@@ -1,0 +1,14 @@
+node_modules/
+dist/
+server/data/
+server/uploads/
+*.db
+.env
+.DS_Store
+Thumbs.db
+*.log
+lynchpin
+read_xlsx.py
+.codebuddy/
+PV4解密.xlsx
+

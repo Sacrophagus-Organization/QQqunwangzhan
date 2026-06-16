@@ -1,0 +1,6 @@
+/* Arknights Puzzle Blog - Global App Styles */
+/* Main layout handled by Tailwind, kept minimal */
+
+#root {
+  min-height: 100vh;
+}
