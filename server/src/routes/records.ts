@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { v4 as uuid } from 'uuid';
+import { unlinkSync } from 'node:fs';
 import { db } from '../db.js';
 import { authMiddleware, AuthRequest } from '../middleware/auth.js';
 
@@ -70,8 +71,7 @@ router.delete('/:id', (req: AuthRequest, res) => {
   }
   // Delete attachments first
   const atts = db.prepare('SELECT * FROM attachments WHERE entity_type=? AND entity_id=?').all('record', req.params.id) as any[];
-  const fs = require('fs');
-  atts.forEach((a: any) => { try { fs.unlinkSync(a.file_path); } catch {} });
+  atts.forEach((a: any) => { try { unlinkSync(a.file_path); } catch {} });
   db.prepare('DELETE FROM attachments WHERE entity_type=? AND entity_id=?').run('record', req.params.id);
   db.prepare('DELETE FROM records WHERE id = ?').run(req.params.id);
   res.json({ success: true });

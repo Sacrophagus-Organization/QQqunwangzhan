@@ -44,10 +44,10 @@ echo "=== [5/5] 配置 Nginx ==="
 cat > /tmp/arkoverseer-nginx << 'NGX'
 server {
     listen 80;
-    server_name YOUR_DOMAIN_OR_IP;
+    server_name sarcophagus.org.cn www.sarcophagus.org.cn;
     client_max_body_size 50m;
-    location /api/ { proxy_pass http://127.0.0.1:3001; proxy_http_version 1.1; proxy_set_header Host $host; proxy_set_header X-Real-IP $remote_addr; proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for; }
-    location / { proxy_pass http://127.0.0.1:3001; proxy_set_header Host $host; proxy_set_header X-Real-IP $remote_addr; }
+    location /api/ { proxy_pass http://127.0.0.1:3001; proxy_http_version 1.1; proxy_set_header Host $host; proxy_set_header X-Real-IP $remote_addr; proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for; proxy_set_header X-Forwarded-Proto $scheme; }
+    location / { proxy_pass http://127.0.0.1:3001; proxy_set_header Host $host; proxy_set_header X-Real-IP $remote_addr; proxy_set_header X-Forwarded-Proto $scheme; }
 }
 NGX
 sudo cp /tmp/arkoverseer-nginx /etc/nginx/sites-available/arkoverseer
