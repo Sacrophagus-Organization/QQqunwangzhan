@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RichTextEditor } from '@/components/RichTextEditor';
 import { apiGet, apiPost, apiPut, apiDelete, apiUpload } from '@/api/client';
-import { BookOpen, Plus, Search, User, Tag, Clock, Bookmark, Sparkles, ChevronDown, Filter, Code2, Binary, Hash, Globe, FileCode, Paperclip, Download, Edit3, Save, Loader2, Trash2, Pin } from 'lucide-react';
+import { BookOpen, Plus, Search, User, Tag, Clock, Bookmark, Sparkles, ChevronDown, Filter, Code2, Binary, Hash, Globe, FileCode, Paperclip, Download, Edit3, Save, Loader2, Trash2 } from 'lucide-react';
 import type { WikiEntry, FileAttachment } from '@/types';
 
 const wikiCategories = [

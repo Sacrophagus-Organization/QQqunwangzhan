@@ -8,7 +8,7 @@ import { apiGet, apiPost, apiDelete } from '@/api/client';
 import {
   Shield, Users, UserCheck, UserX, Trash2,
   Clock, CheckCircle2, XCircle, Loader2, AlertTriangle,
-  FileText, MessageSquare, Star,
+  MessageSquare, Star,
 } from 'lucide-react';
 
 interface UserItem {
