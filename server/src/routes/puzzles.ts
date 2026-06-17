@@ -34,7 +34,7 @@ router.post('/', (req: AuthRequest, res) => {
 router.put('/:id', (req: AuthRequest, res) => {
   const puz = db.prepare('SELECT * FROM puzzles WHERE id = ?').get(req.params.id) as any;
   if (!puz) { res.status(404).json({ error: '谜题不存在' }); return; }
-  if (puz.author_id !== req.userId && req.userRole !== 'admin') {
+  if (puz.author_id !== req.userId && req.userRole !== 'admin' && req.userRole !== 'editor') {
     res.status(403).json({ error: '无权限编辑' }); return;
   }
   const { title, description, content, category, difficulty, hint, solution, tags } = req.body;
@@ -67,7 +67,7 @@ router.post('/:id/solve', (req: AuthRequest, res) => {
 router.delete('/:id', (req: AuthRequest, res) => {
   const puz = db.prepare('SELECT * FROM puzzles WHERE id = ?').get(req.params.id) as any;
   if (!puz) { res.status(404).json({ error: '谜题不存在' }); return; }
-  if (puz.author_id !== req.userId && req.userRole !== 'admin') {
+  if (puz.author_id !== req.userId && req.userRole !== 'admin' && req.userRole !== 'editor') {
     res.status(403).json({ error: '无权限删除' }); return;
   }
   db.prepare('DELETE FROM attachments WHERE entity_type=? AND entity_id=?').run('puzzle', req.params.id);

@@ -4,7 +4,7 @@ import { setToken, clearToken, apiPost, apiGet } from '@/api/client';
 interface AuthUser {
   id: string;
   username: string;
-  role: 'admin' | 'member';
+  role: 'admin' | 'editor' | 'member';
   qqNumber: string;
   createdAt: string;
 }
@@ -14,7 +14,7 @@ interface AuthState {
   isAuthenticated: boolean;
   loading: boolean;
   login: (username: string, password: string) => Promise<{ success: boolean; message: string }>;
-  register: (username: string, password: string, qqNumber: string) => Promise<{ success: boolean; message: string }>;
+  register: (username: string, password: string, qqNumber: string, registerReason?: string) => Promise<{ success: boolean; message: string }>;
   logout: () => void;
 }
 
@@ -48,12 +48,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const register = useCallback(async (username: string, password: string, qqNumber: string) => {
+  const register = useCallback(async (username: string, password: string, qqNumber: string, registerReason?: string) => {
     try {
-      const res = await apiPost<{ token: string; user: AuthUser }>('/auth/register', { username, password, qqNumber });
-      setToken(res.token);
-      setUser(res.user);
-      return { success: true, message: '注册成功' };
+      const res = await apiPost<{ success: boolean; message: string }>('/auth/register', { username, password, qqNumber, registerReason: registerReason || '' });
+      // Don't auto-login after register - user needs admin approval
+      return { success: true, message: res.message || '注册成功，请等待管理员审核' };
     } catch (e: any) {
       return { success: false, message: e.message || '注册失败' };
     }

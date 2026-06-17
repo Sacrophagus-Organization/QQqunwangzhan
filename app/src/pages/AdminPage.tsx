@@ -3,10 +3,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { apiGet, apiPost } from '@/api/client';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { apiGet, apiPost, apiDelete } from '@/api/client';
 import {
   Shield, Users, UserCheck, UserX, Trash2,
   Clock, CheckCircle2, XCircle, Loader2, AlertTriangle,
+  FileText, MessageSquare, Star,
 } from 'lucide-react';
 
 interface UserItem {
@@ -15,8 +17,15 @@ interface UserItem {
   qq_number: string;
   role: string;
   status: string;
+  register_reason: string;
   created_at: string;
 }
+
+const roleLabels: Record<string, { label: string; color: string }> = {
+  admin: { label: '管理员', color: 'bg-red-500/10 text-red-400 border-red-500/30' },
+  editor: { label: '编辑', color: 'bg-blue-500/10 text-blue-400 border-blue-500/30' },
+  member: { label: '成员', color: 'bg-secondary text-muted-foreground' },
+};
 
 export default function AdminPage() {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
@@ -44,14 +53,22 @@ export default function AdminPage() {
     if (!confirm('确定永久删除该用户？此操作不可撤销。')) return;
     setActingId(userId);
     try {
-      await apiPost(`/admin/users/${userId}/delete`);
+      await apiDelete(`/admin/users/${userId}`);
       setUsers(prev => prev.filter(u => u.id !== userId));
     } catch (e: any) { alert(e.message); }
     setActingId(null);
   };
 
-  // Guard: not admin → show forbidden
-  if (!authLoading && (!isAuthenticated || user?.role !== 'admin')) {
+  const handleRoleChange = async (userId: string, newRole: string) => {
+    setActingId(userId);
+    try {
+      await apiPost(`/admin/users/${userId}/role`, { role: newRole });
+      setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u));
+    } catch (e: any) { alert(e.message); }
+    setActingId(null);
+  };
+
+  if (!authLoading && (!isAuthenticated || (user?.role !== 'admin' && user?.role !== 'editor'))) {
     return (
       <div className="min-h-screen bg-background hex-grid-bg flex items-center justify-center">
         <Card className="glass-card border-border/50 max-w-md">
@@ -64,6 +81,8 @@ export default function AdminPage() {
       </div>
     );
   }
+
+  const isAdmin = user?.role === 'admin';
 
   const pendingCount = users.filter(u => u.status === 'pending').length;
 
@@ -92,7 +111,6 @@ export default function AdminPage() {
           </div>
         </div>
 
-        {/* Pending users alert */}
         {pendingCount > 0 && (
           <Card className="glass-card border-amber-500/30 bg-amber-500/5 mb-6">
             <CardContent className="p-4 flex items-center gap-3">
@@ -105,59 +123,86 @@ export default function AdminPage() {
           </Card>
         )}
 
-        {/* User list */}
         <div className="space-y-3">
           {users.map(u => (
             <Card key={u.id} className={`glass-card border-border/50 hover:border-primary/20 transition-all ${u.status === 'pending' ? 'border-amber-500/30' : ''}`}>
-              <CardContent className="p-4 flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className={`h-10 w-10 rounded-full flex items-center justify-center ${
-                    u.role === 'admin' ? 'bg-red-500/10 border border-red-500/30' : 'bg-primary/10 border border-primary/20'
-                  }`}>
-                    <Users className="h-5 w-5 text-muted-foreground" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">{u.username}</span>
-                      {u.role === 'admin' && <Badge variant="secondary" className="text-xs bg-red-500/10 text-red-400">管理员</Badge>}
-                      {statusBadge(u.status)}
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className={`h-10 w-10 rounded-full flex items-center justify-center ${
+                      u.role === 'admin' ? 'bg-red-500/10 border border-red-500/30' :
+                      u.role === 'editor' ? 'bg-blue-500/10 border border-blue-500/30' :
+                      'bg-primary/10 border border-primary/20'
+                    }`}>
+                      {u.role === 'admin' ? <Shield className="h-5 w-5 text-red-400" /> :
+                       u.role === 'editor' ? <Star className="h-5 w-5 text-blue-400" /> :
+                       <Users className="h-5 w-5 text-muted-foreground" />}
                     </div>
-                    <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-                      <span>QQ: {u.qq_number || '-'}</span>
-                      <span>注册于 {u.created_at?.split('T')[0]}</span>
-                      <span className="mono-text">ID: {u.id}</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  {u.role !== 'admin' && (
-                    <>
-                      {u.status === 'pending' && (
-                        <>
-                          <Button size="sm" variant="outline"
-                            className="border-green-500/30 text-green-400 hover:bg-green-500/10"
-                            onClick={() => handleAction(u.id, 'approve')}
-                            disabled={actingId === u.id}>
-                            {actingId === u.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserCheck className="h-4 w-4 mr-1" />}通过
-                          </Button>
-                          <Button size="sm" variant="outline"
-                            className="border-red-500/30 text-red-400 hover:bg-red-500/10"
-                            onClick={() => handleAction(u.id, 'reject')}
-                            disabled={actingId === u.id}>
-                            <UserX className="h-4 w-4 mr-1" />拒绝
-                          </Button>
-                        </>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{u.username}</span>
+                        <Badge variant="outline" className={`text-xs ${roleLabels[u.role]?.color || ''}`}>{roleLabels[u.role]?.label || u.role}</Badge>
+                        {statusBadge(u.status)}
+                      </div>
+                      <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                        <span>QQ: {u.qq_number || '-'}</span>
+                        <span>注册于 {u.created_at?.split('T')[0]}</span>
+                        <span className="mono-text">ID: {u.id}</span>
+                      </div>
+                      {u.register_reason && (
+                        <div className="flex items-start gap-1.5 mt-2 text-xs bg-secondary/30 rounded-md p-2">
+                          <MessageSquare className="h-3 w-3 text-muted-foreground shrink-0 mt-0.5" />
+                          <span className="text-muted-foreground">{u.register_reason}</span>
+                        </div>
                       )}
-                      {u.status !== 'pending' && (
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {isAdmin && u.role !== 'admin' && u.status === 'pending' && (
+                      <>
+                        <Button size="sm" variant="outline"
+                          className="border-green-500/30 text-green-400 hover:bg-green-500/10"
+                          onClick={() => handleAction(u.id, 'approve')}
+                          disabled={actingId === u.id}>
+                          {actingId === u.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserCheck className="h-4 w-4 mr-1" />}通过
+                        </Button>
+                        <Button size="sm" variant="outline"
+                          className="border-red-500/30 text-red-400 hover:bg-red-500/10"
+                          onClick={() => handleAction(u.id, 'reject')}
+                          disabled={actingId === u.id}>
+                          <UserX className="h-4 w-4 mr-1" />拒绝
+                        </Button>
+                      </>
+                    )}
+                    {isAdmin && u.role !== 'admin' && u.status === 'active' && (
+                      <>
+                        <Select value={u.role} onValueChange={(v) => handleRoleChange(u.id, v)}>
+                          <SelectTrigger className="w-24 h-8 text-xs bg-secondary/30 border-border/50">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="member">成员</SelectItem>
+                            <SelectItem value="editor">编辑</SelectItem>
+                            <SelectItem value="admin">管理员</SelectItem>
+                          </SelectContent>
+                        </Select>
                         <Button size="sm" variant="ghost"
                           className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                           onClick={() => handleDelete(u.id)}
                           disabled={actingId === u.id}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
-                      )}
-                    </>
-                  )}
+                      </>
+                    )}
+                    {isAdmin && u.role !== 'admin' && u.status === 'rejected' && (
+                      <Button size="sm" variant="ghost"
+                        className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                        onClick={() => handleDelete(u.id)}
+                        disabled={actingId === u.id}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>

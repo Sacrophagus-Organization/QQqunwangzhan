@@ -6,59 +6,59 @@
 
 @layer base {
   :root {
-    --background: 228 30% 5%;
-    --foreground: 210 40% 92%;
-    --card: 228 25% 8%;
-    --card-foreground: 210 40% 92%;
-    --popover: 228 25% 10%;
-    --popover-foreground: 210 40% 92%;
-    --primary: 190 100% 50%;
-    --primary-foreground: 228 30% 5%;
-    --secondary: 228 20% 14%;
-    --secondary-foreground: 210 40% 92%;
-    --muted: 228 20% 14%;
-    --muted-foreground: 215 20% 60%;
-    --accent: 261 73% 60%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 72% 55%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 228 20% 18%;
-    --input: 228 20% 16%;
-    --ring: 190 100% 50%;
+    --background: 230 35% 3%;
+    --foreground: 220 35% 88%;
+    --card: 230 28% 6%;
+    --card-foreground: 220 35% 88%;
+    --popover: 230 28% 8%;
+    --popover-foreground: 220 35% 88%;
+    --primary: 190 100% 48%;
+    --primary-foreground: 230 35% 3%;
+    --secondary: 230 18% 12%;
+    --secondary-foreground: 220 35% 88%;
+    --muted: 230 18% 12%;
+    --muted-foreground: 220 15% 55%;
+    --accent: 35 90% 55%;
+    --accent-foreground: 230 35% 3%;
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 220 35% 98%;
+    --border: 230 20% 14%;
+    --input: 230 20% 12%;
+    --ring: 190 100% 48%;
     --radius: 0.5rem;
-    --sidebar-background: 228 30% 4%;
-    --sidebar-foreground: 210 40% 85%;
-    --sidebar-primary: 190 100% 50%;
-    --sidebar-primary-foreground: 228 30% 5%;
-    --sidebar-accent: 228 20% 12%;
-    --sidebar-accent-foreground: 210 40% 92%;
-    --sidebar-border: 228 20% 16%;
-    --sidebar-ring: 190 100% 50%;
+    --sidebar-background: 230 35% 3%;
+    --sidebar-foreground: 220 35% 82%;
+    --sidebar-primary: 190 100% 48%;
+    --sidebar-primary-foreground: 230 35% 3%;
+    --sidebar-accent: 230 20% 10%;
+    --sidebar-accent-foreground: 220 35% 88%;
+    --sidebar-border: 230 20% 12%;
+    --sidebar-ring: 190 100% 48%;
 
     --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
     --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
   }
 
   .dark {
-    --background: 228 30% 5%;
-    --foreground: 210 40% 92%;
-    --card: 228 25% 8%;
-    --card-foreground: 210 40% 92%;
-    --popover: 228 25% 10%;
-    --popover-foreground: 210 40% 92%;
-    --primary: 190 100% 50%;
-    --primary-foreground: 228 30% 5%;
-    --secondary: 228 20% 14%;
-    --secondary-foreground: 210 40% 92%;
-    --muted: 228 20% 14%;
-    --muted-foreground: 215 20% 60%;
-    --accent: 261 73% 60%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 72% 55%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 228 20% 18%;
-    --input: 228 20% 16%;
-    --ring: 190 100% 50%;
+    --background: 230 35% 3%;
+    --foreground: 220 35% 88%;
+    --card: 230 28% 6%;
+    --card-foreground: 220 35% 88%;
+    --popover: 230 28% 8%;
+    --popover-foreground: 220 35% 88%;
+    --primary: 190 100% 48%;
+    --primary-foreground: 230 35% 3%;
+    --secondary: 230 18% 12%;
+    --secondary-foreground: 220 35% 88%;
+    --muted: 230 18% 12%;
+    --muted-foreground: 220 15% 55%;
+    --accent: 35 90% 55%;
+    --accent-foreground: 230 35% 3%;
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 220 35% 98%;
+    --border: 230 20% 14%;
+    --input: 230 20% 12%;
+    --ring: 190 100% 48%;
   }
 }
 
@@ -72,49 +72,66 @@
   }
 }
 
-/* Arknights-style utility classes */
+/* Sarcophagus theme utility classes */
 @layer components {
   .glow-cyan {
-    box-shadow: 0 0 15px rgba(0, 212, 255, 0.15), 0 0 30px rgba(0, 212, 255, 0.05);
+    box-shadow: 0 0 20px rgba(0, 210, 245, 0.18), 0 0 40px rgba(0, 210, 245, 0.06);
   }
   .glow-purple {
-    box-shadow: 0 0 15px rgba(168, 85, 247, 0.15), 0 0 30px rgba(168, 85, 247, 0.05);
+    box-shadow: 0 0 15px rgba(139, 92, 246, 0.15), 0 0 30px rgba(139, 92, 246, 0.05);
   }
   .glow-amber {
-    box-shadow: 0 0 15px rgba(240, 192, 64, 0.15), 0 0 30px rgba(240, 192, 64, 0.05);
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.18), 0 0 40px rgba(245, 158, 11, 0.06);
   }
   .border-glow {
-    border-color: rgba(0, 212, 255, 0.2);
-    box-shadow: 0 0 10px rgba(0, 212, 255, 0.08), inset 0 0 10px rgba(0, 212, 255, 0.03);
+    border-color: rgba(0, 210, 245, 0.25);
+    box-shadow: 0 0 12px rgba(0, 210, 245, 0.1), inset 0 0 12px rgba(0, 210, 245, 0.04);
   }
   .text-glow-cyan {
-    text-shadow: 0 0 10px rgba(0, 212, 255, 0.5), 0 0 20px rgba(0, 212, 255, 0.3);
+    text-shadow: 0 0 12px rgba(0, 210, 245, 0.5), 0 0 24px rgba(0, 210, 245, 0.25);
   }
   .text-glow-amber {
-    text-shadow: 0 0 10px rgba(240, 192, 64, 0.5), 0 0 20px rgba(240, 192, 64, 0.3);
+    text-shadow: 0 0 12px rgba(245, 158, 11, 0.5), 0 0 24px rgba(245, 158, 11, 0.25);
   }
   .text-glow-purple {
-    text-shadow: 0 0 10px rgba(168, 85, 247, 0.5), 0 0 20px rgba(168, 85, 247, 0.3);
+    text-shadow: 0 0 10px rgba(139, 92, 246, 0.5), 0 0 20px rgba(139, 92, 246, 0.3);
   }
   .mono-text {
     font-family: var(--font-mono);
   }
   .glass-card {
-    @apply bg-card/80 backdrop-blur-md border border-border/50;
+    @apply bg-card/85 backdrop-blur-xl border border-border/40;
   }
+  /* Sarcophagus stone grid background */
   .hex-grid-bg {
     background-image:
-      linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
-    background-size: 40px 40px;
+      linear-gradient(rgba(0, 210, 245, 0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 210, 245, 0.025) 1px, transparent 1px);
+    background-size: 48px 48px;
+    background-position: center center;
+  }
+  /* Stone texture overlay */
+  .stone-texture {
+    position: relative;
+  }
+  .stone-texture::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      radial-gradient(ellipse at 20% 50%, rgba(245, 158, 11, 0.04) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 20%, rgba(0, 210, 245, 0.04) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 80%, rgba(139, 92, 246, 0.03) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
   }
   .diagonal-lines {
     background-image: repeating-linear-gradient(
       45deg,
       transparent,
-      transparent 3px,
-      rgba(0, 212, 255, 0.02) 3px,
-      rgba(0, 212, 255, 0.02) 6px
+      transparent 4px,
+      rgba(245, 158, 11, 0.015) 4px,
+      rgba(245, 158, 11, 0.015) 8px
     );
   }
 
@@ -123,15 +140,25 @@
     width: 6px;
   }
   ::-webkit-scrollbar-track {
-    background: hsl(228, 25%, 8%);
+    background: hsl(230, 30%, 5%);
   }
   ::-webkit-scrollbar-thumb {
-    background: hsl(228, 20%, 18%);
+    background: hsl(230, 18%, 16%);
     border-radius: 3px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: hsl(190, 100%, 50%, 0.3);
+    background: hsla(190, 100%, 48%, 0.3);
   }
+}
+
+/* Sarcophagus originium crystal pulse animation */
+@keyframes originium-pulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(0, 210, 245, 0.3), 0 0 20px rgba(0, 210, 245, 0.1); }
+  50% { box-shadow: 0 0 16px rgba(0, 210, 245, 0.5), 0 0 32px rgba(0, 210, 245, 0.2); }
+}
+
+.originium-pulse {
+  animation: originium-pulse 3s ease-in-out infinite;
 }
 
 /* Rich Text Editor Styles */

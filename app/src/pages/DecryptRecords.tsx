@@ -10,10 +10,12 @@ import {
 } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RichTextEditor, htmlToSummary } from '@/components/RichTextEditor';
-import { apiGet, apiPost, apiUpload } from '@/api/client';
+import { apiGet, apiPost, apiDelete, apiUpload } from '@/api/client';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   FileText, Plus, Search, User, Tag, Filter, ArrowUpDown,
   Calendar, AlertTriangle, Paperclip, Sparkles, ArrowRight, Loader2,
+  Pin, Trash2,
 } from 'lucide-react';
 import type { DecryptRecord } from '@/types';
 
@@ -25,6 +27,7 @@ const importanceLabels: Record<string, { label: string; color: string }> = {
 
 export default function DecryptRecords() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [records, setRecords] = useState<DecryptRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -60,6 +63,23 @@ export default function DecryptRecords() {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) setPendingFiles(Array.from(e.target.files));
+  };
+
+  const canEdit = (r: DecryptRecord) => user && (user.id === r.authorId || user.role === 'admin' || user.role === 'editor');
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('确定永久删除这条记录？此操作不可撤销。')) return;
+    try {
+      await apiDelete(`/records/${id}`);
+      setRecords(prev => prev.filter(r => r.id !== id));
+    } catch (e: any) { alert(e.message); }
+  };
+
+  const handlePin = async (id: string) => {
+    try {
+      const res = await apiPost<{ pinned: boolean }>(`/records/${id}/pin`);
+      setRecords(prev => prev.map(r => r.id === id ? { ...r, pinned: res.pinned ? 1 : 0 } : r));
+    } catch (e: any) { alert(e.message); }
   };
 
   const handleCreate = async () => {
@@ -121,12 +141,12 @@ export default function DecryptRecords() {
         <div className="space-y-3">
           {sorted.length === 0 ? <Card className="glass-card border-border/50"><CardContent className="p-12 text-center"><FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-30" /><p className="text-muted-foreground">暂无解密记录</p></CardContent></Card>
             : sorted.map(record => (
-            <Card key={record.id} className="glass-card border-border/50 hover:border-primary/30 hover:bg-primary/[0.03] transition-all duration-200 cursor-pointer group" onClick={() => navigate(`/records/${record.id}`)}>
+            <Card key={record.id} className={`glass-card border-border/50 hover:border-primary/30 hover:bg-primary/[0.03] transition-all duration-200 group ${record.pinned ? 'border-amber-500/30 bg-amber-500/[0.02]' : ''}`}>
               <CardContent className="p-5">
                 <div className="flex items-start gap-4">
-                  <div className="shrink-0 mt-1">{record.importance === 'critical' ? <AlertTriangle className="h-5 w-5 text-red-400" /> : <FileText className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />}</div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1"><h3 className="text-base font-semibold group-hover:text-primary transition-colors truncate">{record.title}</h3><Badge variant="outline" className={`text-xs shrink-0 ${importanceLabels[record.importance]?.color || ''}`}>{importanceLabels[record.importance]?.label || record.importance}</Badge></div>
+                  <div className="shrink-0 mt-1">{record.importance === 'critical' ? <AlertTriangle className="h-5 w-5 text-red-400" /> : record.pinned ? <Pin className="h-5 w-5 text-amber-400" /> : <FileText className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />}</div>
+                  <div className="flex-1 min-w-0 cursor-pointer" onClick={() => navigate(`/records/${record.id}`)}>
+                    <div className="flex items-center gap-2 mb-1"><h3 className="text-base font-semibold group-hover:text-primary transition-colors truncate">{record.title}</h3>{record.pinned ? <Badge className="text-xs bg-amber-500/10 text-amber-400 border-amber-500/20"><Pin className="h-3 w-3 mr-0.5" />置顶</Badge> : null}<Badge variant="outline" className={`text-xs shrink-0 ${importanceLabels[record.importance]?.color || ''}`}>{importanceLabels[record.importance]?.label || record.importance}</Badge></div>
                     <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{record.summary}</p>
                     <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{record.date}</span>
@@ -135,7 +155,19 @@ export default function DecryptRecords() {
                       {record.attachments?.length > 0 && <span className="flex items-center gap-1"><Paperclip className="h-3 w-3" />{record.attachments.length}</span>}
                     </div>
                   </div>
-                  <div className="shrink-0 self-center"><ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" /></div>
+                  <div className="shrink-0 flex items-center gap-1">
+                    {canEdit(record) && (
+                      <>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-amber-400" onClick={(e) => { e.stopPropagation(); handlePin(record.id); }} title={record.pinned ? '取消置顶' : '置顶'}>
+                          <Pin className={`h-4 w-4 ${record.pinned ? 'text-amber-400 fill-amber-400' : ''}`} />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={(e) => { e.stopPropagation(); handleDelete(record.id); }} title="删除">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </>
+                    )}
+                    <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all ml-1 cursor-pointer" onClick={() => navigate(`/records/${record.id}`)} />
+                  </div>
                 </div>
               </CardContent>
             </Card>

@@ -9,10 +9,10 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RichTextEditor } from '@/components/RichTextEditor';
-import { apiGet, apiPut, apiUpload } from '@/api/client';
+import { apiGet, apiPut, apiDelete, apiUpload } from '@/api/client';
 import {
   ArrowLeft, Calendar, User, Tag, AlertTriangle, Paperclip, Download,
-  Edit3, Clock, Save, Loader2,
+  Edit3, Clock, Save, Loader2, Trash2, Pin,
 } from 'lucide-react';
 import type { DecryptRecord, FileAttachment } from '@/types';
 
@@ -42,12 +42,20 @@ export default function RecordDetail() {
   };
   useEffect(() => { load(); }, [id]);
 
-  const canEdit = user && record && (user.id === record.authorId || user.role === 'admin');
+  const canEdit = user && record && (user.id === record.authorId || user.role === 'admin' || user.role === 'editor');
 
   const openEdit = () => {
     if (!record) return;
     setETitle(record.title); setESummary(record.summary); setEContent(record.content);
     setETags((record.tags || []).join(', ')); setEImportance(record.importance); setEFiles([]); setShowEdit(true);
+  };
+
+  const handleDelete = async () => {
+    if (!record || !confirm('确定永久删除这条记录？此操作不可撤销。')) return;
+    try {
+      await apiDelete(`/records/${record.id}`);
+      navigate('/records');
+    } catch (e: any) { alert(e.message); }
   };
 
   const handleSave = async () => {
@@ -74,7 +82,7 @@ export default function RecordDetail() {
       <div className="container mx-auto max-w-4xl px-4 py-8">
         <button onClick={() => navigate('/records')} className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors mb-6 group"><ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" /><span className="text-sm">返回记录列表</span></button>
         <Card className="glass-card border-border/50 border-glow mb-6">
-          <CardHeader><div className="flex items-start gap-3">{record.importance === 'critical' && <AlertTriangle className="h-5 w-5 text-red-400 shrink-0 mt-0.5" />}<div className="flex-1"><div className="flex items-center justify-between"><CardTitle className="text-2xl font-bold text-glow-cyan">{record.title}</CardTitle>{canEdit && <Button variant="outline" size="sm" onClick={openEdit} className="shrink-0 ml-4 border-border/40 hover:border-primary/30 hover:text-primary"><Edit3 className="h-4 w-4 mr-1.5" />编辑</Button>}</div><p className="text-muted-foreground mt-2">{record.summary}</p></div></div></CardHeader>
+          <CardHeader><div className="flex items-start gap-3">{record.importance === 'critical' ? <AlertTriangle className="h-5 w-5 text-red-400 shrink-0 mt-0.5" /> : record.pinned ? <Pin className="h-5 w-5 text-amber-400 shrink-0 mt-0.5" /> : null}<div className="flex-1"><div className="flex items-center justify-between"><div className="flex items-center gap-2"><CardTitle className="text-2xl font-bold text-glow-cyan">{record.title}</CardTitle>{record.pinned ? <Badge className="text-xs bg-amber-500/10 text-amber-400 border-amber-500/20"><Pin className="h-3 w-3 mr-0.5" />置顶</Badge> : null}</div>{canEdit && <div className="flex items-center gap-1 shrink-0 ml-4"><Button variant="outline" size="sm" onClick={openEdit} className="border-border/40 hover:border-primary/30 hover:text-primary"><Edit3 className="h-4 w-4 mr-1.5" />编辑</Button><Button variant="outline" size="sm" onClick={handleDelete} className="border-border/40 hover:border-destructive/30 hover:text-destructive"><Trash2 className="h-4 w-4" /></Button></div>}</div><p className="text-muted-foreground mt-2">{record.summary}</p></div></div></CardHeader>
           <CardContent><div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground border-t border-border/30 pt-4"><span className="flex items-center gap-1.5"><Calendar className="h-4 w-4 text-primary/60" />{record.date}</span><span className="flex items-center gap-1.5"><User className="h-4 w-4 text-primary/60" />{record.author}</span><span className="flex items-center gap-1.5"><Clock className="h-4 w-4 text-primary/60" />更新于 {record.updatedAt?.split('T')[0] || record.date}</span><Badge variant="outline" className={`text-xs ${importanceLabels[record.importance]?.color || ''}`}>{importanceLabels[record.importance]?.label}</Badge></div></CardContent>
         </Card>
         <Card className="glass-card border-border/50 mb-6"><CardContent className="p-6"><div className="rich-editor-content text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: record.content || '<p class="text-muted-foreground">暂无内容</p>' }} /></CardContent></Card>

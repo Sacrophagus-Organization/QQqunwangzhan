@@ -10,7 +10,7 @@ router.use(authMiddleware);
 
 // Get all records
 router.get('/', (_req: AuthRequest, res) => {
-  const rows = db.prepare('SELECT * FROM records ORDER BY date DESC').all() as any[];
+  const rows = db.prepare('SELECT * FROM records ORDER BY pinned DESC, sort_order ASC, date DESC').all() as any[];
   const records = rows.map(r => ({
     ...r,
     tags: JSON.parse(r.tags || '[]'),
@@ -45,14 +45,17 @@ router.post('/', (req: AuthRequest, res) => {
 router.put('/:id', (req: AuthRequest, res) => {
   const record = db.prepare('SELECT * FROM records WHERE id = ?').get(req.params.id) as any;
   if (!record) { res.status(404).json({ error: '记录不存在' }); return; }
-  if (record.author_id !== req.userId && req.userRole !== 'admin') {
+  if (record.author_id !== req.userId && req.userRole !== 'admin' && req.userRole !== 'editor') {
     res.status(403).json({ error: '无权限编辑' }); return;
   }
-  const { title, content, summary, tags, importance } = req.body;
-  db.prepare(`UPDATE records SET title=?, content=?, summary=?, tags=?, importance=?, updated_at=? WHERE id=?`).run(
+  const { title, content, summary, tags, importance, pinned, sortOrder } = req.body;
+  db.prepare(`UPDATE records SET title=?, content=?, summary=?, tags=?, importance=?, pinned=?, sort_order=?, updated_at=? WHERE id=?`).run(
     title || record.title, content ?? record.content, summary ?? record.summary,
     JSON.stringify(tags ?? JSON.parse(record.tags || '[]')),
-    importance || record.importance, new Date().toISOString(), req.params.id
+    importance || record.importance,
+    pinned !== undefined ? (pinned ? 1 : 0) : (record.pinned || 0),
+    sortOrder !== undefined ? sortOrder : (record.sort_order || 0),
+    new Date().toISOString(), req.params.id
   );
   const updated = db.prepare('SELECT * FROM records WHERE id = ?').get(req.params.id) as any;
   res.json({ ...updated, tags: JSON.parse(updated.tags || '[]'), attachments: getAttachments('record', updated.id) });
@@ -62,7 +65,7 @@ router.put('/:id', (req: AuthRequest, res) => {
 router.delete('/:id', (req: AuthRequest, res) => {
   const record = db.prepare('SELECT * FROM records WHERE id = ?').get(req.params.id) as any;
   if (!record) { res.status(404).json({ error: '记录不存在' }); return; }
-  if (record.author_id !== req.userId && req.userRole !== 'admin') {
+  if (record.author_id !== req.userId && req.userRole !== 'admin' && req.userRole !== 'editor') {
     res.status(403).json({ error: '无权限删除' }); return;
   }
   // Delete attachments first
@@ -72,6 +75,18 @@ router.delete('/:id', (req: AuthRequest, res) => {
   db.prepare('DELETE FROM attachments WHERE entity_type=? AND entity_id=?').run('record', req.params.id);
   db.prepare('DELETE FROM records WHERE id = ?').run(req.params.id);
   res.json({ success: true });
+});
+
+// Pin/unpin record
+router.post('/:id/pin', (req: AuthRequest, res) => {
+  const record = db.prepare('SELECT * FROM records WHERE id = ?').get(req.params.id) as any;
+  if (!record) { res.status(404).json({ error: '记录不存在' }); return; }
+  if (req.userRole !== 'admin' && req.userRole !== 'editor') {
+    res.status(403).json({ error: '无权限操作' }); return;
+  }
+  const newPinned = record.pinned ? 0 : 1;
+  db.prepare('UPDATE records SET pinned=? WHERE id=?').run(newPinned, req.params.id);
+  res.json({ success: true, pinned: !!newPinned });
 });
 
 function getAttachments(type: string, entityId: string) {

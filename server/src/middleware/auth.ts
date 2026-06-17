@@ -42,3 +42,11 @@ export function adminOnly(req: AuthRequest, res: Response, next: NextFunction) {
   }
   next();
 }
+
+export function editorOrAdmin(req: AuthRequest, res: Response, next: NextFunction) {
+  if (req.userRole !== 'admin' && req.userRole !== 'editor') {
+    res.status(403).json({ error: '仅管理员或编辑可操作' });
+    return;
+  }
+  next();
+}

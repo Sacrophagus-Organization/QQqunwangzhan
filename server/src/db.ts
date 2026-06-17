@@ -22,6 +22,7 @@ db.exec(`
     qq_number TEXT NOT NULL DEFAULT '',
     role TEXT NOT NULL DEFAULT 'member',
     status TEXT NOT NULL DEFAULT 'active',
+    register_reason TEXT NOT NULL DEFAULT '',
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 
@@ -86,11 +87,15 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_attachments_entity ON attachments(entity_type, entity_id);
 `);
 
-// Migration: add status column for existing databases
-try {
-  db.exec('ALTER TABLE users ADD COLUMN status TEXT NOT NULL DEFAULT "active"');
-  console.log('[DB] Added status column (migration)');
-} catch { /* column already exists */ }
+// Migration: add columns for existing databases
+try { db.exec('ALTER TABLE users ADD COLUMN status TEXT NOT NULL DEFAULT "active"'); console.log('[DB] Added status column (migration)'); } catch {}
+try { db.exec('ALTER TABLE users ADD COLUMN register_reason TEXT NOT NULL DEFAULT ""'); console.log('[DB] Added register_reason column (migration)'); } catch {}
+try { db.exec('ALTER TABLE records ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0'); console.log('[DB] Added pinned column to records'); } catch {}
+try { db.exec('ALTER TABLE records ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0'); console.log('[DB] Added sort_order column to records'); } catch {}
+try { db.exec('ALTER TABLE wiki_entries ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0'); console.log('[DB] Added pinned column to wiki'); } catch {}
+try { db.exec('ALTER TABLE wiki_entries ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0'); console.log('[DB] Added sort_order column to wiki'); } catch {}
+try { db.exec('ALTER TABLE puzzles ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0'); console.log('[DB] Added pinned column to puzzles'); } catch {}
+try { db.exec('ALTER TABLE puzzles ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0'); console.log('[DB] Added sort_order column to puzzles'); } catch {}
 
 // Seed admin
 const existingAdmin = db.prepare('SELECT id FROM users WHERE username = ?').get('Admin');

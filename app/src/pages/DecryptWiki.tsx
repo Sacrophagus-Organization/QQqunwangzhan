@@ -8,8 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RichTextEditor } from '@/components/RichTextEditor';
-import { apiGet, apiPost, apiPut, apiUpload } from '@/api/client';
-import { BookOpen, Plus, Search, User, Tag, Clock, Bookmark, Sparkles, ChevronDown, Filter, Code2, Binary, Hash, Globe, FileCode, Paperclip, Download, Edit3, Save, Loader2 } from 'lucide-react';
+import { apiGet, apiPost, apiPut, apiDelete, apiUpload } from '@/api/client';
+import { BookOpen, Plus, Search, User, Tag, Clock, Bookmark, Sparkles, ChevronDown, Filter, Code2, Binary, Hash, Globe, FileCode, Paperclip, Download, Edit3, Save, Loader2, Trash2, Pin } from 'lucide-react';
 import type { WikiEntry, FileAttachment } from '@/types';
 
 const wikiCategories = [
@@ -42,7 +42,15 @@ export default function DecryptWiki() {
     return true;
   });
 
-  const canEdit = (e: WikiEntry) => user && (user.id === e.authorId || user.role === 'admin');
+  const canEdit = (e: WikiEntry) => user && (user.id === e.authorId || user.role === 'admin' || user.role === 'editor');
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('确定永久删除这个词条？此操作不可撤销。')) return;
+    try {
+      await apiDelete(`/wiki/${id}`);
+      setEntries(prev => prev.filter(e => e.id !== id));
+    } catch (e: any) { alert(e.message); }
+  };
 
   const handleCreate = async () => {
     if (!ne.title.trim() || !nc.trim() || !ne.category.trim()) return;
@@ -104,7 +112,7 @@ export default function DecryptWiki() {
                   <div className="mt-4"><div className="text-sm bg-secondary/20 rounded-lg p-4 border border-border/20 rich-editor-content" dangerouslySetInnerHTML={{ __html: entry.content }} /></div>
                   {entry.tags?.length > 0 && <div className="flex flex-wrap gap-1.5 mt-4">{entry.tags.map((t: string) => <Badge key={t} variant="outline" className="text-xs"><Tag className="h-3 w-3 mr-1" />{t}</Badge>)}</div>}
                   {entry.attachments?.length > 0 && <div className="mt-3 border-t border-border/20 pt-3"><p className="text-xs text-muted-foreground mb-2"><Paperclip className="h-3 w-3 inline mr-1" />附件</p><div className="flex flex-wrap gap-2">{entry.attachments.map((a: FileAttachment) => <Button key={a.id} variant="outline" size="sm" onClick={() => downloadAtt(a)} className="text-xs"><Download className="h-3 w-3 mr-1" />{a.name}</Button>)}</div></div>}
-                  <div className="mt-4 flex justify-end">{canEdit(entry) && <Button variant="outline" size="sm" onClick={e => { e.stopPropagation(); openEdit(entry); }} className="border-border/40 hover:border-amber-500/30 hover:text-amber-400"><Edit3 className="h-4 w-4 mr-1" />编辑词条</Button>}</div>
+                  <div className="mt-4 flex justify-end gap-2">{canEdit(entry) && <><Button variant="outline" size="sm" onClick={e => { e.stopPropagation(); openEdit(entry); }} className="border-border/40 hover:border-amber-500/30 hover:text-amber-400"><Edit3 className="h-4 w-4 mr-1" />编辑词条</Button><Button variant="outline" size="sm" onClick={e => { e.stopPropagation(); handleDelete(entry.id); }} className="border-border/40 hover:border-destructive/30 hover:text-destructive"><Trash2 className="h-4 w-4 mr-1" />删除</Button></>}</div>
                 </CardContent>}
               </Card>
             ))}

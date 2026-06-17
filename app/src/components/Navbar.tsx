@@ -102,15 +102,15 @@ export function Navbar() {
                 <p className="text-sm font-medium">{user.username}</p>
                 <p className="text-xs text-muted-foreground">QQ: {user.qqNumber}</p>
                 <p className="text-xs text-muted-foreground">
-                  {user.role === 'admin' ? '管理员' : '成员'}
+                  {user.role === 'admin' ? '管理员' : user.role === 'editor' ? '编辑' : '成员'}
                 </p>
               </div>
-              {user.role === 'admin' && (
+              {(user.role === 'admin' || user.role === 'editor') && (
                 <Link to="/lynchpin-admin">
                   <DropdownMenuItem className="cursor-pointer text-amber-400">
                     <Shield className="mr-2 h-4 w-4" />
-                    <span>管理员控制台</span>
-                    {pendingCount > 0 && (
+                    <span>控制台</span>
+                    {user.role === 'admin' && pendingCount > 0 && (
                       <span className="ml-auto bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center">{pendingCount}</span>
                     )}
                   </DropdownMenuItem>
@@ -166,7 +166,7 @@ export function Navbar() {
                     </div>
                     <div>
                       <p className="text-sm font-medium">{user.username}</p>
-                      <p className="text-xs text-muted-foreground">{user.role === 'admin' ? '管理员' : '成员'}</p>
+                      <p className="text-xs text-muted-foreground">{user.role === 'admin' ? '管理员' : user.role === 'editor' ? '编辑' : '成员'}</p>
                     </div>
                   </div>
                   <Button variant="destructive" size="sm" className="w-full" onClick={logout}>

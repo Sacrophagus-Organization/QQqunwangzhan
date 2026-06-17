@@ -9,8 +9,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RichTextEditor } from '@/components/RichTextEditor';
-import { apiGet, apiPost, apiPut, apiUpload } from '@/api/client';
-import { Puzzle, Plus, Search, User, Tag, Lightbulb, Key, CheckCircle2, HelpCircle, Brain, Zap, Filter, Sparkles, Trophy, Paperclip, Download, Edit3, Save, Loader2 } from 'lucide-react';
+import { apiGet, apiPost, apiPut, apiDelete, apiUpload } from '@/api/client';
+import { Puzzle, Plus, Search, User, Tag, Lightbulb, Key, CheckCircle2, HelpCircle, Brain, Zap, Filter, Sparkles, Trophy, Paperclip, Download, Edit3, Save, Loader2, Trash2 } from 'lucide-react';
 import type { Puzzle as PuzzleType, FileAttachment } from '@/types';
 
 const catLabels: Record<string, string> = { cipher: '密码学', logic: '逻辑推理', pattern: '模式识别', math: '数学', lore: '剧情考据', other: '其他' };
@@ -48,7 +48,15 @@ export default function CustomPuzzles() {
     return true;
   });
 
-  const canEdit = (p: PuzzleType) => user && (user.id === p.authorId || user.role === 'admin');
+  const canEdit = (p: PuzzleType) => user && (user.id === p.authorId || user.role === 'admin' || user.role === 'editor');
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('确定永久删除这个谜题？此操作不可撤销。')) return;
+    try {
+      await apiDelete(`/puzzles/${id}`);
+      setPuzzles(prev => prev.filter(p => p.id !== id));
+    } catch (e: any) { alert(e.message); }
+  };
 
   const handleCreate = async () => {
     if (!np.title.trim() || !nc.trim()) return;
@@ -119,7 +127,7 @@ export default function CustomPuzzles() {
                 {pz.hint && <div className="flex items-start gap-1.5 text-xs bg-amber-500/10 border border-amber-500/20 rounded-md p-2"><Lightbulb className="h-3 w-3 text-amber-400 shrink-0 mt-0.5" /><span className="text-amber-400/80">{pz.hint}</span></div>}
                 <div className="flex gap-2 pt-1">
                   <Dialog open={solveId === pz.id} onOpenChange={o => { if (!o) { setSolveId(null); setSolveAnswer(''); setSolveResult(null); } }}><DialogTrigger asChild><Button size="sm" className="flex-1" variant={pz.status === 'solved' ? 'outline' : 'default'} disabled={pz.status === 'solved'} onClick={() => setSolveId(pz.id)}>{pz.status === 'solved' ? <><CheckCircle2 className="h-4 w-4 mr-1" />已破解</> : <><Key className="h-4 w-4 mr-1" />提交答案</>}</Button></DialogTrigger><DialogContent><DialogHeader><DialogTitle className="flex items-center gap-2"><Key className="h-5 w-5 text-amber-400" />提交答案</DialogTitle></DialogHeader><div className="space-y-4 mt-4">{solveResult === null && <><div className="space-y-2"><Label>你的答案</Label><Input value={solveAnswer} onChange={e => setSolveAnswer(e.target.value)} className="bg-secondary/30 border-border/50 mono-text" /></div><Button onClick={() => handleSolve(pz.id)} className="w-full" disabled={!solveAnswer.trim()}><Zap className="h-4 w-4 mr-2" />提交</Button></>}{solveResult === 'correct' && <div className="text-center py-4"><CheckCircle2 className="h-12 w-12 text-green-400 mx-auto mb-2" /><p className="text-lg font-bold text-green-400">回答正确！</p></div>}{solveResult === 'wrong' && <div className="text-center py-4"><HelpCircle className="h-12 w-12 text-red-400 mx-auto mb-2" /><p className="text-lg font-bold text-red-400">回答错误</p></div>}</div></DialogContent></Dialog>
-                  <Dialog><DialogTrigger asChild><Button size="sm" variant="ghost">详情</Button></DialogTrigger><DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto"><DialogHeader><div className="flex items-center justify-between"><DialogTitle className="flex items-center gap-2"><Puzzle className="h-5 w-5 text-accent" />{pz.title}</DialogTitle>{canEdit(pz) && <Button variant="outline" size="sm" onClick={() => openEdit(pz)} className="border-border/40 hover:border-accent/30 hover:text-accent"><Edit3 className="h-4 w-4 mr-1" />编辑</Button>}</div></DialogHeader><div className="mt-4 space-y-4"><div className="text-sm bg-secondary/20 rounded-lg p-4 border border-border/20 rich-editor-content" dangerouslySetInnerHTML={{ __html: pz.content }} />{pz.hint && <div className="flex items-start gap-2 text-sm bg-amber-500/10 border border-amber-500/20 rounded-lg p-3"><Lightbulb className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" /><span className="text-amber-400">{pz.hint}</span></div>}{pz.tags?.length > 0 && <div className="flex flex-wrap gap-1.5">{pz.tags.map((t: string) => <Badge key={t} variant="secondary" className="text-xs"><Tag className="h-3 w-3 mr-1" />{t}</Badge>)}</div>}{pz.attachments?.length > 0 && <div className="border-t border-border/20 pt-3"><p className="text-xs text-muted-foreground mb-2"><Paperclip className="h-3 w-3 inline mr-1" />附件</p><div className="flex flex-wrap gap-2">{pz.attachments.map((a: FileAttachment) => <Button key={a.id} variant="outline" size="sm" onClick={() => downloadAtt(a)} className="text-xs"><Download className="h-3 w-3 mr-1" />{a.name}</Button>)}</div></div>}</div></DialogContent></Dialog>
+                  <Dialog><DialogTrigger asChild><Button size="sm" variant="ghost">详情</Button></DialogTrigger><DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto"><DialogHeader><div className="flex items-center justify-between"><DialogTitle className="flex items-center gap-2"><Puzzle className="h-5 w-5 text-accent" />{pz.title}</DialogTitle>{canEdit(pz) && <div className="flex items-center gap-1"><Button variant="outline" size="sm" onClick={() => openEdit(pz)} className="border-border/40 hover:border-accent/30 hover:text-accent"><Edit3 className="h-4 w-4 mr-1" />编辑</Button><Button variant="outline" size="sm" onClick={() => handleDelete(pz.id)} className="border-border/40 hover:border-destructive/30 hover:text-destructive"><Trash2 className="h-4 w-4" /></Button></div>}</div></DialogHeader><div className="mt-4 space-y-4"><div className="text-sm bg-secondary/20 rounded-lg p-4 border border-border/20 rich-editor-content" dangerouslySetInnerHTML={{ __html: pz.content }} />{pz.hint && <div className="flex items-start gap-2 text-sm bg-amber-500/10 border border-amber-500/20 rounded-lg p-3"><Lightbulb className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" /><span className="text-amber-400">{pz.hint}</span></div>}{pz.tags?.length > 0 && <div className="flex flex-wrap gap-1.5">{pz.tags.map((t: string) => <Badge key={t} variant="secondary" className="text-xs"><Tag className="h-3 w-3 mr-1" />{t}</Badge>)}</div>}{pz.attachments?.length > 0 && <div className="border-t border-border/20 pt-3"><p className="text-xs text-muted-foreground mb-2"><Paperclip className="h-3 w-3 inline mr-1" />附件</p><div className="flex flex-wrap gap-2">{pz.attachments.map((a: FileAttachment) => <Button key={a.id} variant="outline" size="sm" onClick={() => downloadAtt(a)} className="text-xs"><Download className="h-3 w-3 mr-1" />{a.name}</Button>)}</div></div>}</div></DialogContent></Dialog>
                 </div>
               </CardContent>
             </Card>

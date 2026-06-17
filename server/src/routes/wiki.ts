@@ -7,7 +7,7 @@ const router = Router();
 router.use(authMiddleware);
 
 router.get('/', (_req: AuthRequest, res) => {
-  const rows = db.prepare('SELECT * FROM wiki_entries ORDER BY created_at DESC').all() as any[];
+  const rows = db.prepare('SELECT * FROM wiki_entries ORDER BY pinned DESC, sort_order ASC, created_at DESC').all() as any[];
   res.json(rows.map(r => ({ ...r, tags: JSON.parse(r.tags || '[]'), attachments: getAtts('wiki', r.id) })));
 });
 
@@ -33,7 +33,7 @@ router.post('/', (req: AuthRequest, res) => {
 router.put('/:id', (req: AuthRequest, res) => {
   const entry = db.prepare('SELECT * FROM wiki_entries WHERE id = ?').get(req.params.id) as any;
   if (!entry) { res.status(404).json({ error: '词条不存在' }); return; }
-  if (entry.author_id !== req.userId && req.userRole !== 'admin') {
+  if (entry.author_id !== req.userId && req.userRole !== 'admin' && req.userRole !== 'editor') {
     res.status(403).json({ error: '无权限编辑' }); return;
   }
   const { title, content, category, tags } = req.body;
@@ -48,12 +48,23 @@ router.put('/:id', (req: AuthRequest, res) => {
 router.delete('/:id', (req: AuthRequest, res) => {
   const entry = db.prepare('SELECT * FROM wiki_entries WHERE id = ?').get(req.params.id) as any;
   if (!entry) { res.status(404).json({ error: '词条不存在' }); return; }
-  if (entry.author_id !== req.userId && req.userRole !== 'admin') {
+  if (entry.author_id !== req.userId && req.userRole !== 'admin' && req.userRole !== 'editor') {
     res.status(403).json({ error: '无权限删除' }); return;
   }
   db.prepare('DELETE FROM attachments WHERE entity_type=? AND entity_id=?').run('wiki', req.params.id);
   db.prepare('DELETE FROM wiki_entries WHERE id = ?').run(req.params.id);
   res.json({ success: true });
+});
+
+router.post('/:id/pin', (req: AuthRequest, res) => {
+  const entry = db.prepare('SELECT * FROM wiki_entries WHERE id = ?').get(req.params.id) as any;
+  if (!entry) { res.status(404).json({ error: '词条不存在' }); return; }
+  if (req.userRole !== 'admin' && req.userRole !== 'editor') {
+    res.status(403).json({ error: '无权限操作' }); return;
+  }
+  const newPinned = entry.pinned ? 0 : 1;
+  db.prepare('UPDATE wiki_entries SET pinned=? WHERE id=?').run(newPinned, req.params.id);
+  res.json({ success: true, pinned: !!newPinned });
 });
 
 function getAtts(type: string, eid: string) {

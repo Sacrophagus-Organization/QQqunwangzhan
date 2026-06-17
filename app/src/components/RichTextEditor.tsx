@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Bold,
   Underline,
@@ -10,6 +11,7 @@ import {
   AlignLeft,
   AlignCenter,
   AlignRight,
+  Link,
 } from 'lucide-react';
 
 interface RichTextEditorProps {
@@ -130,6 +132,8 @@ export function RichTextEditor({
   const [isFocused, setIsFocused] = useState(false);
   const [showFontSize, setShowFontSize] = useState(false);
   const [showColor, setShowColor] = useState(false);
+  const [showLinkInput, setShowLinkInput] = useState(false);
+  const [linkUrl, setLinkUrl] = useState('');
   const isInternalChange = useRef(false);
 
   useEffect(() => {
@@ -183,6 +187,38 @@ export function RichTextEditor({
     handleInput();
   };
   const handleAlign = (align: string) => execCmd('justify' + align);
+
+  const handleLink = () => {
+    const sel = document.getSelection();
+    if (!sel || sel.isCollapsed) {
+      setShowLinkInput(!showLinkInput);
+      return;
+    }
+    setShowLinkInput(!showLinkInput);
+    if (showLinkInput) return;
+    // Try to get existing link
+    const node = sel.anchorNode?.parentElement?.closest('a');
+    setLinkUrl(node?.getAttribute('href') || '');
+  };
+
+  const insertLink = () => {
+    if (!linkUrl.trim()) return;
+    const sel = document.getSelection();
+    if (!sel || sel.isCollapsed) return;
+    const range = sel.getRangeAt(0);
+    const a = document.createElement('a');
+    a.href = linkUrl.trim();
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.style.cssText = 'color:#00d4ff;text-decoration:underline;';
+    a.textContent = range.toString() || linkUrl.trim();
+    range.deleteContents();
+    range.insertNode(a);
+    sel.removeAllRanges();
+    setShowLinkInput(false);
+    setLinkUrl('');
+    handleInput();
+  };
 
   // Check if bold/underline is active
   const isBold = () => document.queryCommandState('bold');
@@ -282,6 +318,34 @@ export function RichTextEditor({
         <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground" onClick={() => handleAlign('Right')} title="右对齐">
           <AlignRight className="h-4 w-4" />
         </Button>
+
+        <div className="w-px h-6 bg-border/50 mx-1" />
+
+        {/* Link */}
+        <div className="relative">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 px-2 text-muted-foreground hover:text-primary hover:bg-primary/10 gap-1"
+            onClick={handleLink}
+            title="插入超链接"
+          >
+            <Link className="h-4 w-4" />
+            <span className="text-xs">链接</span>
+          </Button>
+          {showLinkInput && (
+            <div className="absolute top-full left-0 mt-1 bg-popover border border-border/50 rounded-lg p-2 shadow-xl z-50 flex gap-1">
+              <Input
+                value={linkUrl}
+                onChange={e => setLinkUrl(e.target.value)}
+                placeholder="输入URL..."
+                className="w-48 h-8 text-xs bg-secondary/30 border-border/50"
+                onKeyDown={e => { if (e.key === 'Enter') insertLink(); if (e.key === 'Escape') setShowLinkInput(false); }}
+              />
+              <Button size="sm" className="h-8 text-xs" onClick={insertLink}>确认</Button>
+            </div>
+          )}
+        </div>
 
         <div className="w-px h-6 bg-border/50 mx-1" />
 
