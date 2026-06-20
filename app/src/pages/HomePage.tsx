@@ -8,7 +8,7 @@ import {
   FileText,
   Puzzle,
   BookOpen,
-  Shield,
+  MessagesSquare,
   Users,
   Clock,
   ChevronRight,
@@ -201,7 +201,7 @@ export default function HomePage() {
               { icon: FileText, label: '浏览记录', path: '/records', desc: '查看群内所有解密成果' },
               { icon: Puzzle, label: '挑战谜题', path: '/puzzles', desc: '参与自制谜题解答' },
               { icon: BookOpen, label: '查阅Wiki', path: '/wiki', desc: '浏览解密知识库' },
-              { icon: Shield, label: '关于石棺', path: '/', desc: 'sarcophagus.org.cn' },
+              { icon: MessagesSquare, label: '留言板', path: '/messages', desc: '发表和查看留言' },
             ].map((item, i) => {
               const Icon = item.icon;
               return (
@@ -217,6 +217,19 @@ export default function HomePage() {
               );
             })}
           </div>
+        </div>
+
+        {/* 隐蔽终端入口 — 系统诊断残留文本 */}
+        <div className="mt-12 text-center">
+          <Link
+            to="/sarcophagus"
+            className="mono-text text-[11px] tracking-[0.35em] text-muted-foreground/15
+                       hover:text-primary/60 transition-all duration-1000
+                       cursor-default hover:cursor-pointer select-none"
+            title="远程终端协议"
+          >
+            TERMINAL_SARCO-ID-07&nbsp;&nbsp;·&nbsp;&nbsp;v1.7.3&nbsp;&nbsp;·&nbsp;&nbsp;R.I. REMOTE ACCESS&nbsp;&nbsp;·&nbsp;&nbsp;STANDBY
+          </Link>
         </div>
       </div>
     </div>

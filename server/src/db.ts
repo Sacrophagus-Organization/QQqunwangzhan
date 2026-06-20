@@ -84,6 +84,41 @@ db.exec(`
     uploaded_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 
+  CREATE TABLE IF NOT EXISTS messages (
+    id TEXT PRIMARY KEY,
+    content TEXT NOT NULL DEFAULT '',
+    is_anonymous INTEGER NOT NULL DEFAULT 0,
+    author TEXT NOT NULL,
+    author_id TEXT NOT NULL,
+    pinned INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS comments (
+    id TEXT PRIMARY KEY,
+    entity_type TEXT NOT NULL,
+    entity_id TEXT NOT NULL,
+    parent_id TEXT,
+    content TEXT NOT NULL DEFAULT '',
+    is_anonymous INTEGER NOT NULL DEFAULT 0,
+    author TEXT NOT NULL,
+    author_id TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS sarcophagus_codes (
+    id TEXT PRIMARY KEY,
+    code TEXT NOT NULL UNIQUE,
+    file_name TEXT NOT NULL,
+    file_path TEXT NOT NULL,
+    download_token TEXT,
+    token_expires_at TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_comments_entity ON comments(entity_type, entity_id);
   CREATE INDEX IF NOT EXISTS idx_attachments_entity ON attachments(entity_type, entity_id);
 `);
 
@@ -96,6 +131,8 @@ try { db.exec('ALTER TABLE wiki_entries ADD COLUMN pinned INTEGER NOT NULL DEFAU
 try { db.exec('ALTER TABLE wiki_entries ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0'); console.log('[DB] Added sort_order column to wiki'); } catch {}
 try { db.exec('ALTER TABLE puzzles ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0'); console.log('[DB] Added pinned column to puzzles'); } catch {}
 try { db.exec('ALTER TABLE puzzles ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0'); console.log('[DB] Added sort_order column to puzzles'); } catch {}
+try { db.exec('ALTER TABLE messages ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0'); console.log('[DB] Added pinned column to messages'); } catch {}
+try { db.exec('ALTER TABLE messages ADD COLUMN updated_at TEXT NOT NULL DEFAULT (datetime(\"now\"))'); console.log('[DB] Added updated_at column to messages'); } catch {}
 
 // Seed admin
 const existingAdmin = db.prepare('SELECT id FROM users WHERE username = ?').get('Admin');

@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RichTextEditor } from '@/components/RichTextEditor';
+import CommentSection from '@/components/CommentSection';
 import { apiGet, apiPut, apiDelete, apiUpload } from '@/api/client';
 import {
   ArrowLeft, Calendar, User, Tag, AlertTriangle, Paperclip, Download,
@@ -86,6 +87,7 @@ export default function RecordDetail() {
           <CardContent><div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground border-t border-border/30 pt-4"><span className="flex items-center gap-1.5"><Calendar className="h-4 w-4 text-primary/60" />{record.date}</span><span className="flex items-center gap-1.5"><User className="h-4 w-4 text-primary/60" />{record.author}</span><span className="flex items-center gap-1.5"><Clock className="h-4 w-4 text-primary/60" />更新于 {record.updatedAt?.split('T')[0] || record.date}</span><Badge variant="outline" className={`text-xs ${importanceLabels[record.importance]?.color || ''}`}>{importanceLabels[record.importance]?.label}</Badge></div></CardContent>
         </Card>
         <Card className="glass-card border-border/50 mb-6"><CardContent className="p-6"><div className="rich-editor-content text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: record.content || '<p class="text-muted-foreground">暂无内容</p>' }} /></CardContent></Card>
+        <Card className="glass-card border-border/50 mb-6"><CardContent className="p-6"><CommentSection entityType="record" entityId={record.id} /></CardContent></Card>
         {record.tags?.length > 0 && <div className="flex flex-wrap gap-2 mb-6">{record.tags.map((tag: string) => <Badge key={tag} variant="secondary" className="text-xs px-3 py-1"><Tag className="h-3 w-3 mr-1.5" />{tag}</Badge>)}</div>}
         {record.attachments?.length > 0 && <Card className="glass-card border-border/50 mb-6"><CardHeader className="pb-3"><CardTitle className="text-base flex items-center gap-2"><Paperclip className="h-4 w-4 text-primary" />附件 ({record.attachments.length})</CardTitle></CardHeader><CardContent><div className="flex flex-wrap gap-3">{record.attachments.map(att => <Button key={att.id} variant="outline" size="sm" onClick={() => downloadAtt(att)} className="text-xs border-border/40 hover:border-primary/30"><Download className="h-3.5 w-3.5 mr-1.5" />{att.name}<span className="ml-2 text-muted-foreground">({(att.size / 1024).toFixed(0)} KB)</span></Button>)}</div></CardContent></Card>}
         <div className="flex items-center justify-between"><Button variant="ghost" onClick={() => navigate('/records')} className="text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4 mr-2" />返回列表</Button><p className="text-xs text-muted-foreground mono-text">ID: {record.id}</p></div>

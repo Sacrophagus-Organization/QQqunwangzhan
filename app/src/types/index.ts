@@ -59,6 +59,29 @@ export interface Puzzle {
   updatedAt: string;
 }
 
+export interface Message {
+  id: string;
+  content: string;
+  isAnonymous: number; // 0=公开, 1=匿名
+  author: string;
+  authorId: string;
+  pinned: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Comment {
+  id: string;
+  entityType: string;
+  entityId: string;
+  parentId: string | null;
+  content: string;
+  isAnonymous: number;
+  author: string;
+  authorId: string;
+  createdAt: string;
+}
+
 export interface WikiEntry {
   id: string;
   title: string;
@@ -73,6 +96,17 @@ export interface WikiEntry {
   attachments: FileAttachment[];
   lastUpdated: string;
   createdAt: string;
+}
+
+export interface SarcophagusCode {
+  id: string;
+  code: string;
+  file_name: string;
+  file_path: string;
+  download_token?: string;
+  token_expires_at?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface AuthState {

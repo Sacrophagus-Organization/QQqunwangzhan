@@ -270,3 +270,66 @@
 .animate-pulse-glow {
   animation: pulse-glow 2s ease-in-out infinite;
 }
+
+/* ═══════════════════════════════════════════
+   Sarcophagus Terminal Keyframe Animations
+   ═══════════════════════════════════════════ */
+
+/* 石棺解锁动画 — 整体亮度脉冲 + 青蓝辉光扩散 */
+@keyframes sarcophagus-unlock {
+  0%   { filter: brightness(1); }
+  30%  { filter: brightness(1.8) drop-shadow(0 0 20px rgba(0,210,245,0.4)); }
+  100% { filter: brightness(1.2) drop-shadow(0 0 10px rgba(0,210,245,0.2)); }
+}
+.animate-sarcophagus-unlock {
+  animation: sarcophagus-unlock 1s ease-out forwards;
+}
+
+/* 封印解裂动画 — 横向收缩消失 */
+@keyframes sarcophagus-seal-break {
+  0%   { transform: scaleX(1); opacity: 1; }
+  100% { transform: scaleX(0); opacity: 0; }
+}
+.animate-sarcophagus-seal-break {
+  animation: sarcophagus-seal-break 0.6s ease-in forwards;
+  animation-delay: 0.4s;
+}
+
+/* 符文辉光 — 青色发光符文 */
+@keyframes sarcophagus-rune-glow-cyan {
+  0%   { color: #4a5568; text-shadow: none; }
+  50%  { color: #00d4ff; text-shadow: 0 0 20px rgba(0,210,245,0.8), 0 0 40px rgba(0,210,245,0.4); }
+  100% { color: #22d3ee; text-shadow: 0 0 15px rgba(0,210,245,0.6); }
+}
+.animate-sarcophagus-rune-glow-cyan {
+  animation: sarcophagus-rune-glow-cyan 1.2s ease-out forwards;
+}
+
+/* 石棺抖动动画 — 验证失败 */
+@keyframes sarcophagus-fail {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-3px); }
+  20%, 40%, 60%, 80% { transform: translateX(3px); }
+}
+.animate-sarcophagus-fail {
+  animation: sarcophagus-fail 0.6s ease-in-out;
+}
+
+/* 核心红色脉冲 — 失败警告灯 */
+@keyframes sarcophagus-core-pulse-red {
+  0%, 100% { box-shadow: 0 0 5px rgba(239,68,68,0.3); }
+  50% { box-shadow: 0 0 15px rgba(239,68,68,0.7), 0 0 30px rgba(239,68,68,0.3); }
+}
+.animate-sarcophagus-core-pulse-red {
+  animation: sarcophagus-core-pulse-red 1s ease-in-out 2;
+}
+
+/* 粒子浮动 */
+@keyframes particle-float {
+  0% { transform: translateY(0) translateX(0); opacity: 0.6; }
+  50% { opacity: 0.9; }
+  100% { transform: translateY(-200px) translateX(20px); opacity: 0; }
+}
+.animate-particle-float {
+  animation: particle-float 4s ease-in-out infinite;
+}

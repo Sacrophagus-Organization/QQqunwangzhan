@@ -8,6 +8,9 @@ import puzzleRoutes from './routes/puzzles.js';
 import wikiRoutes from './routes/wiki.js';
 import fileRoutes from './routes/files.js';
 import adminRoutes from './routes/admin.js';
+import messageRoutes from './routes/messages.js';
+import commentRoutes from './routes/comments.js';
+import sarcophagusRoutes from './routes/sarcophagus.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -25,6 +28,9 @@ app.use('/api/puzzles', puzzleRoutes);
 app.use('/api/wiki', wikiRoutes);
 app.use('/api/files', fileRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/messages', messageRoutes);
+app.use('/api/comments', commentRoutes);
+app.use('/api/sarcophagus', sarcophagusRoutes);
 
 // Serve static frontend build
 const staticDir = path.join(__dirname, '..', '..', 'app', 'dist');

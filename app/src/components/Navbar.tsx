@@ -21,6 +21,7 @@ import {
   Home,
   ChevronDown,
   Shield,
+  MessagesSquare,
 } from 'lucide-react';
 
 const navItems = [
@@ -28,6 +29,7 @@ const navItems = [
   { path: '/records', label: '解密记录', icon: FileText },
   { path: '/puzzles', label: '自制谜题', icon: Puzzle },
   { path: '/wiki', label: '解密Wiki', icon: BookOpen },
+  { path: '/messages', label: '留言板', icon: MessagesSquare },
 ];
 
 export function Navbar() {
