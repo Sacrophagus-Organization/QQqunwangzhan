@@ -187,53 +187,166 @@ export default function SarcophagusTerminal() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-foreground relative overflow-hidden">
-      {/* Scanline — 调慢至 8s */}
-      <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden opacity-[0.03]">
+    <div className="min-h-screen bg-black text-foreground relative overflow-hidden"
+      style={{ animation: 'crt-flicker 12s linear infinite' }}>
+      
+      {/* ── 第0层: 数据雨背景 (Matrix风格，极其暗淡) ── */}
+      <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden opacity-[0.04]">
+        {[...Array(8)].map((_, i) => (
+          <div key={i} className="absolute top-0 mono-text text-[10px] text-primary/60 leading-none whitespace-nowrap"
+            style={{
+              left: `${5 + i * 12}%`,
+              animation: `matrix-rain ${6 + (i % 4) * 3}s linear infinite`,
+              animationDelay: `${i * 1.5}s`,
+            }}>
+            {Array.from({length: 30}, () => 
+              String.fromCharCode(0x30A0 + Math.random() * 96)
+            ).join('\n')}
+          </div>
+        ))}
+      </div>
+
+      {/* ── 第1层: 六角网格底纹 ── */}
+      <div className="absolute inset-0 pointer-events-none z-0 opacity-[0.025] hex-grid-bg" 
+        style={{ backgroundSize: '40px 40px' }} />
+
+      {/* ── 第2层: CRT球面暗角 ── */}
+      <div className="absolute inset-0 pointer-events-none z-[1] crt-vignette" />
+
+      {/* ── 第3层: 扫描线 ── */}
+      <div className="absolute inset-0 pointer-events-none z-[2] overflow-hidden opacity-[0.025]">
         <div className="absolute inset-0 bg-repeat-y"
           style={{
-            background: 'linear-gradient(to bottom, rgba(0,210,245,0.15) 1px, transparent 1px)',
+            background: 'linear-gradient(to bottom, rgba(0,210,245,0.12) 1px, transparent 1px)',
             backgroundSize: '100% 4px',
             animation: 'scan-line 8s linear infinite',
           }} />
       </div>
 
-      {/* Ambient particles */}
+      {/* ── 第4层: 氛围粒子（三种变体） ── */}
       <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
-        {[...Array(15)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute w-1 h-1 rounded-full bg-primary/40 animate-particle-float"
+        {/* 近景快粒子 */}
+        {[...Array(8)].map((_, i) => (
+          <div key={`fast-${i}`} className="absolute rounded-full"
             style={{
-              left: `${Math.random() * 100}%`,
-              top: `${80 + Math.random() * 20}%`,
-              animationDelay: `${Math.random() * 5}s`,
-              animationDuration: `${4 + Math.random() * 6}s`,
-              width: `${2 + Math.random() * 3}px`,
-              height: `${2 + Math.random() * 3}px`,
+              left: `${10 + Math.random() * 80}%`,
+              top: `${85 + Math.random() * 15}%`,
+              width: `${1.5 + Math.random() * 2}px`,
+              height: `${1.5 + Math.random() * 2}px`,
+              background: '#00D4FF',
+              boxShadow: '0 0 3px rgba(0,210,245,0.6)',
+              animation: `particle-float ${3 + Math.random() * 3}s ease-out infinite`,
+              animationDelay: `${Math.random() * 6}s`,
+            }}
+          />
+        ))}
+        {/* 中景飘移粒子 */}
+        {[...Array(6)].map((_, i) => (
+          <div key={`drift-${i}`} className="absolute rounded-full"
+            style={{
+              left: `${5 + Math.random() * 90}%`,
+              top: `${70 + Math.random() * 30}%`,
+              width: `${2 + Math.random() * 4}px`,
+              height: `${2 + Math.random() * 4}px`,
+              background: 'rgba(0,210,245,0.3)',
+              boxShadow: '0 0 6px rgba(0,210,245,0.2)',
+              animation: `particle-drift ${5 + Math.random() * 7}s ease-in-out infinite`,
+              animationDelay: `${Math.random() * 8}s`,
+            }}
+          />
+        ))}
+        {/* 远景大粒子 — 长距离缓慢上浮 */}
+        {[...Array(4)].map((_, i) => (
+          <div key={`deep-${i}`} className="absolute rounded-full"
+            style={{
+              left: `${20 + Math.random() * 60}%`,
+              top: `${90 + Math.random() * 10}%`,
+              width: `${3 + Math.random() * 5}px`,
+              height: `${3 + Math.random() * 5}px`,
+              background: 'rgba(0,210,245,0.15)',
+              boxShadow: '0 0 10px rgba(0,210,245,0.08)',
+              animation: `particle-float-deep ${8 + Math.random() * 10}s linear infinite`,
+              animationDelay: `${Math.random() * 12}s`,
             }}
           />
         ))}
       </div>
 
-      {/* Back link */}
-      <div className="relative z-20 p-4" style={{
+
+      {/* ── Back link + 顶栏 ── */}
+      <div className="relative z-20 p-4 flex items-center justify-between" style={{
         animation: 'crt-content-fade-in 0.6s ease-out forwards',
         animationDelay: '0.3s',
         opacity: 0,
       }}>
         <Link
           to="/"
-          className="inline-flex items-center gap-1.5 text-muted-foreground/30 hover:text-primary/50 transition-colors duration-700 text-sm mono-text"
+          className="inline-flex items-center gap-1.5 text-muted-foreground/25 hover:text-primary/50 transition-colors duration-700 text-sm mono-text"
         >
           <ArrowLeft className="h-3 w-3" />
           &lt; DISCONNECT
         </Link>
+        {/* 顶栏右侧系统时间 */}
+        <div className="flex items-center gap-4 mono-text text-[10px] text-muted-foreground/20">
+          <span className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-500/40 animate-status-dot" />
+            SYS.ONLINE
+          </span>
+          <span className="text-muted-foreground/10">|</span>
+          <span>SARC-ID-07</span>
+        </div>
       </div>
 
-      {/* Main Terminal */}
-      <div className="relative z-10 flex items-center justify-center px-4" style={{ minHeight: 'calc(100vh - 120px)' }}>
-        <div className="w-full max-w-2xl mx-auto">
+      {/* ── 主区域: HUD边栏 + 终端核心 ── */}
+      <div className="relative z-10 flex items-start justify-center px-4 gap-4" style={{ minHeight: 'calc(100vh - 120px)' }}>
+        
+        {/* 左侧 HUD 状态面板 */}
+        <div className="hidden xl:flex flex-col gap-5 w-40 pt-8 shrink-0"
+          style={{
+            animation: 'crt-content-fade-in 0.8s ease-out forwards',
+            animationDelay: '0.5s',
+            opacity: 0,
+          }}>
+          {/* 系统指标 */}
+          <div className="p-3 rounded-lg border border-primary/10" style={{ background: 'rgba(0,0,0,0.4)' }}>
+            <div className="mono-text text-[9px] text-primary/30 tracking-[0.2em] mb-2">SYS_METRICS</div>
+            {[
+              { label: 'CPU', val: '23%', bar: 23 },
+              { label: 'MEM', val: '41%', bar: 41 },
+              { label: 'NET', val: '7%',  bar: 7 },
+              { label: 'ENC', val: '100%', bar: 100, accent: true },
+            ].map(m => (
+              <div key={m.label} className="flex items-center gap-2 mb-1.5">
+                <span className="mono-text text-[9px] text-muted-foreground/30 w-7">{m.label}</span>
+                <div className="flex-1 h-1 rounded-full" style={{ background: 'rgba(0,210,245,0.06)' }}>
+                  <div className="h-full rounded-full transition-all duration-1000"
+                    style={{ 
+                      width: `${m.bar}%`, 
+                      background: m.accent ? 'rgba(0,210,245,0.5)' : 'rgba(0,210,245,0.2)',
+                      boxShadow: m.accent ? '0 0 4px rgba(0,210,245,0.3)' : 'none',
+                    }} />
+                </div>
+                <span className={`mono-text text-[8px] ${m.accent ? 'text-primary/50' : 'text-muted-foreground/25'}`}>{m.val}</span>
+              </div>
+            ))}
+          </div>
+          {/* 连接状态 */}
+          <div className="p-3 rounded-lg border border-primary/10" style={{ background: 'rgba(0,0,0,0.4)' }}>
+            <div className="mono-text text-[9px] text-primary/30 tracking-[0.2em] mb-2">CHANNEL</div>
+            <div className="flex items-center gap-2 mb-1.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-green-500/50 animate-status-dot" />
+              <span className="mono-text text-[9px] text-green-400/40">SECURE</span>
+            </div>
+            <div className="mono-text text-[8px] text-muted-foreground/15 leading-relaxed">
+              AES-256-GCM<br/>
+              PFS/TLS 1.3<br/>
+              NODE_07_ACTIVE
+            </div>
+          </div>
+        </div>
+
+        {/* 中央终端核心 */}
+        <div className="w-full max-w-2xl mx-auto pt-4">
           {/* Post-boot fade-in wrapper */}
           <div style={{
             animation: 'crt-content-fade-in 0.8s ease-out forwards',
@@ -243,30 +356,51 @@ export default function SarcophagusTerminal() {
           <div
             onAnimationEnd={handleAnimationEnd}
             className={`
-              relative border border-primary/20 rounded-2xl p-8 md:p-10 transition-all duration-1000
+              relative border rounded-2xl p-8 md:p-10 transition-all duration-1000
               ${animationType === 'unlock' ? 'animate-sarcophagus-unlock' : ''}
               ${animationType === 'fail' ? 'animate-sarcophagus-fail' : ''}
             `}
             style={{
-              background: 'radial-gradient(ellipse at center, rgba(0,210,245,0.04) 0%, rgba(0,0,0,0.6) 100%)',
-              boxShadow: '0 0 60px rgba(0,210,245,0.06), inset 0 0 60px rgba(0,210,245,0.03)',
+              background: 'radial-gradient(ellipse at 50% 0%, rgba(0,210,245,0.06) 0%, rgba(0,0,0,0.55) 70%)',
+              borderColor: 'rgba(0,210,245,0.15)',
+              boxShadow: `
+                0 0 80px rgba(0,210,245,0.04), 
+                0 0 40px rgba(0,210,245,0.06),
+                inset 0 1px 0 rgba(0,210,245,0.05),
+                inset 0 0 60px rgba(0,210,245,0.02)
+              `,
             }}
           >
-            {/* Corner ornaments */}
-            <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-primary/30 rounded-tl-xl" />
-            <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-primary/30 rounded-tr-xl" />
-            <div className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-primary/30 rounded-bl-xl" />
-            <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-primary/30 rounded-br-xl" />
+            {/* ── 扫描边框 SVG ── */}
+            <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ borderRadius: 'inherit' }}>
+              <rect x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="15" ry="15"
+                fill="none" stroke="rgba(0,210,245,0.08)" strokeWidth="0.5"
+                strokeDasharray="40 200" strokeDashoffset="400"
+                style={{ animation: 'border-scan 8s linear infinite' }} />
+            </svg>
+
+            {/* Corner ornaments — 增强版 */}
+            <div className="absolute top-0 left-0 w-10 h-10 border-t-2 border-l-2 border-primary/40 rounded-tl-xl" 
+              style={{ boxShadow: '-2px -2px 8px rgba(0,210,245,0.1)' }} />
+            <div className="absolute top-0 right-0 w-10 h-10 border-t-2 border-r-2 border-primary/40 rounded-tr-xl"
+              style={{ boxShadow: '2px -2px 8px rgba(0,210,245,0.1)' }} />
+            <div className="absolute bottom-0 left-0 w-10 h-10 border-b-2 border-l-2 border-primary/40 rounded-bl-xl"
+              style={{ boxShadow: '-2px 2px 8px rgba(0,210,245,0.1)' }} />
+            <div className="absolute bottom-0 right-0 w-10 h-10 border-b-2 border-r-2 border-primary/40 rounded-br-xl"
+              style={{ boxShadow: '2px 2px 8px rgba(0,210,245,0.1)' }} />
 
             {/* Header */}
             <div className="flex items-center justify-between mb-8">
               <div className="flex items-center gap-3">
                 <div className={`h-10 w-10 rounded-lg border border-primary/30 flex items-center justify-center ${animationType === 'unlock' ? 'animate-sarcophagus-rune-glow-cyan' : ''}`}
-                  style={{ background: 'rgba(0,210,245,0.06)' }}>
+                  style={{ 
+                    background: 'rgba(0,210,245,0.06)',
+                    boxShadow: '0 0 16px rgba(0,210,245,0.08), inset 0 0 8px rgba(0,210,245,0.04)',
+                  }}>
                   <Terminal className="h-5 w-5 text-primary/70" />
                 </div>
                 <div>
-                  <h1 className="mono-text text-sm tracking-[0.3em] text-primary/70 text-glow-cyan">
+                  <h1 className="mono-text text-sm tracking-[0.3em] text-primary/70 text-crt-chromatic">
                     TERMINAL_SARCO-ID-07
                   </h1>
                   <p className="mono-text text-[10px] text-muted-foreground/40 mt-0.5">
@@ -289,15 +423,21 @@ export default function SarcophagusTerminal() {
             <div
               className={`
                 mb-6 p-4 rounded-lg border border-primary/10 font-mono text-xs md:text-sm leading-relaxed
-                overflow-y-auto transition-all duration-500
+                overflow-y-auto transition-all duration-500 relative
                 ${animationType === 'fail' ? 'animate-sarcophagus-core-pulse-red' : ''}
               `}
               style={{
-                background: 'rgba(0,0,0,0.5)',
+                background: 'linear-gradient(180deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.4) 100%)',
                 minHeight: '180px',
                 maxHeight: '320px',
+                borderLeft: '1px solid rgba(0,210,245,0.08)',
+                borderRight: '1px solid rgba(0,210,245,0.08)',
               }}
             >
+              {/* 内部水平分隔线 */}
+              <div className="absolute top-0 left-4 right-4 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(0,210,245,0.06), transparent)' }} />
+              <div className="absolute bottom-0 left-4 right-4 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(0,210,245,0.04), transparent)' }} />
+              
               <div className="text-primary/50 mb-2 mono-text text-[10px]">
                 // SARCOPHAGUS REMOTE TERMINAL v1.7.3 //
               </div>
@@ -307,7 +447,9 @@ export default function SarcophagusTerminal() {
               {output.length === 0 ? (
                 <div className="flex items-center gap-2">
                   <span className="text-primary/60 mono-text text-xs">_</span>
-                  <span className="text-muted-foreground/30 mono-text text-xs animate-pulse-glow">STANDBY...</span>
+                  <span className="text-muted-foreground/30 mono-text text-xs">STANDBY</span>
+                  <span className="w-2 h-4 bg-primary/40 animate-terminal-cursor inline-block align-middle ml-0.5" 
+                    style={{ display: 'inline-block' }} />
                 </div>
               ) : (
                 output.map((line, i) => (
@@ -340,23 +482,23 @@ export default function SarcophagusTerminal() {
 
             {/* Input Area */}
             <div className="flex items-center gap-3">
-              <span className="text-primary/40 mono-text text-sm shrink-0">&gt;</span>
+              <span className="text-primary/50 mono-text text-sm shrink-0 animate-pulse-glow">&gt;</span>
               <input
                 type="text"
                 value={code}
                 onChange={e => setCode(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="输入访问代码..."
+                placeholder="AUTH_CODE_REQUIRED..."
                 disabled={isAnimating || loading}
-                className="flex-1 bg-transparent border-none outline-none text-primary/80 placeholder:text-muted-foreground/20
+                className="flex-1 bg-transparent border-none outline-none text-primary/80 placeholder:text-muted-foreground/15
                            mono-text text-sm py-2 disabled:opacity-40 tracking-widest uppercase"
                 autoFocus
               />
               <button
                 onClick={handleVerify}
                 disabled={isAnimating || loading}
-                className="mono-text text-xs px-4 py-2 rounded-lg border border-primary/30 text-primary/60
-                           hover:bg-primary/10 hover:text-primary/90 hover:border-primary/50
+                className="mono-text text-xs px-4 py-2 rounded-lg border border-primary/25 text-primary/55
+                           hover:bg-primary/10 hover:text-primary/95 hover:border-primary/50 hover:shadow-[0_0_12px_rgba(0,210,245,0.15)]
                            disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-300"
               >
                 {loading ? '...' : 'EXEC'}
@@ -376,24 +518,28 @@ export default function SarcophagusTerminal() {
             </div>
           </div>
           </div> {/* end post-boot fade-in wrapper */}
-        </div>
-      </div>
+        </div> {/* end central terminal */}
+      </div> {/* end HUD + terminal row */}
 
       {/* ─── Download Modal ─── */}
       {showModal && (
         <div
           className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-all duration-500 ${
-            modalPhase === 'open' ? 'bg-black/70 backdrop-blur-sm' : 'bg-transparent'
+            modalPhase === 'open' ? 'bg-black/75 backdrop-blur-sm' : 'bg-transparent'
           }`}
         >
+          {/* 模态扫描线 */}
+          <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden opacity-[0.015]" style={{
+            background: 'repeating-linear-gradient(to bottom, rgba(0,210,245,0.3) 0px, transparent 1px, transparent 4px)',
+          }} />
           <div
             className={`
-              relative w-full max-w-sm rounded-xl border border-primary/30 p-6 transition-all duration-500
+              relative w-full max-w-sm rounded-xl border border-primary/30 p-6 transition-all duration-500 z-10
               ${modalPhase === 'open' ? 'scale-100 opacity-100' : 'scale-90 opacity-0'}
             `}
             style={{
-              background: 'linear-gradient(135deg, rgba(10,15,25,0.95), rgba(5,10,20,0.98))',
-              boxShadow: '0 0 40px rgba(0,210,245,0.12), 0 0 80px rgba(0,210,245,0.04)',
+              background: 'radial-gradient(ellipse at 30% 0%, rgba(0,210,245,0.05) 0%, rgba(5,10,18,0.96) 60%)',
+              boxShadow: '0 0 60px rgba(0,210,245,0.15), 0 0 120px rgba(0,210,245,0.05), inset 0 1px 0 rgba(0,210,245,0.04)',
             }}
           >
             <button
@@ -434,12 +580,12 @@ export default function SarcophagusTerminal() {
 
       {/* ─── Error Modal ─── */}
       {errorModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
           <div
-            className="relative w-full max-w-sm rounded-xl border border-red-500/20 p-6"
+            className="relative w-full max-w-sm rounded-xl border border-red-500/15 p-6"
             style={{
-              background: 'linear-gradient(135deg, rgba(15,5,5,0.95), rgba(8,2,2,0.98))',
-              boxShadow: '0 0 40px rgba(239,68,68,0.08)',
+              background: 'radial-gradient(ellipse at 30% 0%, rgba(239,68,68,0.04) 0%, rgba(6,4,4,0.96) 60%)',
+              boxShadow: '0 0 50px rgba(239,68,68,0.1), inset 0 1px 0 rgba(239,68,68,0.03)',
             }}
           >
             <button

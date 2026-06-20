@@ -399,3 +399,97 @@
   from { opacity: 0; transform: translateY(16px); filter: blur(2px); }
   to   { opacity: 1; transform: translateY(0); filter: blur(0); }
 }
+
+/* ═══════════════════════════════════════════
+   复古未来主义 CRT 终端增强特效
+   ═══════════════════════════════════════════ */
+
+/* 闪烁光标 — 终端等待输入 */
+@keyframes terminal-cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+.animate-terminal-cursor {
+  animation: terminal-cursor-blink 1s step-end infinite;
+}
+
+/* CRT 球面暗角 — 模拟老电视屏幕弯曲边缘 */
+.crt-vignette {
+  background: radial-gradient(ellipse at center, 
+    transparent 55%, 
+    rgba(0,0,0,0.35) 72%, 
+    rgba(0,0,0,0.7) 88%, 
+    rgba(0,0,0,0.92) 100%
+  );
+}
+
+/* CRT 屏幕间歇性闪烁 */
+@keyframes crt-flicker {
+  0%   { opacity: 1; }
+  97%  { opacity: 1; }
+  97.5%{ opacity: 0.85; }
+  98%  { opacity: 1; }
+  99%  { opacity: 0.9; }
+  99.5%{ opacity: 1; }
+}
+
+/* 色散/色差效果 — RGB 分离微偏移 */
+.text-crt-chromatic {
+  text-shadow:
+    0.5px 0   0 rgba(255, 80,  80,  0.5),
+    -0.5px 0  0 rgba(80,  180, 255, 0.5),
+    0   0 6px rgba(0,   210, 245, 0.4);
+}
+
+/* 扫描边框动画 — 框线沿边旋转 */
+@keyframes border-scan {
+  0%   { stroke-dashoffset: 400; }
+  100% { stroke-dashoffset: 0; }
+}
+
+/* HUD 数据脉冲 */
+@keyframes hud-pulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.7; }
+}
+
+/* 数据雨下落 — Matrix 风格背景 */
+@keyframes matrix-rain {
+  0%   { transform: translateY(-100%); opacity: 1; }
+  80%  { opacity: 0.5; }
+  100% { transform: translateY(100vh); opacity: 0; }
+}
+
+/* 大粒子 — 长距离缓慢上浮 */
+@keyframes particle-float-deep {
+  0%   { transform: translateY(0)   translateX(0);    opacity: 0; }
+  15%  { opacity: 0.5; }
+  85%  { opacity: 0.3; }
+  100% { transform: translateY(-60vh) translateX(30px); opacity: 0; }
+}
+
+/* 水平漂移粒子 */
+@keyframes particle-drift {
+  0%   { transform: translate(0, 0);     opacity: 0; }
+  20%  { opacity: 0.45; }
+  80%  { opacity: 0.25; }
+  100% { transform: translate(40px, -40vh); opacity: 0; }
+}
+
+/* 状态指示灯 — 双脉冲 */
+@keyframes status-dot-dual {
+  0%, 100% { box-shadow: 0 0 4px rgba(0,210,245,0.4), 0 0 8px rgba(0,210,245,0.2); }
+  50% { box-shadow: 0 0 8px rgba(0,210,245,0.7), 0 0 16px rgba(0,210,245,0.35); }
+}
+.animate-status-dot {
+  animation: status-dot-dual 2s ease-in-out infinite;
+}
+
+/* 终端头部扫描线划过 */
+@keyframes header-sweep {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+.animate-header-sweep {
+  animation: header-sweep 4s linear infinite;
+}
