@@ -1,8 +1,10 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Link } from 'react-router-dom';
 import { apiPost } from '@/api/client';
 import { Loader2, Terminal, Shield, X, Download, ArrowLeft } from 'lucide-react';
+
+type BootPhase = 'idle' | 'booting' | 'complete';
 
 export default function SarcophagusTerminal() {
   const { user } = useAuth();
@@ -16,6 +18,14 @@ export default function SarcophagusTerminal() {
   const [modalPhase, setModalPhase] = useState<'closed' | 'opening' | 'open'>('closed');
   const [errorModal, setErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [bootPhase, setBootPhase] = useState<BootPhase>('idle');
+
+  // CRT 开机动画：组件挂载时触发
+  useEffect(() => {
+    setBootPhase('booting');
+    const t = setTimeout(() => setBootPhase('complete'), 2400);
+    return () => clearTimeout(t);
+  }, []);
 
   const appendOutput = useCallback((line: string) => {
     setOutput(prev => [...prev, `&gt; ${line}`]);
@@ -63,7 +73,6 @@ export default function SarcophagusTerminal() {
   const handleAnimationEnd = () => {
     setIsAnimating(false);
     if (animationType === 'unlock' && downloadToken) {
-      // Short delay then show download modal
       setTimeout(() => {
         setModalPhase('opening');
         setTimeout(() => setModalPhase('open'), 50);
@@ -87,12 +96,106 @@ export default function SarcophagusTerminal() {
     }
   };
 
+  // ═══════════════════════════════════════════
+  //   CRT 老电视开机动画
+  // ═══════════════════════════════════════════
+  if (bootPhase !== 'complete') {
+    return (
+      <div className="min-h-screen bg-black relative overflow-hidden flex items-center justify-center">
+        {/* ── 阶段1: 中心白点 (0-500ms) ── */}
+        <div
+          className="absolute w-4 h-4 rounded-full bg-white"
+          style={{
+            animation: 'crt-boot-dot 0.5s ease-out forwards',
+            boxShadow: '0 0 60px 25px rgba(255,255,255,0.9), 0 0 120px 50px rgba(200,220,255,0.5)',
+          }}
+        />
+
+        {/* ── 阶段2: 水平亮线 (500-950ms) ── */}
+        <div
+          className="absolute inset-x-0 h-[3px] bg-white"
+          style={{
+            animation: 'crt-boot-line 0.45s ease-in forwards',
+            animationDelay: '0.5s',
+            opacity: 0,
+            boxShadow: '0 0 40px 12px rgba(255,255,255,0.7), 0 0 80px 30px rgba(200,230,255,0.3)',
+            top: '50%',
+            transform: 'translateY(-50%)',
+          }}
+        />
+
+        {/* ── 阶段3: 垂直展开 + 雪花噪点 (950-1650ms) ── */}
+        <div
+          className="absolute inset-0"
+          style={{
+            animation: 'crt-boot-expand 0.7s ease-out forwards',
+            animationDelay: '0.95s',
+            opacity: 0,
+          }}
+        >
+          <div
+            className="absolute inset-0"
+            style={{
+              animation: 'crt-static-noise 0.8s steps(12) infinite, crt-noise-shift 0.5s steps(8) infinite',
+              animationDelay: '0.95s',
+              backgroundImage: `
+                repeating-radial-gradient(circle at 20% 30%, rgba(255,255,255,0.09) 0, transparent 3px),
+                repeating-radial-gradient(circle at 70% 50%, rgba(255,255,255,0.06) 0, transparent 2px),
+                repeating-radial-gradient(circle at 45% 75%, rgba(255,255,255,0.07) 0, transparent 4px),
+                repeating-radial-gradient(circle at 10% 80%, rgba(255,255,255,0.05) 0, transparent 3px)
+              `,
+              backgroundSize: '100px 100px, 80px 80px, 120px 120px, 90px 90px',
+            }}
+          />
+        </div>
+
+        {/* ── 阶段4: 画面浮现 (1650-2400ms) ── */}
+        <div
+          className="absolute inset-0 flex flex-col items-center justify-center"
+          style={{
+            animation: 'crt-content-fade-in 0.75s ease-out forwards',
+            animationDelay: '1.65s',
+            opacity: 0,
+          }}
+        >
+          <div className="flex flex-col items-center gap-4">
+            <div
+              className="h-14 w-14 rounded-lg border border-primary/25 flex items-center justify-center"
+              style={{
+                background: 'rgba(0,210,245,0.08)',
+                boxShadow: '0 0 30px rgba(0,210,245,0.15)',
+              }}
+            >
+              <Terminal className="h-7 w-7 text-primary/70" />
+            </div>
+            <h1 className="mono-text text-sm tracking-[0.3em] text-primary/50 text-glow-cyan">
+              TERMINAL_SARCO-ID-07
+            </h1>
+            <p className="mono-text text-[10px] text-muted-foreground/20">
+              v1.7.3 // R.I. SECURE CHANNEL
+            </p>
+            <div className="flex items-center gap-2 mt-3">
+              <div className="w-1.5 h-1.5 rounded-full bg-primary/40 animate-pulse" />
+              <span className="mono-text text-[9px] text-muted-foreground/15 tracking-wider">
+                ESTABLISHING_ENCRYPTED_LINK...
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-black text-foreground relative overflow-hidden">
-      {/* Scanline overlay */}
+      {/* Scanline — 调慢至 8s */}
       <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden opacity-[0.03]">
-        <div className="absolute inset-0 bg-repeat-y animate-scan-line"
-          style={{ background: 'linear-gradient(to bottom, rgba(0,210,245,0.15) 1px, transparent 1px)', backgroundSize: '100% 4px' }} />
+        <div className="absolute inset-0 bg-repeat-y"
+          style={{
+            background: 'linear-gradient(to bottom, rgba(0,210,245,0.15) 1px, transparent 1px)',
+            backgroundSize: '100% 4px',
+            animation: 'scan-line 8s linear infinite',
+          }} />
       </div>
 
       {/* Ambient particles */}
@@ -114,7 +217,11 @@ export default function SarcophagusTerminal() {
       </div>
 
       {/* Back link */}
-      <div className="relative z-20 p-4">
+      <div className="relative z-20 p-4" style={{
+        animation: 'crt-content-fade-in 0.6s ease-out forwards',
+        animationDelay: '0.3s',
+        opacity: 0,
+      }}>
         <Link
           to="/"
           className="inline-flex items-center gap-1.5 text-muted-foreground/30 hover:text-primary/50 transition-colors duration-700 text-sm mono-text"
@@ -127,6 +234,11 @@ export default function SarcophagusTerminal() {
       {/* Main Terminal */}
       <div className="relative z-10 flex items-center justify-center px-4" style={{ minHeight: 'calc(100vh - 120px)' }}>
         <div className="w-full max-w-2xl mx-auto">
+          {/* Post-boot fade-in wrapper */}
+          <div style={{
+            animation: 'crt-content-fade-in 0.8s ease-out forwards',
+            opacity: 0,
+          }}>
           {/* Sarcophagus Unit */}
           <div
             onAnimationEnd={handleAnimationEnd}
@@ -208,6 +320,11 @@ export default function SarcophagusTerminal() {
                           ? 'text-red-400/80'
                           : 'text-primary/60'
                     }`}
+                    style={{
+                      opacity: 0,
+                      animation: `code-stagger-in 0.5s ease-out forwards`,
+                      animationDelay: `${i * 500 + 200}ms`,
+                    }}
                   >
                     {line}
                   </div>
@@ -258,6 +375,7 @@ export default function SarcophagusTerminal() {
               <div className="h-px flex-1 bg-primary/10" />
             </div>
           </div>
+          </div> {/* end post-boot fade-in wrapper */}
         </div>
       </div>
 
@@ -278,7 +396,6 @@ export default function SarcophagusTerminal() {
               boxShadow: '0 0 40px rgba(0,210,245,0.12), 0 0 80px rgba(0,210,245,0.04)',
             }}
           >
-            {/* Close button */}
             <button
               onClick={() => { setShowModal(false); setModalPhase('closed'); }}
               className="absolute top-3 right-3 text-muted-foreground/30 hover:text-primary/60 transition-colors"
@@ -286,7 +403,6 @@ export default function SarcophagusTerminal() {
               <X className="h-4 w-4" />
             </button>
 
-            {/* Modal header */}
             <div className="flex items-center gap-3 mb-4">
               <div className="h-10 w-10 rounded-lg bg-green-500/10 border border-green-500/20 flex items-center justify-center">
                 <Download className="h-5 w-5 text-green-400" />
@@ -297,14 +413,12 @@ export default function SarcophagusTerminal() {
               </div>
             </div>
 
-            {/* Warning */}
             <div className="p-3 rounded-lg border border-amber-500/10 mb-4" style={{ background: 'rgba(245,158,11,0.04)' }}>
               <p className="text-[11px] text-amber-400/60 mono-text">
                 ⚠ 本链接5分钟内有效，请在失效前完成下载。数据通道仅可单次建立，请谨慎操作。
               </p>
             </div>
 
-            {/* Download action */}
             <button
               onClick={handleDownload}
               className="w-full py-3 rounded-lg border border-primary/30 text-primary/80 mono-text text-sm

@@ -176,7 +176,6 @@ function CommentItem({
 }
 
 export default function CommentSection({ entityType, entityId }: CommentSectionProps) {
-  const { user } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
   const [showNewComment, setShowNewComment] = useState(false);

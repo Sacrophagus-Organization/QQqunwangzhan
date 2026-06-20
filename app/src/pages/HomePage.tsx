@@ -220,10 +220,10 @@ export default function HomePage() {
         </div>
 
         {/* 隐蔽终端入口 — 系统诊断残留文本 */}
-        <div className="mt-12 text-center">
+        <div className="mt-12 text-center border-t border-primary/5 pt-6">
           <Link
             to="/sarcophagus"
-            className="mono-text text-[11px] tracking-[0.35em] text-muted-foreground/15
+            className="mono-text text-[11px] tracking-[0.35em] text-muted-foreground/30
                        hover:text-primary/60 transition-all duration-1000
                        cursor-default hover:cursor-pointer select-none"
             title="远程终端协议"

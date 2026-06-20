@@ -25,17 +25,58 @@ export default function SarcophagusAdmin() {
   }, []);
 
   const loadCodes = async () => {
+    setLoading(true);
+    setError('');
     try {
       const data = await apiGet<SarcophagusCode[]>('/sarcophagus/codes');
       setCodes(data);
     } catch (e: any) {
-      setError(e.message);
+      setError(e.message || '无法加载访问代码列表');
     }
     setLoading(false);
   };
 
+  // ═══ 保护态：loading ──────────────────────────
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-6 w-6 text-primary/30 animate-spin" />
+          <p className="mono-text text-[10px] text-muted-foreground/20 tracking-wider">
+            ESTABLISHING_ROOT_CHANNEL...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // ═══ 保护态：非管理员 ────────────────────────
   if (user?.role !== 'admin') {
     return <Navigate to="/sarcophagus" replace />;
+  }
+
+  // ═══ 保护态：加载失败 ────────────────────────
+  if (error && codes.length === 0) {
+    return (
+      <div className="min-h-screen bg-black flex flex-col items-center justify-center gap-4">
+        <Shield className="h-10 w-10 text-red-400/30" />
+        <h2 className="mono-text text-sm text-red-400/60 tracking-wider">ROOT_ACCESS_FAILED</h2>
+        <p className="mono-text text-xs text-red-400/40 max-w-md text-center">{error}</p>
+        <button
+          onClick={loadCodes}
+          className="mono-text text-xs px-4 py-2 rounded-lg border border-primary/20 text-primary/50
+                     hover:text-primary/80 hover:border-primary/40 transition-all duration-300"
+        >
+          RETRY
+        </button>
+        <Link
+          to="/sarcophagus"
+          className="mono-text text-[10px] text-muted-foreground/20 hover:text-primary/40 transition-colors mt-2"
+        >
+          &lt; BACK_TO_TERMINAL
+        </Link>
+      </div>
+    );
   }
 
   const handleAdd = async () => {
@@ -206,11 +247,7 @@ export default function SarcophagusAdmin() {
         )}
 
         {/* Code List */}
-        {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="h-6 w-6 text-primary/30 animate-spin" />
-          </div>
-        ) : codes.length === 0 ? (
+        {codes.length === 0 ? (
           <div className="text-center py-20">
             <Terminal className="h-8 w-8 text-muted-foreground/15 mx-auto mb-3" />
             <p className="mono-text text-xs text-muted-foreground/20">NO_ACTIVE_CODES</p>

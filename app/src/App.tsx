@@ -11,7 +11,6 @@ import DecryptWiki from '@/pages/DecryptWiki';
 import MessageBoard from '@/pages/MessageBoard';
 import AdminPage from '@/pages/AdminPage';
 import SarcophagusTerminal from '@/pages/SarcophagusTerminal';
-import SarcophagusAdmin from '@/pages/SarcophagusAdmin';
 import './App.css';
 
 function AppLayout({ children }: { children: React.ReactNode }) {
@@ -92,14 +91,6 @@ function App() {
             element={
               <ProtectedRoute>
                 <SarcophagusTerminal />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/sarcophagus/admin"
-            element={
-              <ProtectedRoute>
-                <SarcophagusAdmin />
               </ProtectedRoute>
             }
           />
