@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Link, Navigate } from 'react-router-dom';
-import { apiGet, apiPost, apiPut, apiDelete, apiUpload } from '@/api/client';
+import { apiGet, apiDelete } from '@/api/client';
 import { Loader2, Plus, Trash2, Upload, ArrowLeft, Terminal, Key, FileText, Clock, Shield } from 'lucide-react';
 import type { SarcophagusCode } from '@/types';
 
