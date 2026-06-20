@@ -338,47 +338,48 @@
    CRT TV 老电视开机动画
    ═══════════════════════════════════════════ */
 
-/* 阶段1: 屏幕白点 — 电子束击中荧光屏中心 */
+/* 阶段1: 屏幕白点 — 电子束击中荧光屏中心，350ms 内闪亮后彻底熄灭 */
 @keyframes crt-boot-dot {
   0%   { transform: scale(0); opacity: 0; }
-  30%  { transform: scale(1); opacity: 1; }
-  70%  { transform: scale(1); opacity: 1; }
-  100% { transform: scale(1.2); opacity: 0.6; }
+  18%  { transform: scale(1); opacity: 1; }
+  45%  { transform: scale(1.05); opacity: 0.9; }
+  72%  { transform: scale(1.2); opacity: 0.4; }
+  100% { transform: scale(1.4); opacity: 0; }
 }
 
-/* 阶段2: 白点展开为水平亮线（垂直偏转） */
+/* 阶段2: 白点展开为水平亮线 → 向上方逸散消失 */
 @keyframes crt-boot-line {
-  0%   { transform: scaleY(0.02); opacity: 1; }
-  40%  { transform: scaleY(0.6); opacity: 1; }
-  100% { transform: scaleY(2); opacity: 0; }
+  0%   { transform: translateY(-50%) scaleY(0.03); opacity: 1; }
+  35%  { transform: translateY(-50%) scaleY(0.5); opacity: 1; }
+  100% { transform: translateY(-50%) scaleY(2.5); opacity: 0; }
 }
 
-/* 阶段3: 亮线垂直展开铺满全屏，伴随抖动 */
+/* 阶段3: 亮线垂直展开铺满全屏，伴回弹 → 最终融入画面 */
 @keyframes crt-boot-expand {
-  0%   { transform: scaleY(0); opacity: 1; }
-  60%  { transform: scaleY(1.08); opacity: 1; }
-  80%  { transform: scaleY(0.94); opacity: 0.9; }
+  0%   { transform: scaleY(0.03); opacity: 1; }
+  45%  { transform: scaleY(1.06); opacity: 1; }
+  70%  { transform: scaleY(0.95); opacity: 0.8; }
   100% { transform: scaleY(1); opacity: 0; }
 }
 
-/* 阶段3背景: 雪花噪点闪烁 */
+/* 阶段3背景: 雪花噪点闪烁 — 后期逐渐沉静 */
 @keyframes crt-static-noise {
-  0%   { opacity: 0.9; }
-  10%  { opacity: 0.2; }
-  20%  { opacity: 0.8; }
-  30%  { opacity: 0.1; }
+  0%   { opacity: 0.95; }
+  10%  { opacity: 0.3; }
+  20%  { opacity: 0.85; }
+  30%  { opacity: 0.15; }
   40%  { opacity: 0.7; }
-  50%  { opacity: 0.3; }
+  50%  { opacity: 0.35; }
   60%  { opacity: 0.6; }
-  70%  { opacity: 0.15; }
-  80%  { opacity: 0.5; }
-  90%  { opacity: 0.2; }
-  100% { opacity: 0.4; }
+  70%  { opacity: 0.2; }
+  80%  { opacity: 0.4; }
+  90%  { opacity: 0.15; }
+  100% { opacity: 0.25; }
 }
 
 /* 阶段4: 画面由模糊渐清晰 */
 @keyframes crt-content-fade-in {
-  from { opacity: 0; filter: blur(5px) brightness(0.5); }
+  from { opacity: 0; filter: blur(6px) brightness(0.3); }
   to   { opacity: 1; filter: blur(0) brightness(1); }
 }
 

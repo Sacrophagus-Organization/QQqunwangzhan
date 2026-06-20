@@ -20,10 +20,10 @@ export default function SarcophagusTerminal() {
   const [errorMessage, setErrorMessage] = useState('');
   const [bootPhase, setBootPhase] = useState<BootPhase>('idle');
 
-  // CRT 开机动画：组件挂载时触发
+  // CRT 开机动画：组件挂载时触发（总时长 1700ms，白点在 350ms 彻底消失避免与内容重叠）
   useEffect(() => {
     setBootPhase('booting');
-    const t = setTimeout(() => setBootPhase('complete'), 2400);
+    const t = setTimeout(() => setBootPhase('complete'), 1700);
     return () => clearTimeout(t);
   }, []);
 
@@ -102,21 +102,21 @@ export default function SarcophagusTerminal() {
   if (bootPhase !== 'complete') {
     return (
       <div className="min-h-screen bg-black relative overflow-hidden flex items-center justify-center">
-        {/* ── 阶段1: 中心白点 (0-500ms) ── */}
+        {/* ── 阶段1: 中心白点闪亮后熄灭 (0-350ms) ── */}
         <div
           className="absolute w-4 h-4 rounded-full bg-white"
           style={{
-            animation: 'crt-boot-dot 0.5s ease-out forwards',
+            animation: 'crt-boot-dot 0.35s ease-out forwards',
             boxShadow: '0 0 60px 25px rgba(255,255,255,0.9), 0 0 120px 50px rgba(200,220,255,0.5)',
           }}
         />
 
-        {/* ── 阶段2: 水平亮线 (500-950ms) ── */}
+        {/* ── 阶段2: 水平亮线 (200-500ms，与白点尾部交叠) ── */}
         <div
           className="absolute inset-x-0 h-[3px] bg-white"
           style={{
-            animation: 'crt-boot-line 0.45s ease-in forwards',
-            animationDelay: '0.5s',
+            animation: 'crt-boot-line 0.3s ease-in forwards',
+            animationDelay: '0.2s',
             opacity: 0,
             boxShadow: '0 0 40px 12px rgba(255,255,255,0.7), 0 0 80px 30px rgba(200,230,255,0.3)',
             top: '50%',
@@ -124,12 +124,12 @@ export default function SarcophagusTerminal() {
           }}
         />
 
-        {/* ── 阶段3: 垂直展开 + 雪花噪点 (950-1650ms) ── */}
+        {/* ── 阶段3: 垂直展开 + 雪花噪点 (450-1100ms) ── */}
         <div
           className="absolute inset-0"
           style={{
-            animation: 'crt-boot-expand 0.7s ease-out forwards',
-            animationDelay: '0.95s',
+            animation: 'crt-boot-expand 0.65s ease-out forwards',
+            animationDelay: '0.45s',
             opacity: 0,
           }}
         >
@@ -137,7 +137,7 @@ export default function SarcophagusTerminal() {
             className="absolute inset-0"
             style={{
               animation: 'crt-static-noise 0.8s steps(12) infinite, crt-noise-shift 0.5s steps(8) infinite',
-              animationDelay: '0.95s',
+              animationDelay: '0.45s',
               backgroundImage: `
                 repeating-radial-gradient(circle at 20% 30%, rgba(255,255,255,0.09) 0, transparent 3px),
                 repeating-radial-gradient(circle at 70% 50%, rgba(255,255,255,0.06) 0, transparent 2px),
@@ -149,12 +149,12 @@ export default function SarcophagusTerminal() {
           />
         </div>
 
-        {/* ── 阶段4: 画面浮现 (1650-2400ms) ── */}
+        {/* ── 阶段4: 终端画面浮现 (900-1700ms，白点早已消失) ── */}
         <div
           className="absolute inset-0 flex flex-col items-center justify-center"
           style={{
-            animation: 'crt-content-fade-in 0.75s ease-out forwards',
-            animationDelay: '1.65s',
+            animation: 'crt-content-fade-in 0.8s ease-out forwards',
+            animationDelay: '0.9s',
             opacity: 0,
           }}
         >
