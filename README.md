@@ -90,7 +90,7 @@ bash verify.sh
 ├── app/                   # React 前端
 │   └── src/
 │       ├── components/    # 组件（Navbar, RichTextEditor, shadcn/ui）
-│       ├── pages/         # 页面（Records, Puzzles, Wiki, Admin）
+│       ├── pages/         # 页面（Records, Puzzles, Wiki, Admin, SarcophagusTerminal彩蛋）
 │       ├── contexts/      # AuthContext
 │       └── api/           # API 客户端
 ├── go_live.sh             # 生产上线脚本（Nginx + SSL + 防火墙）
@@ -105,6 +105,20 @@ bash verify.sh
 ---
 
 ## 更新日志
+
+### 2026-06-21 — CRT 终端复古未来主义视觉升级
+
+- 🎨 **7 项视觉升级**：球面暗角 / 数据雨背景 / HUD 状态面板 / 色散标题 / 扫描边框 / 闪烁光标 / 三层粒子系统
+- 🚀 CRT 开机动画时序优化：白点 350ms 彻底消失，总时长从 2400ms 缩短至 1700ms
+- 🖥️ 新增左侧 HUD 面板（xl 屏可见）：系统指标（CPU/MEM/NET/ENC）+ 加密通道状态
+- 📦 `/sarcophagus` 页面完整重构：Multi-layer 深度背景 + Matrix 风格数据雨 + SVG 扫描边框
+
+### 2026-06-20 — 石棺彩蛋终端上线
+
+- ✅ 新增 `/sarcophagus` 石棺远程访问协议终端页面（CRT 开机动画）
+- ✅ Admin 管理面板 `/sarcophagus/admin`：访问代码增删改 + 文件上传
+- ✅ 访问代码验证逻辑：AUTH_OK → 下载模因污染文件 / AUTH_FAIL → 错误提示
+- ✅ CRT 老电视效果：扫描线 + 雪花噪点 + 内容渐清晰
 
 ### 2026-06-17 — 正式上线
 
