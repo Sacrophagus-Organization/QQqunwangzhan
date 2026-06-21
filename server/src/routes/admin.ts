@@ -10,7 +10,7 @@ router.use(adminOnly);
 
 // Get all users (including pending)
 router.get('/users', (_req: AuthRequest, res) => {
-  const rows = db.prepare('SELECT id, username, qq_number, role, status, register_reason, created_at FROM users ORDER BY created_at DESC').all();
+  const rows = db.prepare('SELECT id, username, qq_number, role, status, register_reason, avatar_url, created_at FROM users ORDER BY created_at DESC').all();
   res.json(rows);
 });
 

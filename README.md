@@ -12,7 +12,11 @@
 - 📝 **解密记录** — 富文本编辑，附件上传，含 PV4 全阶段解密归档
 - 🧩 **自制谜题** — 创建/发布谜题，提交答案自动判定
 - 📚 **解密Wiki** — 密码学知识库，分类浏览
+- 💬 **留言板 + 评论区** — 富文本编辑，嵌套回复，评论折叠
 - 🛡️ **管理员面板** — 审核用户、管理内容（`/lynchpin-admin`）
+- 🖥️ **石棺彩蛋** — CRT 终端解密页面，访问代码验证，自运行程序效果
+- 🎵 **BGM 系统** — 赛博朋克风背景音乐，路由切换，循环+间隔播放
+- 🖼️ **用户头像** — 上传+拖拽裁剪，全站统一展示
 
 ---
 
@@ -80,17 +84,31 @@ bash verify.sh
 │   │   ├── middleware/
 │   │   │   └── auth.ts    # JWT 认证
 │   │   └── routes/
-│   │       ├── auth.ts    # 注册/登录
+│   │       ├── auth.ts    # 注册/登录/头像上传
 │   │       ├── records.ts # 解密记录 CRUD
 │   │       ├── puzzles.ts # 谜题 CRUD
 │   │       ├── wiki.ts    # Wiki CRUD
 │   │       ├── files.ts   # 文件上传/下载
+│   │       ├── messages.ts # 留言板 CRUD
+│   │       ├── comments.ts # 评论 CRUD
+│   │       ├── sarcophagus.ts # 石棺彩蛋 API
 │   │       └── admin.ts   # 用户审核
-│   └── .env.example
+│   └── uploads/avatars/   # 用户头像存储
 ├── app/                   # React 前端
+│   ├── public/
+│   │   └── assets/audio/  # BGM 音频文件
 │   └── src/
-│       ├── components/    # 组件（Navbar, RichTextEditor, shadcn/ui）
-│       ├── pages/         # 页面（Records, Puzzles, Wiki, Admin, SarcophagusTerminal彩蛋）
+│       ├── components/    # 组件（Navbar, RichTextEditor, shadcn/ui 等）
+│       │   ├── AvatarDisplay.tsx    # 通用头像组件
+│       │   ├── AvatarUpload.tsx     # 头像上传+裁剪
+│       │   ├── BackgroundMusic.tsx  # 全局 BGM 管理
+│       │   ├── TerminalAutopilot.tsx # 终端自运行程序
+│       │   └── CommentSection.tsx   # 评论区（含折叠）
+│       ├── pages/         # 页面
+│       │   ├── HomePage.tsx / LoginPage.tsx
+│       │   ├── MessageBoard.tsx     # 留言板
+│       │   ├── SarcophagusTerminal.tsx # 石棺彩蛋终端
+│       │   └── AdminPage.tsx / Records / Puzzles / Wiki
 │       ├── contexts/      # AuthContext
 │       └── api/           # API 客户端
 ├── go_live.sh             # 生产上线脚本（Nginx + SSL + 防火墙）
@@ -105,6 +123,15 @@ bash verify.sh
 ---
 
 ## 更新日志
+
+### 2026-06-21 #2 — BGM · 头像 · 评论折叠 · 终端自运行
+
+- 🎵 **全局 BGM 系统**：两套背景音乐（`sarcophagus-bgm.mp3` / `caidan.mp3`），路由感知自动切换，5 秒间隔循环，3 秒首次播放延迟
+- 🔊 **每小时语音播报**：首页进入时用广播风电子女声播报 "Welcome back, Doctor"
+- 🖥️ **终端自运行程序**：不定时输出明日方舟世界观系统日志，滴声+淡入动画
+- 💬 **评论折叠**：根评论预览3条+展开；嵌套回复自动折叠，逐层展开
+- 🖼️ **用户自定义头像**：上传 → 拖拽定位 → 缩放裁剪 → Canvas 输出 200×200，全站同步
+- 🐛 **Bug修复**：成功弹窗重复弹出（animationEnd 事件冒泡）
 
 ### 2026-06-21 — CRT 终端复古未来主义视觉升级
 

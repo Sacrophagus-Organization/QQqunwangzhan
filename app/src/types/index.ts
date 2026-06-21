@@ -65,6 +65,7 @@ export interface Message {
   isAnonymous: number; // 0=公开, 1=匿名
   author: string;
   authorId: string;
+  authorAvatar?: string;
   pinned: number;
   createdAt: string;
   updatedAt: string;
@@ -79,6 +80,7 @@ export interface Comment {
   isAnonymous: number;
   author: string;
   authorId: string;
+  authorAvatar?: string;
   createdAt: string;
 }
 

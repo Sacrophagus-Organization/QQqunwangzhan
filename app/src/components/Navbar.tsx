@@ -11,13 +11,14 @@ import {
 import { apiGet } from '@/api/client';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { DiamondLogo } from '@/components/DiamondLogo';
+import { AvatarDisplay } from '@/components/AvatarDisplay';
+import { AvatarUpload } from '@/components/AvatarUpload';
 import {
   FileText,
   Puzzle,
   BookOpen,
   LogOut,
   Menu,
-  User,
   Home,
   ChevronDown,
   Shield,
@@ -92,20 +93,25 @@ export function Navbar() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" className="flex items-center gap-2 hover:bg-secondary/50">
-                <div className="h-7 w-7 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center">
-                  <User className="h-3.5 w-3.5 text-primary" />
-                </div>
+                <AvatarDisplay
+                  avatarUrl={user.avatarUrl}
+                  username={user.username}
+                  size="sm"
+                />
                 <span className="text-sm hidden sm:inline">{user.username}</span>
                 <ChevronDown className="h-3 w-3 text-muted-foreground" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <div className="px-3 py-2 border-b border-border/50">
-                <p className="text-sm font-medium">{user.username}</p>
-                <p className="text-xs text-muted-foreground">QQ: {user.qqNumber}</p>
-                <p className="text-xs text-muted-foreground">
-                  {user.role === 'admin' ? '管理员' : user.role === 'editor' ? '编辑' : '成员'}
-                </p>
+            <DropdownMenuContent align="end" className="w-56">
+              <div className="px-3 py-3 border-b border-border/50 flex items-center gap-3">
+                <AvatarUpload />
+                <div>
+                  <p className="text-sm font-medium">{user.username}</p>
+                  <p className="text-xs text-muted-foreground">QQ: {user.qqNumber}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {user.role === 'admin' ? '管理员' : user.role === 'editor' ? '编辑' : '成员'}
+                  </p>
+                </div>
               </div>
               {(user.role === 'admin' || user.role === 'editor') && (
                 <Link to="/lynchpin-admin">
@@ -163,9 +169,11 @@ export function Navbar() {
                 </nav>
                 <div className="p-4 border-t border-border/50">
                   <div className="flex items-center gap-3 mb-3">
-                    <div className="h-8 w-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center">
-                      <User className="h-4 w-4 text-primary" />
-                    </div>
+                    <AvatarDisplay
+                      avatarUrl={user.avatarUrl}
+                      username={user.username}
+                      size="md"
+                    />
                     <div>
                       <p className="text-sm font-medium">{user.username}</p>
                       <p className="text-xs text-muted-foreground">{user.role === 'admin' ? '管理员' : user.role === 'editor' ? '编辑' : '成员'}</p>

@@ -133,6 +133,7 @@ try { db.exec('ALTER TABLE puzzles ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0'
 try { db.exec('ALTER TABLE puzzles ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0'); console.log('[DB] Added sort_order column to puzzles'); } catch {}
 try { db.exec('ALTER TABLE messages ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0'); console.log('[DB] Added pinned column to messages'); } catch {}
 try { db.exec('ALTER TABLE messages ADD COLUMN updated_at TEXT NOT NULL DEFAULT (datetime(\"now\"))'); console.log('[DB] Added updated_at column to messages'); } catch {}
+try { db.exec('ALTER TABLE users ADD COLUMN avatar_url TEXT NOT NULL DEFAULT \"\"'); console.log('[DB] Added avatar_url column to users'); } catch {}
 
 // Seed admin
 const existingAdmin = db.prepare('SELECT id FROM users WHERE username = ?').get('Admin');

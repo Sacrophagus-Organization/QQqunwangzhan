@@ -1,0 +1,184 @@
+import { useState, useRef, useCallback, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { apiUploadAvatar } from '@/api/client';
+import { Camera, Loader2, ZoomIn, ZoomOut } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+
+const CROP_SIZE = 200;
+
+export function AvatarUpload() {
+  const { user, updateAvatar } = useAuth();
+  const [previewUrl, setPreviewUrl] = useState(user?.avatarUrl || '');
+  const [open, setOpen] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [zoom, setZoom] = useState(1);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [dragging, setDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const imgRef = useRef<HTMLImageElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleFile = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    if (f.size > 5 * 1024 * 1024) {
+      alert('图片大小不能超过 5MB');
+      return;
+    }
+    setFile(f);
+    setZoom(1);
+    setOffset({ x: 0, y: 0 });
+    setOpen(true);
+  }, []);
+
+  // 拖动头像
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setDragging(true);
+    setDragStart({ x: e.clientX - offset.x, y: e.clientY - offset.y });
+  };
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!dragging) return;
+    setOffset({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y });
+  };
+  const handleMouseUp = () => setDragging(false);
+
+  // 裁剪并上传
+  const handleCropAndUpload = useCallback(async () => {
+    if (!imgRef.current) return;
+    setUploading(true);
+    try {
+      const canvas = canvasRef.current!;
+      canvas.width = CROP_SIZE;
+      canvas.height = CROP_SIZE;
+      const ctx = canvas.getContext('2d')!;
+      const img = imgRef.current;
+
+      const scale = CROP_SIZE / (CROP_SIZE * zoom);
+      const sx = -offset.x * scale;
+      const sy = -offset.y * scale;
+      const sw = CROP_SIZE * scale;
+      const sh = CROP_SIZE * scale;
+
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, CROP_SIZE, CROP_SIZE);
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, CROP_SIZE, CROP_SIZE);
+
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('裁剪失败'))), 'image/png');
+      });
+
+      const avatarUrl = await apiUploadAvatar(blob);
+      updateAvatar(avatarUrl);
+      setPreviewUrl(avatarUrl + '?t=' + Date.now());
+      setOpen(false);
+    } catch (e: any) {
+      alert(e.message || '上传失败');
+    } finally {
+      setUploading(false);
+    }
+  }, [offset, zoom, updateAvatar]);
+
+  // 临时预览 URL
+  const tempPreviewUrl = file ? URL.createObjectURL(file) : null;
+  useEffect(() => {
+    return () => {
+      if (tempPreviewUrl) URL.revokeObjectURL(tempPreviewUrl);
+    };
+  }, [tempPreviewUrl]);
+
+  return (
+    <>
+      <div className="relative group cursor-pointer" onClick={() => inputRef.current?.click()}>
+        <div className={`h-14 w-14 rounded-full flex items-center justify-center flex-shrink-0 border-2 border-border/40 group-hover:border-primary/50 transition-colors ${previewUrl ? '' : 'bg-muted/30'}`}>
+          {previewUrl ? (
+            <img src={previewUrl} alt="avatar" className="h-full w-full rounded-full object-cover" />
+          ) : (
+            <span className="text-lg font-bold text-muted-foreground/50">
+              {user?.username?.slice(0, 2).toUpperCase() || '?'}
+            </span>
+          )}
+        </div>
+        <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+          <Camera className="h-5 w-5 text-white/80" />
+        </div>
+      </div>
+      <input ref={inputRef} type="file" accept="image/png,image/jpeg,image/gif,image/webp" className="hidden" onChange={handleFile} />
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center">设置头像</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col items-center gap-4">
+            {tempPreviewUrl ? (
+              <>
+                {/* 裁剪预览区 */}
+                <p className="text-xs text-muted-foreground">拖动图片调整位置</p>
+                <div
+                  className="relative w-[200px] h-[200px] rounded-full overflow-hidden border-2 border-primary/30 cursor-move select-none"
+                  onMouseDown={handleMouseDown}
+                  onMouseMove={handleMouseMove}
+                  onMouseUp={handleMouseUp}
+                  onMouseLeave={handleMouseUp}
+                  style={{ background: '#000' }}
+                >
+                  <img
+                    ref={imgRef}
+                    src={tempPreviewUrl}
+                    alt="preview"
+                    className="absolute pointer-events-none"
+                    style={{
+                      width: `${CROP_SIZE * zoom}px`,
+                      height: `${CROP_SIZE * zoom}px`,
+                      left: `${offset.x}px`,
+                      top: `${offset.y}px`,
+                      objectFit: 'cover',
+                    }}
+                    draggable={false}
+                  />
+                  {/* 中心十字 */}
+                  <div className="absolute inset-0 pointer-events-none rounded-full" style={{ boxShadow: 'inset 0 0 0 999px rgba(0,0,0,0.3)' }}>
+                    <div className="absolute top-1/2 left-0 right-0 h-[1px] bg-white/15" />
+                    <div className="absolute left-1/2 top-0 bottom-0 w-[1px] bg-white/15" />
+                  </div>
+                </div>
+
+                {/* 缩放控件 */}
+                <div className="flex items-center gap-2">
+                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setZoom(z => Math.max(1, z - 0.2))}>
+                    <ZoomOut className="h-3.5 w-3.5" />
+                  </Button>
+                  <span className="text-xs text-muted-foreground min-w-[40px] text-center">
+                    {Math.round(zoom * 100)}%
+                  </span>
+                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setZoom(z => Math.min(3, z + 0.2))}>
+                    <ZoomIn className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <div className="p-8">
+                <Camera className="h-12 w-12 text-muted-foreground/30 mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground text-center">点击下方按钮选择图片</p>
+              </div>
+            )}
+
+            <canvas ref={canvasRef} className="hidden" />
+
+            <div className="flex gap-2 w-full">
+              <Button variant="outline" className="flex-1" onClick={() => inputRef.current?.click()}>
+                选择图片
+              </Button>
+              <Button className="flex-1" onClick={handleCropAndUpload} disabled={!file || uploading}>
+                {uploading ? <><Loader2 className="h-4 w-4 animate-spin mr-1" />上传中</> : '保存头像'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}

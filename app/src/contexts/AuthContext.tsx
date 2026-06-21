@@ -6,6 +6,7 @@ interface AuthUser {
   username: string;
   role: 'admin' | 'editor' | 'member';
   qqNumber: string;
+  avatarUrl: string;
   createdAt: string;
 }
 
@@ -16,6 +17,7 @@ interface AuthState {
   login: (username: string, password: string) => Promise<{ success: boolean; message: string }>;
   register: (username: string, password: string, qqNumber: string, registerReason?: string) => Promise<{ success: boolean; message: string }>;
   logout: () => void;
+  updateAvatar: (avatarUrl: string) => void;
 }
 
 const AuthContext = createContext<AuthState | null>(null);
@@ -63,10 +65,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, []);
 
+  const updateAvatar = useCallback((avatarUrl: string) => {
+    setUser(prev => prev ? { ...prev, avatarUrl } : null);
+  }, []);
+
   return (
     <AuthContext.Provider value={{
       user, isAuthenticated: !!user, loading,
-      login, register, logout,
+      login, register, logout, updateAvatar,
     }}>
       {children}
     </AuthContext.Provider>

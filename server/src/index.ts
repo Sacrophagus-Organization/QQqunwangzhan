@@ -14,6 +14,11 @@ import sarcophagusRoutes from './routes/sarcophagus.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+// Ensure avatar upload directory
+import * as fs from 'fs';
+const avatarDir = path.join(__dirname, '..', 'uploads', 'avatars');
+if (!fs.existsSync(avatarDir)) fs.mkdirSync(avatarDir, { recursive: true });
+
 const app = express();
 const PORT = parseInt(process.env.PORT || '3001');
 
@@ -31,6 +36,9 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/comments', commentRoutes);
 app.use('/api/sarcophagus', sarcophagusRoutes);
+
+// Serve uploaded avatars as static files
+app.use('/uploads/avatars', express.static(path.join(__dirname, '..', 'uploads', 'avatars')));
 
 // Serve static frontend build
 const staticDir = path.join(__dirname, '..', '..', 'app', 'dist');

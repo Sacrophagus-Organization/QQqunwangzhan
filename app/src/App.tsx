@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { Navbar } from '@/components/Navbar';
+import { BackgroundMusic } from '@/components/BackgroundMusic';
 import LoginPage from '@/pages/LoginPage';
 import HomePage from '@/pages/HomePage';
 import DecryptRecords from '@/pages/DecryptRecords';
@@ -28,6 +29,7 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <BackgroundMusic />
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route

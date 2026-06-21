@@ -15,6 +15,7 @@ const mapComment = (r: any) => ({
   isAnonymous: r.is_anonymous,
   author: r.author,
   authorId: r.author_id,
+  authorAvatar: r.avatar_url ? '/' + r.avatar_url : '',
   createdAt: r.created_at,
 });
 
@@ -26,7 +27,11 @@ router.get('/', (req: AuthRequest, res) => {
     return;
   }
   const rows = db.prepare(
-    'SELECT * FROM comments WHERE entity_type = ? AND entity_id = ? ORDER BY created_at ASC'
+    `SELECT c.*, u.avatar_url
+     FROM comments c
+     LEFT JOIN users u ON c.author_id = u.id
+     WHERE c.entity_type = ? AND c.entity_id = ?
+     ORDER BY c.created_at ASC`
   ).all(entityType as string, entityId as string) as any[];
   res.json(rows.map(mapComment));
 });

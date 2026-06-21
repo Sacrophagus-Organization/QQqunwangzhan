@@ -80,3 +80,19 @@ export async function apiUpload(entityType: string, entityId: string, files: Fil
   if (!res.ok) throw new Error('上传失败');
   return res.json();
 }
+
+export async function apiUploadAvatar(blob: Blob): Promise<string> {
+  const formData = new FormData();
+  formData.append('avatar', blob, 'avatar.png');
+  const res = await fetch(`${API_BASE}/auth/avatar`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${getToken()}` },
+    body: formData,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: '上传失败' }));
+    throw new Error(err.error || '上传失败');
+  }
+  const data = await res.json();
+  return data.avatarUrl;
+}

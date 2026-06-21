@@ -4,16 +4,18 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { RichTextEditor } from '@/components/RichTextEditor';
+import { AvatarDisplay } from '@/components/AvatarDisplay';
 import { apiGet, apiPost, apiDelete } from '@/api/client';
 import {
   MessageCircle,
-  User,
   Clock,
   Trash2,
   CornerDownRight,
   EyeOff,
   Eye,
   Loader2,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import type { Comment } from '@/types';
 
@@ -96,19 +98,25 @@ function CommentItem({
   const c = node.comment;
   const maxDepth = Math.min(node.depth, 7);
   const borderColor = DEPTH_COLORS[maxDepth];
+  const [repliesCollapsed, setRepliesCollapsed] = useState(node.depth >= 2);
+
+  // 计算所有后代回复总数（含孙层）
+  const countAllDescendants = (n: CommentNode): number => {
+    return n.children.reduce((sum, child) => sum + 1 + countAllDescendants(child), 0);
+  };
+  const totalReplies = countAllDescendants(node);
 
   return (
     <div>
       <div className={`pl-3 ${node.depth > 0 ? `border-l-2 ${borderColor} ml-1` : ''}`}>
         {/* Author Row */}
         <div className="flex items-center gap-2 mb-1">
-          <div className={`h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-medium ${
-            c.isAnonymous
-              ? 'bg-muted/50 border border-border/30 text-muted-foreground'
-              : 'bg-primary/10 border border-primary/20 text-primary'
-          }`}>
-            {c.isAnonymous ? <EyeOff className="h-3 w-3" /> : <User className="h-3 w-3" />}
-          </div>
+          <AvatarDisplay
+            avatarUrl={c.authorAvatar}
+            username={c.author}
+            size="sm"
+            isAnonymous={!!c.isAnonymous}
+          />
           <span className="text-xs font-medium">
             {c.isAnonymous ? '匿名用户' : c.author}
           </span>
@@ -152,32 +160,54 @@ function CommentItem({
         </div>
       </div>
 
-      {/* Children (replies) */}
+      {/* Children (replies) — 可折叠 */}
       {node.children.length > 0 && (
         <div className="mt-1">
-          {node.children.map(child => (
-            <div key={child.comment.id} className={child.depth <= 7 ? 'ml-4' : ''}>
-              <CommentItem
-                node={child}
-                entityType={entityType}
-                entityId={entityId}
-                onDelete={onDelete}
-                onReply={onReply}
-                replyingTo={replyingTo}
-                onStartReply={onStartReply}
-                onCancelReply={onCancelReply}
-              />
-            </div>
-          ))}
+          {repliesCollapsed ? (
+            <button
+              onClick={() => setRepliesCollapsed(false)}
+              className="ml-2 mt-1 flex items-center gap-1 text-[10px] text-primary/50 hover:text-primary transition-colors"
+            >
+              <ChevronDown className="h-3 w-3" />
+              查看 {totalReplies} 条回复
+            </button>
+          ) : (
+            <>
+              {node.children.map(child => (
+                <div key={child.comment.id} className={child.depth <= 7 ? 'ml-4' : ''}>
+                  <CommentItem
+                    node={child}
+                    entityType={entityType}
+                    entityId={entityId}
+                    onDelete={onDelete}
+                    onReply={onReply}
+                    replyingTo={replyingTo}
+                    onStartReply={onStartReply}
+                    onCancelReply={onCancelReply}
+                  />
+                </div>
+              ))}
+              <button
+                onClick={() => setRepliesCollapsed(true)}
+                className="ml-2 mt-1 flex items-center gap-1 text-[10px] text-muted-foreground hover:text-primary transition-colors"
+              >
+                <ChevronUp className="h-3 w-3" />
+                收起回复
+              </button>
+            </>
+          )}
         </div>
       )}
     </div>
   );
 }
 
+const PREVIEW_COUNT = 3; // 默认显示前 3 条评论
+
 export default function CommentSection({ entityType, entityId }: CommentSectionProps) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [collapsed, setCollapsed] = useState(true); // 默认折叠
   const [showNewComment, setShowNewComment] = useState(false);
   const [newContent, setNewContent] = useState('');
   const [newAnonymous, setNewAnonymous] = useState(false);
@@ -217,6 +247,7 @@ export default function CommentSection({ entityType, entityId }: CommentSectionP
       setNewContent('');
       setNewAnonymous(false);
       setShowNewComment(false);
+      setCollapsed(false);
       load();
     } catch (e: any) { alert(e.message); }
     finally { setSubmitting(false); }
@@ -236,6 +267,7 @@ export default function CommentSection({ entityType, entityId }: CommentSectionP
       setReplyContent('');
       setReplyAnonymous(false);
       setReplyingTo(null);
+      setCollapsed(false);
       load();
     } catch (e: any) { alert(e.message); }
     finally { setSubmitting(false); }
@@ -324,7 +356,7 @@ export default function CommentSection({ entityType, entityId }: CommentSectionP
         <p className="text-xs text-muted-foreground text-center py-6">还没有评论，来发表第一条吧</p>
       ) : (
         <div className="space-y-3">
-          {tree.map(node => (
+          {(collapsed ? tree.slice(0, PREVIEW_COUNT) : tree).map(node => (
             <div key={node.comment.id} className="border border-border/30 rounded-lg p-3 bg-background/50">
               <CommentItem
                 node={node}
@@ -338,6 +370,26 @@ export default function CommentSection({ entityType, entityId }: CommentSectionP
               />
             </div>
           ))}
+
+          {/* 折叠/展开按钮 */}
+          {tree.length > PREVIEW_COUNT && (
+            <button
+              onClick={() => setCollapsed(!collapsed)}
+              className="w-full flex items-center justify-center gap-1.5 py-2 text-xs text-muted-foreground hover:text-primary transition-colors rounded-lg hover:bg-primary/5"
+            >
+              {collapsed ? (
+                <>
+                  <ChevronDown className="h-3.5 w-3.5" />
+                  展开全部 {tree.length} 条评论
+                </>
+              ) : (
+                <>
+                  <ChevronUp className="h-3.5 w-3.5" />
+                  收起评论
+                </>
+              )}
+            </button>
+          )}
         </div>
       )}
     </div>

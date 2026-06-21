@@ -8,15 +8,17 @@ import { apiGet, apiPost, apiDelete } from '@/api/client';
 import {
   Shield, Users, UserCheck, UserX, Trash2,
   Clock, CheckCircle2, XCircle, Loader2, AlertTriangle,
-  MessageSquare, Star, Terminal, Key, FileText,
+  MessageSquare, Terminal, Key, FileText,
   Upload, Plus,
 } from 'lucide-react';
+import { AvatarDisplay } from '@/components/AvatarDisplay';
 import type { SarcophagusCode } from '@/types';
 
 interface UserItem {
   id: string;
   username: string;
   qq_number: string;
+  avatar_url?: string;
   role: string;
   status: string;
   register_reason: string;
@@ -245,15 +247,11 @@ export default function AdminPage() {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className={`h-10 w-10 rounded-full flex items-center justify-center ${
-                      u.role === 'admin' ? 'bg-red-500/10 border border-red-500/30' :
-                      u.role === 'editor' ? 'bg-blue-500/10 border border-blue-500/30' :
-                      'bg-primary/10 border border-primary/20'
-                    }`}>
-                      {u.role === 'admin' ? <Shield className="h-5 w-5 text-red-400" /> :
-                       u.role === 'editor' ? <Star className="h-5 w-5 text-blue-400" /> :
-                       <Users className="h-5 w-5 text-muted-foreground" />}
-                    </div>
+                    <AvatarDisplay
+                      avatarUrl={u.avatar_url ? '/' + u.avatar_url : ''}
+                      username={u.username}
+                      size="lg"
+                    />
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{u.username}</span>

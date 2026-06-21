@@ -1,7 +1,8 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Link } from 'react-router-dom';
 import { apiPost } from '@/api/client';
+import { TerminalAutopilot } from '@/components/TerminalAutopilot';
 import { Loader2, Terminal, Shield, X, Download, ArrowLeft } from 'lucide-react';
 
 type BootPhase = 'idle' | 'booting' | 'complete';
@@ -19,6 +20,7 @@ export default function SarcophagusTerminal() {
   const [errorModal, setErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [bootPhase, setBootPhase] = useState<BootPhase>('idle');
+  const unlockHandledRef = useRef(false);
 
   // CRT 开机动画：组件挂载时触发（总时长 1700ms，白点在 350ms 彻底消失避免与内容重叠）
   useEffect(() => {
@@ -41,6 +43,7 @@ export default function SarcophagusTerminal() {
     setIsAnimating(true);
     setLoading(true);
     setAnimationType('none');
+    unlockHandledRef.current = false;
     appendOutput(`AUTH_REQ: 正在验证接入代码 "${code.trim().toUpperCase()}"...`);
 
     try {
@@ -72,7 +75,8 @@ export default function SarcophagusTerminal() {
 
   const handleAnimationEnd = () => {
     setIsAnimating(false);
-    if (animationType === 'unlock' && downloadToken) {
+    if (animationType === 'unlock' && downloadToken && !unlockHandledRef.current) {
+      unlockHandledRef.current = true;
       setTimeout(() => {
         setModalPhase('opening');
         setTimeout(() => setModalPhase('open'), 50);
@@ -478,6 +482,11 @@ export default function SarcophagusTerminal() {
                   <span className="text-primary/40 mono-text text-xs">PROCESSING...</span>
                 </div>
               )}
+
+              {/* ── 自运行终端：不定时输出系统日志 ── */}
+              <div className="mt-2 pt-2 border-t border-primary/[0.04]">
+                <TerminalAutopilot />
+              </div>
             </div>
 
             {/* Input Area */}
