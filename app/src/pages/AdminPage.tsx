@@ -22,6 +22,8 @@ interface UserItem {
   role: string;
   status: string;
   register_reason: string;
+  requested_role?: string;
+  requested_role_reason?: string;
   created_at: string;
 }
 
@@ -82,6 +84,28 @@ export default function AdminPage() {
     try {
       await apiPost(`/admin/users/${userId}/role`, { role: newRole });
       setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u));
+    } catch (e: any) { alert(e.message); }
+    setActingId(null);
+  };
+
+  const handleRoleApprove = async (userId: string, newRole: string) => {
+    setActingId(userId);
+    try {
+      await apiPost(`/admin/users/${userId}/approve-role`);
+      setUsers(prev => prev.map(u =>
+        u.id === userId ? { ...u, role: newRole, requested_role: '', requested_role_reason: '' } : u
+      ));
+    } catch (e: any) { alert(e.message); }
+    setActingId(null);
+  };
+
+  const handleRoleReject = async (userId: string) => {
+    setActingId(userId);
+    try {
+      await apiPost(`/admin/users/${userId}/reject-role`);
+      setUsers(prev => prev.map(u =>
+        u.id === userId ? { ...u, requested_role: '', requested_role_reason: '' } : u
+      ));
     } catch (e: any) { alert(e.message); }
     setActingId(null);
   };
@@ -173,7 +197,7 @@ export default function AdminPage() {
 
   const isAdmin = user?.role === 'admin';
 
-  const pendingCount = users.filter(u => u.status === 'pending').length;
+  const pendingCount = users.filter(u => u.status === 'pending' || !!u.requested_role).length;
 
   const statusBadge = (status: string) => {
     switch (status) {
@@ -267,6 +291,36 @@ export default function AdminPage() {
                         <div className="flex items-start gap-1.5 mt-2 text-xs bg-secondary/30 rounded-md p-2">
                           <MessageSquare className="h-3 w-3 text-muted-foreground shrink-0 mt-0.5" />
                           <span className="text-muted-foreground">{u.register_reason}</span>
+                        </div>
+                      )}
+                      {/* 权限申请信息 */}
+                      {u.requested_role && (
+                        <div className="flex items-start gap-1.5 mt-2 text-xs bg-amber-500/5 border border-amber-500/20 rounded-md p-2">
+                          <Shield className="h-3 w-3 text-amber-400 shrink-0 mt-0.5" />
+                          <div>
+                            <span className="text-amber-400 font-medium">
+                              申请 {u.requested_role === 'admin' ? '管理员' : '编辑'} 权限
+                            </span>
+                            {u.requested_role_reason && (
+                              <p className="text-muted-foreground mt-0.5">{u.requested_role_reason}</p>
+                            )}
+                            {isAdmin && (
+                              <div className="flex gap-1 mt-1.5">
+                                <Button size="sm" variant="outline"
+                                  className="h-6 text-[10px] border-green-500/30 text-green-400 hover:bg-green-500/10"
+                                  onClick={() => handleRoleApprove(u.id, u.requested_role!)}
+                                  disabled={actingId === u.id}>
+                                  {actingId === u.id ? <Loader2 className="h-3 w-3 animate-spin" /> : '通过'}
+                                </Button>
+                                <Button size="sm" variant="outline"
+                                  className="h-6 text-[10px] border-red-500/30 text-red-400 hover:bg-red-500/10"
+                                  onClick={() => handleRoleReject(u.id)}
+                                  disabled={actingId === u.id}>
+                                  拒绝
+                                </Button>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       )}
                     </div>

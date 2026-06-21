@@ -34,7 +34,7 @@ export function AvatarUpload() {
     setOpen(true);
   }, []);
 
-  // 拖动头像
+  // 拖动 —— 拖动的是 200×200 的基准图（缩放由 CSS transform 处理）
   const handleMouseDown = (e: React.MouseEvent) => {
     setDragging(true);
     setDragStart({ x: e.clientX - offset.x, y: e.clientY - offset.y });
@@ -48,23 +48,48 @@ export function AvatarUpload() {
   // 裁剪并上传
   const handleCropAndUpload = useCallback(async () => {
     if (!imgRef.current) return;
+    const img = imgRef.current;
+    if (!img.complete || img.naturalWidth === 0) {
+      alert('图片尚未加载完成，请稍后再试');
+      return;
+    }
     setUploading(true);
     try {
       const canvas = canvasRef.current!;
       canvas.width = CROP_SIZE;
       canvas.height = CROP_SIZE;
       const ctx = canvas.getContext('2d')!;
-      const img = imgRef.current;
 
-      const scale = CROP_SIZE / (CROP_SIZE * zoom);
-      const sx = -offset.x * scale;
-      const sy = -offset.y * scale;
-      const sw = CROP_SIZE * scale;
-      const sh = CROP_SIZE * scale;
+      // Step 1: 将原图按 object-fit:cover 绘制到 200×200 基准 canvas
+      const baseCanvas = document.createElement('canvas');
+      baseCanvas.width = CROP_SIZE;
+      baseCanvas.height = CROP_SIZE;
+      const bctx = baseCanvas.getContext('2d')!;
+
+      const naturalW = img.naturalWidth;
+      const naturalH = img.naturalHeight;
+      const fitScale = Math.max(CROP_SIZE / naturalW, CROP_SIZE / naturalH);
+      const dw = naturalW * fitScale;
+      const dh = naturalH * fitScale;
+      const dx = (CROP_SIZE - dw) / 2;
+      const dy = (CROP_SIZE - dh) / 2;
+
+      bctx.drawImage(img, dx, dy, dw, dh);
+
+      // Step 2: 从 200×200 基准图上，按 zoom + offset 提取最终区域
+      // UI 中：图片 scale(zoom) 以中心为原点，然后平移 offset
+      // 基准图坐标：
+      //   sx = 100 - 100/zoom - offset.x/zoom
+      //   sy = 100 - 100/zoom - offset.y/zoom
+      //   sw = 200/zoom,  sh = 200/zoom
+      const sx = CROP_SIZE / 2 - (CROP_SIZE / 2) / zoom - offset.x / zoom;
+      const sy = CROP_SIZE / 2 - (CROP_SIZE / 2) / zoom - offset.y / zoom;
+      const sw = CROP_SIZE / zoom;
+      const sh = CROP_SIZE / zoom;
 
       ctx.fillStyle = '#000';
       ctx.fillRect(0, 0, CROP_SIZE, CROP_SIZE);
-      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, CROP_SIZE, CROP_SIZE);
+      ctx.drawImage(baseCanvas, sx, sy, sw, sh, 0, 0, CROP_SIZE, CROP_SIZE);
 
       const blob = await new Promise<Blob>((resolve, reject) => {
         canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('裁剪失败'))), 'image/png');
@@ -115,7 +140,6 @@ export function AvatarUpload() {
           <div className="flex flex-col items-center gap-4">
             {tempPreviewUrl ? (
               <>
-                {/* 裁剪预览区 */}
                 <p className="text-xs text-muted-foreground">拖动图片调整位置</p>
                 <div
                   className="relative w-[200px] h-[200px] rounded-full overflow-hidden border-2 border-primary/30 cursor-move select-none"
@@ -125,21 +149,24 @@ export function AvatarUpload() {
                   onMouseLeave={handleMouseUp}
                   style={{ background: '#000' }}
                 >
+                  {/* 基准图：200×200 object-fit:cover，缩放由 CSS transform 处理 */}
                   <img
                     ref={imgRef}
                     src={tempPreviewUrl}
                     alt="preview"
                     className="absolute pointer-events-none"
                     style={{
-                      width: `${CROP_SIZE * zoom}px`,
-                      height: `${CROP_SIZE * zoom}px`,
+                      width: `${CROP_SIZE}px`,
+                      height: `${CROP_SIZE}px`,
+                      objectFit: 'cover',
+                      transform: `scale(${zoom})`,
+                      transformOrigin: 'center center',
                       left: `${offset.x}px`,
                       top: `${offset.y}px`,
-                      objectFit: 'cover',
                     }}
                     draggable={false}
                   />
-                  {/* 中心十字 */}
+                  {/* 中心十字 + 暗角 */}
                   <div className="absolute inset-0 pointer-events-none rounded-full" style={{ boxShadow: 'inset 0 0 0 999px rgba(0,0,0,0.3)' }}>
                     <div className="absolute top-1/2 left-0 right-0 h-[1px] bg-white/15" />
                     <div className="absolute left-1/2 top-0 bottom-0 w-[1px] bg-white/15" />

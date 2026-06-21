@@ -13,6 +13,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { DiamondLogo } from '@/components/DiamondLogo';
 import { AvatarDisplay } from '@/components/AvatarDisplay';
 import { AvatarUpload } from '@/components/AvatarUpload';
+import { RoleApply } from '@/components/RoleApply';
 import {
   FileText,
   Puzzle,
@@ -113,6 +114,7 @@ export function Navbar() {
                   </p>
                 </div>
               </div>
+              <RoleApply />
               {(user.role === 'admin' || user.role === 'editor') && (
                 <Link to="/lynchpin-admin">
                   <DropdownMenuItem className="cursor-pointer text-amber-400">

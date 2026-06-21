@@ -116,4 +116,32 @@ router.get('/avatar-info/:userId', (req: AuthRequest, res) => {
   res.json({ avatarUrl: user.avatar_url ? '/' + user.avatar_url : '' });
 });
 
+// POST /apply-role — 用户申请角色升级（editor 或 admin）
+router.post('/apply-role', authMiddleware, (req: AuthRequest, res) => {
+  const { role, reason } = req.body;
+  if (!['editor', 'admin'].includes(role)) {
+    res.status(400).json({ error: '无效的角色申请' });
+    return;
+  }
+  if (!reason || !reason.trim()) {
+    res.status(400).json({ error: '请填写申请理由' });
+    return;
+  }
+  // 不能申请自己已有的角色
+  const user = db.prepare('SELECT role, requested_role FROM users WHERE id = ?').get(req.userId!) as any;
+  if (!user) { res.status(404).json({ error: '用户不存在' }); return; }
+  if (user.role === role) {
+    res.status(400).json({ error: `你已经是 ${role === 'admin' ? '管理员' : '编辑'} 了` });
+    return;
+  }
+  if (user.requested_role) {
+    res.status(400).json({ error: '你已有待审核的权限申请，请等待管理员处理' });
+    return;
+  }
+  db.prepare('UPDATE users SET requested_role = ?, requested_role_reason = ? WHERE id = ?').run(
+    role, reason.trim(), req.userId
+  );
+  res.json({ success: true, message: '权限申请已提交，请等待管理员审核' });
+});
+
 export default router;

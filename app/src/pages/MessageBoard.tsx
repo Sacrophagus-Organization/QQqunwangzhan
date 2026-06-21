@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { RichTextEditor, htmlToSummary } from '@/components/RichTextEditor';
 import CommentSection from '@/components/CommentSection';
 import { AvatarDisplay } from '@/components/AvatarDisplay';
+import { LikeButton } from '@/components/LikeButton';
 import { apiGet, apiPost, apiPut, apiDelete } from '@/api/client';
 import {
   MessagesSquare,
@@ -136,22 +137,32 @@ export default function MessageBoard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background hex-grid-bg flex items-center justify-center">
-        <Loader2 className="h-8 w-8 text-primary animate-spin" />
+      <div className="min-h-screen bg-background warm-glow-bg">
+        <div className="container mx-auto max-w-4xl px-4 py-8 space-y-4">
+          <div className="skeleton h-8 w-48 mb-6" />
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="glass-card border-border/50 p-5 space-y-3">
+              <div className="flex items-center gap-3"><div className="skeleton h-8 w-8 rounded-full" /><div className="skeleton h-4 w-24" /></div>
+              <div className="skeleton h-4 w-full" />
+              <div className="skeleton h-4 w-3/4" />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background hex-grid-bg">
+    <div className="min-h-screen bg-background warm-glow-bg">
       <div className="container mx-auto max-w-4xl px-4 py-8">
         {/* Header */}
-        <div className="relative mb-8">
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-accent/5 to-primary/5 rounded-2xl blur-xl" />
+        <div className="relative mb-8 overflow-hidden rounded-2xl">
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-purple-500/5 to-accent/5 rounded-2xl blur-xl" />
+          <div className="absolute top-0 right-0 w-40 h-40 rounded-full bg-primary/[0.03] blur-3xl" />
           <div className="relative glass-card rounded-2xl p-6 border-glow">
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-primary/10 border border-primary/30 flex items-center justify-center">
+                <div className="h-11 w-11 rounded-xl bg-primary/10 border border-primary/30 flex items-center justify-center originium-pulse">
                   <MessagesSquare className="h-5 w-5 text-primary" />
                 </div>
                 <div>
@@ -337,6 +348,11 @@ export default function MessageBoard() {
                         {isExpanded ? '收起' : '展开全文'}
                       </Button>
                     )}
+
+                    {/* Like + Comments */}
+                    <div className="flex items-center gap-3 mt-3 pt-3 border-t border-border/15">
+                      <LikeButton entityType="message" entityId={msg.id} likeCount={msg.likeCount} size="sm" />
+                    </div>
 
                     {/* Comments Section */}
                     <div className="mt-4 pt-4 border-t border-border/20">

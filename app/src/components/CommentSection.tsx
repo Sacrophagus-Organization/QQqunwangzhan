@@ -5,6 +5,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { RichTextEditor } from '@/components/RichTextEditor';
 import { AvatarDisplay } from '@/components/AvatarDisplay';
+import { LikeButton } from '@/components/LikeButton';
 import { apiGet, apiPost, apiDelete } from '@/api/client';
 import {
   MessageCircle,
@@ -137,6 +138,7 @@ function CommentItem({
 
         {/* Actions */}
         <div className="flex items-center gap-2 mb-1">
+          <LikeButton entityType="comment" entityId={c.id} likeCount={c.likeCount} size="sm" />
           <button
             onClick={() => replyingTo === c.id ? onCancelReply() : onStartReply(c.id)}
             className={`text-[11px] flex items-center gap-1 transition-colors ${

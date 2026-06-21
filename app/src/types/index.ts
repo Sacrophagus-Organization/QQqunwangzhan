@@ -31,6 +31,7 @@ export interface DecryptRecord {
   sortOrder: number;
   images: string[];
   attachments: FileAttachment[];
+  likeCount?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -55,6 +56,7 @@ export interface Puzzle {
   sortOrder: number;
   tags: string[];
   attachments: FileAttachment[];
+  likeCount?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -66,6 +68,7 @@ export interface Message {
   author: string;
   authorId: string;
   authorAvatar?: string;
+  likeCount?: number;
   pinned: number;
   createdAt: string;
   updatedAt: string;
@@ -81,6 +84,7 @@ export interface Comment {
   author: string;
   authorId: string;
   authorAvatar?: string;
+  likeCount?: number;
   createdAt: string;
 }
 
@@ -96,6 +100,7 @@ export interface WikiEntry {
   pinned: number;
   sortOrder: number;
   attachments: FileAttachment[];
+  likeCount?: number;
   lastUpdated: string;
   createdAt: string;
 }

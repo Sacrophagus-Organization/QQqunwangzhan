@@ -77,11 +77,12 @@ export default function SarcophagusTerminal() {
     setIsAnimating(false);
     if (animationType === 'unlock' && downloadToken && !unlockHandledRef.current) {
       unlockHandledRef.current = true;
+      // 等待终端消息逐行动画全部播完再弹出下载弹窗
       setTimeout(() => {
         setModalPhase('opening');
         setTimeout(() => setModalPhase('open'), 50);
         setShowModal(true);
-      }, 400);
+      }, 1000);
     }
   };
 
@@ -468,8 +469,8 @@ export default function SarcophagusTerminal() {
                     }`}
                     style={{
                       opacity: 0,
-                      animation: `code-stagger-in 0.5s ease-out forwards`,
-                      animationDelay: `${i * 500 + 200}ms`,
+                      animation: `code-stagger-in 0.4s ease-out forwards`,
+                      animationDelay: `${i * 300 + 100}ms`,
                     }}
                   >
                     {line}

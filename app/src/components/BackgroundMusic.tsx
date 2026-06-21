@@ -63,6 +63,7 @@ export function BackgroundMusic() {
   const gapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const firstPlayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const currentSrcRef = useRef<string>('');
+  const onEndedRef = useRef<(() => void) | null>(null);
 
   const isLoginPage = location.pathname === '/login';
   const isSarcophagusPage = location.pathname === '/sarcophagus';
@@ -100,6 +101,10 @@ export function BackgroundMusic() {
     // 登录页：不播放
     if (isLoginPage || !targetSrc) {
       if (audioRef.current) {
+        if (onEndedRef.current) {
+          audioRef.current.removeEventListener('ended', onEndedRef.current);
+          onEndedRef.current = null;
+        }
         audioRef.current.pause();
         audioRef.current.removeAttribute('src');
         audioRef.current.load();
@@ -118,12 +123,17 @@ export function BackgroundMusic() {
 
     // 如果音频源变了，切换源
     if (currentSrcRef.current !== targetSrc) {
+      // 移除旧监听器
+      if (onEndedRef.current) {
+        audio.removeEventListener('ended', onEndedRef.current);
+      }
+
       audio.src = targetSrc;
       audio.load();
       currentSrcRef.current = targetSrc;
       clearGapTimer();
 
-      // 切歌后重新设置循环逻辑
+      // 循环逻辑：每播完一次就等待 LOOP_GAP_MS 后重播
       const onEnded = () => {
         clearGapTimer();
         gapTimerRef.current = setTimeout(() => {
@@ -133,9 +143,8 @@ export function BackgroundMusic() {
           }
         }, LOOP_GAP_MS);
       };
-
-      audio.removeEventListener('ended', onEnded);
-      audio.addEventListener('ended', onEnded, { once: true });
+      onEndedRef.current = onEnded;
+      audio.addEventListener('ended', onEnded);
 
       // 首次播放延迟，避免进入页面时突兀
       firstPlayTimerRef.current = setTimeout(() => {
@@ -145,8 +154,9 @@ export function BackgroundMusic() {
 
     return () => {
       clearGapTimer();
-      if (audio) {
-        audio.removeEventListener('ended', () => {});
+      if (onEndedRef.current) {
+        audio.removeEventListener('ended', onEndedRef.current);
+        onEndedRef.current = null;
       }
     };
   }, [targetSrc, isLoginPage, playWithGap, clearGapTimer]);
@@ -168,6 +178,10 @@ export function BackgroundMusic() {
     return () => {
       clearGapTimer();
       if (audioRef.current) {
+        if (onEndedRef.current) {
+          audioRef.current.removeEventListener('ended', onEndedRef.current);
+          onEndedRef.current = null;
+        }
         audioRef.current.pause();
         audioRef.current.removeAttribute('src');
         audioRef.current.load();

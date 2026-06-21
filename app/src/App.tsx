@@ -1,8 +1,10 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { Navbar } from '@/components/Navbar';
 import { BackgroundMusic } from '@/components/BackgroundMusic';
+import { NotificationTicker } from '@/components/NotificationTicker';
 import LoginPage from '@/pages/LoginPage';
 import HomePage from '@/pages/HomePage';
 import DecryptRecords from '@/pages/DecryptRecords';
@@ -14,11 +16,28 @@ import AdminPage from '@/pages/AdminPage';
 import SarcophagusTerminal from '@/pages/SarcophagusTerminal';
 import './App.css';
 
+// 全局 spoiler 点击固定显示（覆盖所有 dangerouslySetInnerHTML 渲染区域）
+function SpoilerClickHandler() {
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      const el = e.target as HTMLElement;
+      // 编辑器里已有自己的 click handler，这里只处理显示端
+      if (el.closest('[contenteditable]')) return;
+      const spoiler = el.closest('.spoiler-text') as HTMLElement | null;
+      if (spoiler) spoiler.classList.toggle('revealed');
+    };
+    document.addEventListener('click', handler);
+    return () => document.removeEventListener('click', handler);
+  }, []);
+  return null;
+}
+
 function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background">
+      <NotificationTicker />
       <Navbar />
-      <main className="pt-0">
+      <main className="pt-0 page-enter">
         {children}
       </main>
     </div>
@@ -29,6 +48,7 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <SpoilerClickHandler />
         <BackgroundMusic />
         <Routes>
           <Route path="/login" element={<LoginPage />} />

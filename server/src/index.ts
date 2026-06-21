@@ -10,6 +10,7 @@ import fileRoutes from './routes/files.js';
 import adminRoutes from './routes/admin.js';
 import messageRoutes from './routes/messages.js';
 import commentRoutes from './routes/comments.js';
+import likeRoutes from './routes/likes.js';
 import sarcophagusRoutes from './routes/sarcophagus.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -35,6 +36,7 @@ app.use('/api/files', fileRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/comments', commentRoutes);
+app.use('/api/likes', likeRoutes);
 app.use('/api/sarcophagus', sarcophagusRoutes);
 
 // Serve uploaded avatars as static files

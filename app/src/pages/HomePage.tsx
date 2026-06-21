@@ -4,6 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
 import { apiGet } from '@/api/client';
+import { LikeButton } from '@/components/LikeButton';
+import { CountingNumber } from '@/components/CountingNumber';
+import { StatCardSkeleton, RecordCardSkeleton } from '@/components/Skeleton';
 import {
   FileText,
   Puzzle,
@@ -14,9 +17,12 @@ import {
   ChevronRight,
   Sparkles,
   Terminal,
-  Loader2,
   Pin,
   AlertTriangle,
+  Shield,
+  Database,
+  HardDrive,
+  Wifi,
 } from 'lucide-react';
 import type { DecryptRecord, Puzzle as PuzzleType } from '@/types';
 
@@ -52,8 +58,8 @@ export default function HomePage() {
           apiGet<any[]>('/wiki'),
           apiGet<any[]>('/admin/users').catch(() => []),
         ]);
-        setRecords(recs.slice(0, 5));
-        setPuzzles(puzs.slice(0, 5));
+        setRecords(recs);
+        setPuzzles(puzs);
         setWikiCount(wiki.length);
         setMemberCount(members.filter((u: any) => u.status === 'active').length);
       } catch {}
@@ -63,46 +69,116 @@ export default function HomePage() {
   }, []);
 
   if (loading) {
-    return <div className="min-h-screen bg-background hex-grid-bg flex items-center justify-center"><Loader2 className="h-8 w-8 text-primary animate-spin" /></div>;
+    return (
+      <div className="min-h-screen bg-background hex-grid-bg">
+        <div className="container mx-auto max-w-7xl px-4 py-8 space-y-8">
+          {/* Hero skeleton */}
+          <div className="glass-card rounded-2xl p-8 animate-pulse space-y-4">
+            <div className="skeleton h-8 w-64" />
+            <div className="skeleton h-4 w-96" />
+          </div>
+          {/* Stats skeleton */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[...Array(4)].map((_, i) => <StatCardSkeleton key={i} />)}
+          </div>
+          {/* Content skeleton */}
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="space-y-3">
+              <div className="skeleton h-6 w-32" />
+              {[...Array(3)].map((_, i) => <RecordCardSkeleton key={i} />)}
+            </div>
+            <div className="space-y-3">
+              <div className="skeleton h-6 w-32" />
+              {[...Array(3)].map((_, i) => <RecordCardSkeleton key={i} />)}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="min-h-screen bg-background hex-grid-bg">
       <div className="container mx-auto max-w-7xl px-4 py-8">
-        {/* Hero Section */}
-        <div className="relative mb-12">
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-accent/5 to-primary/5 rounded-2xl blur-xl" />
-          <div className="relative glass-card rounded-2xl p-8 border-glow stone-texture">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="h-12 w-12 rounded-xl bg-primary/10 border border-primary/30 flex items-center justify-center originium-pulse">
-                <Terminal className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-glow-cyan">
-                  欢迎回来，{user?.username}
-                </h1>
-                <p className="text-sm text-muted-foreground mono-text">
-                  &gt; sarcophagus.org.cn // 罗德岛解密数据库在线
+        {/* Hero Section — Immersive Banner */}
+        <div className="relative mb-10 overflow-hidden rounded-2xl">
+          {/* Background decoration: large rhombus core */}
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.06] via-accent/[0.03] to-transparent" />
+          <div className="absolute -top-20 -right-20 w-80 h-80 rounded-full bg-primary/[0.04] blur-3xl" />
+          <div className="absolute -bottom-16 -left-16 w-64 h-64 rounded-full bg-accent/[0.03] blur-3xl" />
+
+          <div className="relative glass-card rounded-2xl p-6 sm:p-8 border-glow stone-texture">
+            <div className="flex flex-col lg:flex-row gap-6 lg:items-start">
+              {/* Left: Welcome & Terminal Icon */}
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="h-12 w-12 rounded-xl bg-primary/10 border border-primary/30 flex items-center justify-center originium-pulse">
+                    <Terminal className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <h1 className="text-xl sm:text-2xl font-bold text-glow-cyan">
+                      欢迎回来，<span className="text-primary">{user?.username}</span>
+                    </h1>
+                    <p className="text-xs sm:text-sm text-muted-foreground mono-text mt-0.5">
+                      &gt; sarcophagus.org.cn // 罗德岛解密数据库在线
+                    </p>
+                  </div>
+                </div>
+                {/* Quick summary */}
+                <p className="text-sm text-muted-foreground/70 mt-3 max-w-xl leading-relaxed">
+                  当前数据库中包含 <span className="text-primary font-medium">{records.length}</span> 条解密记录、
+                  <span className="text-accent font-medium">{puzzles.length}</span> 个谜题、
+                  <span className="text-amber-400 font-medium">{wikiCount}</span> 个 Wiki 词条，
+                  <span className="text-green-400 font-medium">{memberCount}</span> 位活跃成员在线协作。
                 </p>
+              </div>
+
+              {/* Right: Status Panel — vertical data strip */}
+              <div className="lg:w-52 shrink-0 grid grid-cols-2 lg:grid-cols-1 gap-2">
+                {[
+                  { icon: Wifi, label: '终端在线', value: 'ONLINE', color: 'text-green-400' },
+                  { icon: Database, label: '数据库', value: 'v2.1', color: 'text-primary' },
+                  { icon: Shield, label: '加密协议', value: 'TLS-AES', color: 'text-amber-400' },
+                  { icon: HardDrive, label: '节点延迟', value: '< 12ms', color: 'text-muted-foreground' },
+                ].map((item, i) => (
+                  <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary/40 border border-border/20">
+                    <item.icon className={`h-3.5 w-3.5 ${item.color} shrink-0`} />
+                    <div className="min-w-0">
+                      <p className="text-[10px] text-muted-foreground truncate">{item.label}</p>
+                      <p className={`text-xs font-medium ${item.color} mono-text`}>{item.value}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
         </div>
 
-        {/* Stats Grid */}
+        {/* Stats Grid — with counting animation + progress bars */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           {[
-            { icon: FileText, label: '解密记录', value: records.length, color: 'text-primary', bg: 'bg-primary/10 border-primary/20' },
-            { icon: Puzzle, label: '自制谜题', value: puzzles.length, color: 'text-accent', bg: 'bg-accent/10 border-accent/20' },
-            { icon: BookOpen, label: 'Wiki词条', value: wikiCount, color: 'text-amber-400', bg: 'bg-amber-500/10 border-amber-500/20' },
-            { icon: Users, label: '成员', value: memberCount || '--', color: 'text-green-400', bg: 'bg-green-500/10 border-green-500/20' },
+            { icon: FileText, label: '解密记录', value: records.length, color: 'text-primary', bg: 'bg-primary/5 border-primary/15', barColor: 'bg-primary/40', iconBg: 'bg-primary/10' },
+            { icon: Puzzle, label: '自制谜题', value: puzzles.length, color: 'text-accent', bg: 'bg-accent/5 border-accent/15', barColor: 'bg-accent/40', iconBg: 'bg-accent/10' },
+            { icon: BookOpen, label: 'Wiki词条', value: wikiCount, color: 'text-amber-400', bg: 'bg-amber-500/5 border-amber-500/15', barColor: 'bg-amber-500/40', iconBg: 'bg-amber-500/10' },
+            { icon: Users, label: '活跃成员', value: memberCount || 0, color: 'text-green-400', bg: 'bg-green-500/5 border-green-500/15', barColor: 'bg-green-500/40', iconBg: 'bg-green-500/10' },
           ].map((stat, i) => (
-            <Card key={i} className={`${stat.bg} border backdrop-blur-sm`}>
-              <CardContent className="p-4 flex items-center gap-3">
-                <stat.icon className={`h-5 w-5 ${stat.color}`} />
-                <div>
-                  <p className="text-2xl font-bold">{stat.value}</p>
-                  <p className="text-xs text-muted-foreground">{stat.label}</p>
+            <Card key={i} className={`${stat.bg} border backdrop-blur-sm hover:-translate-y-1 transition-all duration-300 group overflow-hidden`}>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className={`h-9 w-9 rounded-lg ${stat.iconBg} flex items-center justify-center`}>
+                    <stat.icon className={`h-4.5 w-4.5 ${stat.color}`} />
+                  </div>
+                  <div>
+                    <p className={`text-2xl font-bold ${stat.color} mono-text animate-count-up`}>
+                      <CountingNumber value={stat.value} />
+                    </p>
+                    <p className="text-xs text-muted-foreground">{stat.label}</p>
+                  </div>
+                </div>
+                {/* Progress bar */}
+                <div className="mt-3 h-0.5 w-full bg-border/30 rounded-full overflow-hidden">
+                  <div className={`h-full ${stat.barColor} rounded-full transition-all duration-1000`}
+                    style={{ width: `${Math.min((stat.value as number / Math.max(records.length, puzzles.length, wikiCount, Number(memberCount), 1)) * 100, 100)}%` }} />
                 </div>
               </CardContent>
             </Card>
@@ -112,33 +188,39 @@ export default function HomePage() {
         {/* Content Grid */}
         <div className="grid md:grid-cols-2 gap-6">
           {/* Recent Records */}
-          <Card className="glass-card border-border/50">
-            <CardHeader className="flex flex-row items-center justify-between pb-3">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <FileText className="h-5 w-5 text-primary" />
+          <Card className="glass-card border-border/50 overflow-hidden">
+            <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-border/15">
+              <CardTitle className="text-base flex items-center gap-2">
+                <div className="h-7 w-7 rounded-md bg-primary/10 flex items-center justify-center">
+                  <FileText className="h-4 w-4 text-primary" />
+                </div>
                 近期解密记录
               </CardTitle>
-              <Link to="/records" className="text-xs text-primary hover:underline flex items-center gap-1">
+              <Link to="/records" className="text-xs text-primary hover:text-primary/80 flex items-center gap-1 transition-colors">
                 查看全部 <ChevronRight className="h-3 w-3" />
               </Link>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="p-0 divide-y divide-border/10">
               {records.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">暂无记录</p>
-              ) : records.map((record) => (
+                <p className="text-sm text-muted-foreground text-center py-10">暂无记录</p>
+              ) : records.slice(0, 5).map((record) => (
                 <Link
                   key={record.id}
                   to={`/records/${record.id}`}
-                  className="block p-3 rounded-lg border border-border/30 hover:border-primary/30 hover:bg-primary/5 transition-all duration-200"
+                  className={`block px-4 py-3 hover:bg-primary/[0.03] transition-all duration-200 group ${
+                    record.importance === 'critical' ? 'archive-band-critical' :
+                    record.importance === 'important' ? 'archive-band-important' :
+                    'archive-band-normal'
+                  }`}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
                         {record.pinned ? <Pin className="h-3 w-3 text-amber-400 shrink-0" /> : null}
                         {record.importance === 'critical' ? <AlertTriangle className="h-3 w-3 text-red-400 shrink-0" /> : null}
-                        <h4 className="text-sm font-medium truncate">{record.title}</h4>
+                        <h4 className="text-sm font-medium truncate group-hover:text-primary transition-colors">{record.title}</h4>
                       </div>
-                      <div className="flex items-center gap-2 mt-1.5">
+                      <div className="flex items-center gap-2 mt-1">
                         <Clock className="h-3 w-3 text-muted-foreground" />
                         <span className="text-xs text-muted-foreground">{record.date}</span>
                       </div>
@@ -147,42 +229,59 @@ export default function HomePage() {
                       {record.importance === 'critical' ? '关键' : record.importance === 'important' ? '重要' : '普通'}
                     </Badge>
                   </div>
+                  <div className="flex items-center gap-3 mt-1.5" onClick={e => e.preventDefault()}>
+                    <LikeButton entityType="record" entityId={record.id} likeCount={record.likeCount} size="sm" />
+                  </div>
                 </Link>
               ))}
             </CardContent>
           </Card>
 
           {/* Active Puzzles */}
-          <Card className="glass-card border-border/50">
-            <CardHeader className="flex flex-row items-center justify-between pb-3">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Puzzle className="h-5 w-5 text-accent" />
+          <Card className="glass-card border-border/50 overflow-hidden">
+            <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-border/15">
+              <CardTitle className="text-base flex items-center gap-2">
+                <div className="h-7 w-7 rounded-md bg-accent/10 flex items-center justify-center">
+                  <Puzzle className="h-4 w-4 text-accent" />
+                </div>
                 活跃谜题
               </CardTitle>
-              <Link to="/puzzles" className="text-xs text-accent hover:underline flex items-center gap-1">
+              <Link to="/puzzles" className="text-xs text-accent hover:text-accent/80 flex items-center gap-1 transition-colors">
                 查看全部 <ChevronRight className="h-3 w-3" />
               </Link>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="p-0 divide-y divide-border/10">
               {puzzles.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">暂无谜题</p>
-              ) : puzzles.map((puzzle) => (
+                <p className="text-sm text-muted-foreground text-center py-10">暂无谜题</p>
+              ) : puzzles.slice(0, 5).map((puzzle) => (
                 <Link
                   key={puzzle.id}
                   to="/puzzles"
-                  className="block p-3 rounded-lg border border-border/30 hover:border-accent/30 hover:bg-accent/5 transition-all duration-200"
+                  className={`block px-4 py-3 hover:bg-accent/[0.03] transition-all duration-200 group ${
+                    puzzle.status === 'solved' ? 'opacity-60' : ''
+                  }`}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-medium truncate">{puzzle.title}</h4>
-                      <p className="text-xs text-muted-foreground mt-1">by {puzzle.author}</p>
+                      <h4 className="text-sm font-medium truncate group-hover:text-accent transition-colors">{puzzle.title}</h4>
+                      <p className="text-xs text-muted-foreground mt-0.5">by {puzzle.author}</p>
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
                       <Badge variant="outline" className={`text-xs ${difficultyColors[puzzle.difficulty] || ''}`}>
                         {diffLabels[puzzle.difficulty] || puzzle.difficulty}
                       </Badge>
-                      <span className={`inline-block w-2 h-2 rounded-full ${puzzle.status === 'solved' ? 'bg-green-400' : 'bg-red-400'}`} />
+                      {/* Seal-style status */}
+                      <span className={`text-[10px] font-bold tracking-wider px-2 py-0.5 rounded-sm border ${
+                        puzzle.status === 'solved'
+                          ? 'text-green-400/70 border-green-500/20 bg-green-500/5'
+                          : 'text-red-400/70 border-red-500/20 bg-red-500/5'
+                      }`} style={{transform: 'rotate(-5deg)'}}>
+                        {puzzle.status === 'solved' ? 'SOLVED' : 'OPEN'}
+                      </span>
                     </div>
+                  </div>
+                  <div className="flex items-center gap-3 mt-1.5" onClick={e => e.preventDefault()}>
+                    <LikeButton entityType="puzzle" entityId={puzzle.id} likeCount={puzzle.likeCount} size="sm" />
                   </div>
                 </Link>
               ))}
@@ -190,28 +289,30 @@ export default function HomePage() {
           </Card>
         </div>
 
-        {/* Bottom Section */}
+        {/* Bottom Quick Links */}
         <div className="mt-8 glass-card rounded-2xl p-6 border-border/50 stone-texture">
-          <div className="flex items-center gap-2 mb-4">
+          <div className="flex items-center gap-2 mb-5">
             <Sparkles className="h-5 w-5 text-amber-400" />
-            <h3 className="text-lg font-semibold">快速入口</h3>
+            <h3 className="text-base font-semibold">快速入口</h3>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
-              { icon: FileText, label: '浏览记录', path: '/records', desc: '查看群内所有解密成果' },
-              { icon: Puzzle, label: '挑战谜题', path: '/puzzles', desc: '参与自制谜题解答' },
-              { icon: BookOpen, label: '查阅Wiki', path: '/wiki', desc: '浏览解密知识库' },
-              { icon: MessagesSquare, label: '留言板', path: '/messages', desc: '发表和查看留言' },
+              { icon: FileText, label: '浏览记录', path: '/records', desc: '查看群内解密成果', color: 'text-primary' },
+              { icon: Puzzle, label: '挑战谜题', path: '/puzzles', desc: '参与自制谜题解答', color: 'text-accent' },
+              { icon: BookOpen, label: '查阅Wiki', path: '/wiki', desc: '浏览解密知识库', color: 'text-amber-400' },
+              { icon: MessagesSquare, label: '留言板', path: '/messages', desc: '发表和查看留言', color: 'text-purple-400' },
             ].map((item, i) => {
               const Icon = item.icon;
               return (
                 <Link
                   key={i}
                   to={item.path}
-                  className="flex flex-col items-center text-center p-4 rounded-xl border border-border/30 hover:border-primary/30 hover:bg-primary/5 transition-all duration-200 group"
+                  className="flex flex-col items-center text-center p-4 rounded-xl border border-border/25 hover:border-primary/25 hover:bg-primary/[0.03] transition-all duration-200 group"
                 >
-                  <Icon className="h-6 w-6 text-muted-foreground group-hover:text-primary transition-colors mb-2" />
-                  <span className="text-sm font-medium">{item.label}</span>
+                  <div className={`h-9 w-9 rounded-lg bg-secondary/50 flex items-center justify-center mb-2 group-hover:bg-secondary transition-colors`}>
+                    <Icon className={`h-4.5 w-4.5 text-muted-foreground group-hover:${item.color} transition-colors`} />
+                  </div>
+                  <span className="text-sm font-medium group-hover:text-foreground transition-colors">{item.label}</span>
                   <span className="text-xs text-muted-foreground mt-1">{item.desc}</span>
                 </Link>
               );

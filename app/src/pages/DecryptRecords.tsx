@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { LikeButton } from '@/components/LikeButton';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
@@ -10,11 +11,12 @@ import {
 } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RichTextEditor, htmlToSummary } from '@/components/RichTextEditor';
+import { RecordCardSkeleton } from '@/components/Skeleton';
 import { apiGet, apiPost, apiDelete, apiUpload } from '@/api/client';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   FileText, Plus, Search, User, Tag, Filter, ArrowUpDown,
-  Calendar, AlertTriangle, Paperclip, Sparkles, ArrowRight, Loader2,
+  Calendar, AlertTriangle, Paperclip, Sparkles, ArrowRight,
   Pin, Trash2,
 } from 'lucide-react';
 import type { DecryptRecord } from '@/types';
@@ -104,11 +106,18 @@ export default function DecryptRecords() {
   };
 
   if (loading) {
-    return <div className="min-h-screen bg-background hex-grid-bg flex items-center justify-center"><Loader2 className="h-8 w-8 text-primary animate-spin" /></div>;
+    return (
+      <div className="min-h-screen bg-background archive-bg">
+        <div className="container mx-auto max-w-5xl px-4 py-8 space-y-3">
+          <div className="skeleton h-8 w-48 mb-6" />
+          {[...Array(5)].map((_, i) => <RecordCardSkeleton key={i} />)}
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-background hex-grid-bg">
+    <div className="min-h-screen bg-background archive-bg">
       <div className="container mx-auto max-w-5xl px-4 py-8">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
           <div><h1 className="text-2xl font-bold text-glow-cyan flex items-center gap-2"><FileText className="h-6 w-6 text-primary" />解密记录</h1><p className="text-sm text-muted-foreground mt-1 mono-text">&gt; 共 {records.length} 条记录</p></div>
@@ -141,7 +150,13 @@ export default function DecryptRecords() {
         <div className="space-y-3">
           {sorted.length === 0 ? <Card className="glass-card border-border/50"><CardContent className="p-12 text-center"><FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-30" /><p className="text-muted-foreground">暂无解密记录</p></CardContent></Card>
             : sorted.map(record => (
-            <Card key={record.id} className={`glass-card border-border/50 hover:border-primary/30 hover:bg-primary/[0.03] transition-all duration-200 group ${record.pinned ? 'border-amber-500/30 bg-amber-500/[0.02]' : ''}`}>
+            <Card key={record.id} className={`glass-card border-border/50 hover:border-primary/20 transition-all duration-200 group overflow-hidden relative ${
+              record.pinned ? 'border-amber-500/30 bg-amber-500/[0.02]' : ''
+            } ${
+              record.importance === 'critical' ? 'archive-band-critical' :
+              record.importance === 'important' ? 'archive-band-important' :
+              'archive-band-normal'
+            }`}>
               <CardContent className="p-5">
                 <div className="flex items-start gap-4">
                   <div className="shrink-0 mt-1">{record.importance === 'critical' ? <AlertTriangle className="h-5 w-5 text-red-400" /> : record.pinned ? <Pin className="h-5 w-5 text-amber-400" /> : <FileText className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />}</div>
@@ -153,6 +168,9 @@ export default function DecryptRecords() {
                       <span className="flex items-center gap-1"><User className="h-3 w-3" />{record.author}</span>
                       {(record.tags || []).slice(0, 3).map((tag: string) => <span key={tag} className="flex items-center gap-1 text-primary/60"><Tag className="h-3 w-3" />{tag}</span>)}
                       {record.attachments?.length > 0 && <span className="flex items-center gap-1"><Paperclip className="h-3 w-3" />{record.attachments.length}</span>}
+                    </div>
+                    <div className="mt-2" onClick={e => e.stopPropagation()}>
+                      <LikeButton entityType="record" entityId={record.id} likeCount={record.likeCount} size="sm" />
                     </div>
                   </div>
                   <div className="shrink-0 flex items-center gap-1">

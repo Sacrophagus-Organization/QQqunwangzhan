@@ -152,6 +152,9 @@ router.post('/codes', authMiddleware, adminOnly, upload.single('file'), (req: Au
     return;
   }
 
+  // latin1 → utf8 修正中文文件名
+  const fileName = Buffer.from(file.originalname, 'latin1').toString('utf8');
+
   const existing = db.prepare('SELECT id FROM sarcophagus_codes WHERE code = ?').get(code.trim().toUpperCase());
   if (existing) {
     // Clean up uploaded file
@@ -163,9 +166,9 @@ router.post('/codes', authMiddleware, adminOnly, upload.single('file'), (req: Au
   const id = 'sarco-' + uuid().slice(0, 8);
   db.prepare(
     'INSERT INTO sarcophagus_codes (id, code, file_name, file_path) VALUES (?, ?, ?, ?)'
-  ).run(id, code.trim().toUpperCase(), file.originalname, file.path);
+  ).run(id, code.trim().toUpperCase(), fileName, file.path);
 
-  res.json({ id, code: code.trim().toUpperCase(), fileName: file.originalname });
+  res.json({ id, code: code.trim().toUpperCase(), fileName });
 });
 
 // Update code (optional file re-upload)
@@ -192,10 +195,11 @@ router.put('/codes/:id', authMiddleware, adminOnly, upload.single('file'), (req:
   }
 
   if (file) {
+    const fileName = Buffer.from(file.originalname, 'latin1').toString('utf8');
     // Delete old file
     try { fs.unlinkSync(existing.file_path); } catch {}
     db.prepare('UPDATE sarcophagus_codes SET file_name = ?, file_path = ?, updated_at = datetime("now") WHERE id = ?')
-      .run(file.originalname, file.path, req.params.id);
+      .run(fileName, file.path, req.params.id);
   }
 
   res.json({ success: true });

@@ -118,6 +118,16 @@ db.exec(`
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 
+  CREATE TABLE IF NOT EXISTS likes (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    entity_type TEXT NOT NULL,
+    entity_id TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE(user_id, entity_type, entity_id)
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_likes_entity ON likes(entity_type, entity_id);
   CREATE INDEX IF NOT EXISTS idx_comments_entity ON comments(entity_type, entity_id);
   CREATE INDEX IF NOT EXISTS idx_attachments_entity ON attachments(entity_type, entity_id);
 `);
@@ -134,6 +144,8 @@ try { db.exec('ALTER TABLE puzzles ADD COLUMN sort_order INTEGER NOT NULL DEFAUL
 try { db.exec('ALTER TABLE messages ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0'); console.log('[DB] Added pinned column to messages'); } catch {}
 try { db.exec('ALTER TABLE messages ADD COLUMN updated_at TEXT NOT NULL DEFAULT (datetime(\"now\"))'); console.log('[DB] Added updated_at column to messages'); } catch {}
 try { db.exec('ALTER TABLE users ADD COLUMN avatar_url TEXT NOT NULL DEFAULT \"\"'); console.log('[DB] Added avatar_url column to users'); } catch {}
+try { db.exec('ALTER TABLE users ADD COLUMN requested_role TEXT NOT NULL DEFAULT \"\"'); console.log('[DB] Added requested_role column to users'); } catch {}
+try { db.exec('ALTER TABLE users ADD COLUMN requested_role_reason TEXT NOT NULL DEFAULT \"\"'); console.log('[DB] Added requested_role_reason column to users'); } catch {}
 
 // Seed admin
 const existingAdmin = db.prepare('SELECT id FROM users WHERE username = ?').get('Admin');

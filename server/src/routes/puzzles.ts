@@ -7,8 +7,10 @@ const router = Router();
 router.use(authMiddleware);
 
 router.get('/', (_req: AuthRequest, res) => {
-  const rows = db.prepare('SELECT * FROM puzzles ORDER BY created_at DESC').all() as any[];
-  res.json(rows.map(r => ({ ...r, tags: JSON.parse(r.tags || '[]'), attachments: getAtts('puzzle', r.id) })));
+  const rows = db.prepare(
+    "SELECT p.*, (SELECT COUNT(*) FROM likes WHERE entity_type='puzzle' AND entity_id=p.id) as like_count FROM puzzles p ORDER BY p.created_at DESC"
+  ).all() as any[];
+  res.json(rows.map(r => ({ ...r, likeCount: r.like_count, tags: JSON.parse(r.tags || '[]'), attachments: getAtts('puzzle', r.id) })));
 });
 
 router.get('/:id', (req: AuthRequest, res) => {

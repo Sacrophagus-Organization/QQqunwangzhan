@@ -9,7 +9,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RichTextEditor } from '@/components/RichTextEditor';
 import { apiGet, apiPost, apiPut, apiDelete, apiUpload } from '@/api/client';
-import { BookOpen, Plus, Search, User, Tag, Clock, Bookmark, Sparkles, ChevronDown, Filter, Code2, Binary, Hash, Globe, FileCode, Paperclip, Download, Edit3, Save, Loader2, Trash2 } from 'lucide-react';
+import { LikeButton } from '@/components/LikeButton';
+import { BookOpen, Plus, Search, User, Tag, Clock, Bookmark, Sparkles, ChevronDown, Filter, Code2, Binary, Hash, Globe, FileCode, Paperclip, Download, Edit3, Save, Trash2 } from 'lucide-react';
 import type { WikiEntry, FileAttachment } from '@/types';
 
 const wikiCategories = [
@@ -74,10 +75,19 @@ export default function DecryptWiki() {
 
   const downloadAtt = (a: FileAttachment) => { const el = document.createElement('a'); el.href = a.dataUrl; el.download = a.name; el.click(); };
 
-  if (loading) return <div className="min-h-screen bg-background hex-grid-bg flex items-center justify-center"><Loader2 className="h-8 w-8 text-amber-400 animate-spin" /></div>;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background book-spine-bg">
+        <div className="container mx-auto max-w-7xl px-4 py-8 space-y-4">
+          <div className="skeleton h-8 w-48 mb-6" />
+          {[...Array(4)].map((_, i) => <div key={i} className="glass-card border-border/50 p-5 space-y-3"><div className="skeleton h-5 w-48" /><div className="skeleton h-4 w-full" /><div className="skeleton h-4 w-2/3" /></div>)}
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-background hex-grid-bg">
+    <div className="min-h-screen bg-background book-spine-bg">
       <div className="container mx-auto max-w-7xl px-4 py-8">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
           <div><h1 className="text-2xl font-bold text-glow-cyan flex items-center gap-2"><BookOpen className="h-6 w-6 text-amber-400" />解密Wiki</h1><p className="text-sm text-muted-foreground mt-1 mono-text">&gt; 词条总数: {entries.length}</p></div>
@@ -104,9 +114,23 @@ export default function DecryptWiki() {
           <div className="flex-1 space-y-4">
             {filtered.length === 0 ? <Card className="glass-card border-border/50"><CardContent className="p-12 text-center"><BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-30" /><p className="text-muted-foreground">暂无相关词条</p></CardContent></Card>
               : filtered.map(entry => (
-              <Card key={entry.id} className="glass-card border-border/50 hover:border-amber-500/20 transition-all duration-200">
-                <CardHeader className="pb-3 cursor-pointer" onClick={() => setExpanded(expanded === entry.id ? null : entry.id)}>
-                  <div className="flex items-start justify-between gap-4"><div className="flex-1"><CardTitle className="text-lg">{entry.title}</CardTitle><div className="flex flex-wrap items-center gap-3 mt-2"><Badge variant="secondary" className="text-xs"><Bookmark className="h-3 w-3 mr-1" />{entry.category}</Badge><span className="flex items-center gap-1 text-xs text-muted-foreground"><User className="h-3 w-3" />{entry.author}</span><span className="flex items-center gap-1 text-xs text-muted-foreground"><Clock className="h-3 w-3" />{entry.lastUpdated?.split('T')[0]}</span>{entry.attachments?.length > 0 && <span className="flex items-center gap-1 text-xs text-muted-foreground"><Paperclip className="h-3 w-3" />{entry.attachments.length}</span>}</div></div><ChevronDown className={`h-5 w-5 text-muted-foreground transition-transform ${expanded === entry.id ? 'rotate-180' : ''}`} /></div>
+              <Card key={entry.id} className={`glass-card border-border/50 hover:border-amber-500/20 transition-all duration-200 overflow-hidden ${
+                expanded === entry.id ? 'border-amber-500/30 ring-1 ring-amber-500/5' : ''
+              }`}>
+                <CardHeader className="pb-3 cursor-pointer select-none" onClick={() => setExpanded(expanded === entry.id ? null : entry.id)}>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <CardTitle className="text-base group-hover:text-amber-400 transition-colors">{entry.title}</CardTitle>
+                      <div className="flex flex-wrap items-center gap-3 mt-2">
+                        <Badge variant="secondary" className="text-xs"><Bookmark className="h-3 w-3 mr-1" />{entry.category}</Badge>
+                        <span className="flex items-center gap-1 text-xs text-muted-foreground"><User className="h-3 w-3" />{entry.author}</span>
+                        <span className="flex items-center gap-1 text-xs text-muted-foreground"><Clock className="h-3 w-3" />{entry.lastUpdated?.split('T')[0]}</span>
+                        {entry.attachments?.length > 0 && <span className="flex items-center gap-1 text-xs text-muted-foreground"><Paperclip className="h-3 w-3" />{entry.attachments.length}</span>}
+                        <div onClick={e => e.stopPropagation()}><LikeButton entityType="wiki" entityId={entry.id} likeCount={entry.likeCount} size="sm" /></div>
+                      </div>
+                    </div>
+                    <ChevronDown className={`h-5 w-5 text-muted-foreground shrink-0 transition-transform duration-300 ${expanded === entry.id ? 'rotate-180 text-amber-400' : ''}`} />
+                  </div>
                 </CardHeader>
                 {expanded === entry.id && <CardContent className="pt-0 border-t border-border/30">
                   <div className="mt-4"><div className="text-sm bg-secondary/20 rounded-lg p-4 border border-border/20 rich-editor-content" dangerouslySetInnerHTML={{ __html: entry.content }} /></div>

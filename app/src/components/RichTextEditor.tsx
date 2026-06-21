@@ -28,16 +28,51 @@ const COLORS = [
   '#f87171', '#fb923c', '#f472b6', '#94a3b8', '#ffffff',
 ];
 
-function insertSpoiler(doc: Document) {
+function insertSpoiler(doc: Document, editorEl?: HTMLElement | null) {
   const sel = doc.getSelection();
   if (!sel || sel.isCollapsed) return;
   const range = sel.getRangeAt(0);
+
+  // 如果光标已在 spoiler 内 → 取消马赛克（unwrap）
+  const existingSpoiler = sel.anchorNode?.parentElement?.closest('.spoiler-text');
+  if (existingSpoiler) {
+    const parent = existingSpoiler.parentNode;
+    if (!parent) return;
+    while (existingSpoiler.firstChild) {
+      parent.insertBefore(existingSpoiler.firstChild, existingSpoiler);
+    }
+    parent.removeChild(existingSpoiler);
+    parent.normalize();
+    return;
+  }
+
+  // 创建 spoiler span，保留富文本格式
   const span = doc.createElement('span');
   span.className = 'spoiler-text';
-  span.textContent = range.toString();
-  range.deleteContents();
+  span.setAttribute('data-spoiler', 'true');
+  span.addEventListener('click', (e) => {
+    e.stopPropagation();
+    span.classList.toggle('revealed');
+  });
+
+  // 用 extractContents 保留选区内的 HTML 格式
+  const fragment = range.extractContents();
+  span.appendChild(fragment);
   range.insertNode(span);
+
+  // 在 spoiler 后面插入零宽空格作为光标锚点
+  const cursorAnchor = doc.createTextNode('\u200B');
+  span.after(cursorAnchor);
+
+  // 光标放到锚点之后
+  const newRange = doc.createRange();
+  newRange.setStartAfter(cursorAnchor);
+  newRange.collapse(true);
   sel.removeAllRanges();
+  sel.addRange(newRange);
+
+  // 强制聚焦编辑器
+  if (editorEl) editorEl.focus();
 }
 
 function insertImagePlaceholder(doc: Document) {
@@ -179,7 +214,7 @@ export function RichTextEditor({
     setShowColor(false);
   };
   const handleSpoiler = () => {
-    insertSpoiler(document);
+    insertSpoiler(document, editorRef.current);
     handleInput();
   };
   const handleImage = () => {

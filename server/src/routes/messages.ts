@@ -9,7 +9,8 @@ router.use(authMiddleware);
 // GET / — 获取全部留言，按置顶优先 + 时间倒序
 router.get('/', (_req: AuthRequest, res) => {
   const rows = db.prepare(`
-    SELECT m.*, u.avatar_url
+    SELECT m.*, u.avatar_url,
+      (SELECT COUNT(*) FROM likes WHERE entity_type='message' AND entity_id=m.id) as like_count
     FROM messages m
     LEFT JOIN users u ON m.author_id = u.id
     ORDER BY m.pinned DESC, m.created_at DESC
@@ -21,6 +22,7 @@ router.get('/', (_req: AuthRequest, res) => {
     author: r.author,
     authorId: r.author_id,
     authorAvatar: r.avatar_url ? '/' + r.avatar_url : '',
+    likeCount: r.like_count,
     pinned: r.pinned || 0,
     createdAt: r.created_at,
     updatedAt: r.updated_at || r.created_at,

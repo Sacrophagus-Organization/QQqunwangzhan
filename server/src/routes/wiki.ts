@@ -7,8 +7,10 @@ const router = Router();
 router.use(authMiddleware);
 
 router.get('/', (_req: AuthRequest, res) => {
-  const rows = db.prepare('SELECT * FROM wiki_entries ORDER BY pinned DESC, sort_order ASC, created_at DESC').all() as any[];
-  res.json(rows.map(r => ({ ...r, tags: JSON.parse(r.tags || '[]'), attachments: getAtts('wiki', r.id) })));
+  const rows = db.prepare(
+    "SELECT w.*, (SELECT COUNT(*) FROM likes WHERE entity_type='wiki' AND entity_id=w.id) as like_count FROM wiki_entries w ORDER BY w.pinned DESC, w.sort_order ASC, w.created_at DESC"
+  ).all() as any[];
+  res.json(rows.map(r => ({ ...r, likeCount: r.like_count, tags: JSON.parse(r.tags || '[]'), attachments: getAtts('wiki', r.id) })));
 });
 
 router.get('/:id', (req: AuthRequest, res) => {

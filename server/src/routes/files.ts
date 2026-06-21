@@ -29,10 +29,12 @@ router.post('/', authMiddleware, upload.array('files', 10), (req: AuthRequest, r
   if (!files || files.length === 0) { res.status(400).json({ error: '请选择文件' }); return; }
   const attachments = files.map(f => {
     const id = 'file-' + uuid().slice(0, 8);
+    // multer 的 originalname 可能被 latin1 误编码，转回 utf8
+    const name = Buffer.from(f.originalname, 'latin1').toString('utf8');
     db.prepare('INSERT INTO attachments (id, entity_type, entity_id, name, size, mime_type, file_path) VALUES (?, ?, ?, ?, ?, ?, ?)').run(
-      id, entityType || 'general', entityId || '', f.originalname, f.size, f.mimetype, f.path
+      id, entityType || 'general', entityId || '', name, f.size, f.mimetype, f.path
     );
-    return { id, name: f.originalname, size: f.size, type: f.mimetype, dataUrl: `/api/files/${id}`, uploadedAt: new Date().toISOString() };
+    return { id, name, size: f.size, type: f.mimetype, dataUrl: `/api/files/${id}`, uploadedAt: new Date().toISOString() };
   });
   res.json(attachments);
 });

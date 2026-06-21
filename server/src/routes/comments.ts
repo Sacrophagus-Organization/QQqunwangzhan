@@ -16,6 +16,7 @@ const mapComment = (r: any) => ({
   author: r.author,
   authorId: r.author_id,
   authorAvatar: r.avatar_url ? '/' + r.avatar_url : '',
+  likeCount: r.like_count,
   createdAt: r.created_at,
 });
 
@@ -27,7 +28,8 @@ router.get('/', (req: AuthRequest, res) => {
     return;
   }
   const rows = db.prepare(
-    `SELECT c.*, u.avatar_url
+    `SELECT c.*, u.avatar_url,
+      (SELECT COUNT(*) FROM likes WHERE entity_type='comment' AND entity_id=c.id) as like_count
      FROM comments c
      LEFT JOIN users u ON c.author_id = u.id
      WHERE c.entity_type = ? AND c.entity_id = ?

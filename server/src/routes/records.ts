@@ -11,9 +11,12 @@ router.use(authMiddleware);
 
 // Get all records
 router.get('/', (_req: AuthRequest, res) => {
-  const rows = db.prepare('SELECT * FROM records ORDER BY pinned DESC, sort_order ASC, date DESC').all() as any[];
+  const rows = db.prepare(
+    "SELECT r.*, (SELECT COUNT(*) FROM likes WHERE entity_type='record' AND entity_id=r.id) as like_count FROM records r ORDER BY r.pinned DESC, r.sort_order ASC, r.date DESC"
+  ).all() as any[];
   const records = rows.map(r => ({
     ...r,
+    likeCount: r.like_count,
     tags: JSON.parse(r.tags || '[]'),
     attachments: getAttachments('record', r.id),
   }));
@@ -22,9 +25,11 @@ router.get('/', (_req: AuthRequest, res) => {
 
 // Get single record
 router.get('/:id', (req: AuthRequest, res) => {
-  const row = db.prepare('SELECT * FROM records WHERE id = ?').get(req.params.id) as any;
+  const row = db.prepare(
+    "SELECT r.*, (SELECT COUNT(*) FROM likes WHERE entity_type='record' AND entity_id=r.id) as like_count FROM records r WHERE id = ?"
+  ).get(req.params.id) as any;
   if (!row) { res.status(404).json({ error: '记录不存在' }); return; }
-  res.json({ ...row, tags: JSON.parse(row.tags || '[]'), attachments: getAttachments('record', row.id) });
+  res.json({ ...row, likeCount: row.like_count, tags: JSON.parse(row.tags || '[]'), attachments: getAttachments('record', row.id) });
 });
 
 // Create record

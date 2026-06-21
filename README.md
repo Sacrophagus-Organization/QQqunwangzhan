@@ -9,14 +9,15 @@
 ## 功能
 
 - 🔐 **JWT 认证 + 注册审核** — 新用户注册后需管理员审核通过
-- 📝 **解密记录** — 富文本编辑，附件上传，含 PV4 全阶段解密归档
-- 🧩 **自制谜题** — 创建/发布谜题，提交答案自动判定
-- 📚 **解密Wiki** — 密码学知识库，分类浏览
-- 💬 **留言板 + 评论区** — 富文本编辑，嵌套回复，评论折叠
+- 📝 **解密记录** — 富文本编辑，马赛克/图片/链接插入，附件上传，含 PV4 全阶段解密归档
+- 🧩 **自制谜题** — 创建/发布谜题，提交答案自动判定，威胁等级+印章状态展示
+- 📚 **解密Wiki** — 密码学知识库，分类浏览，词条折叠展开
+- 💬 **留言板 + 评论区** — 富文本编辑，点赞，嵌套回复，评论折叠
+- 👍 **点赞系统** — 记录/谜题/Wiki/留言/评论全实体通用 LikeButton
 - 🛡️ **管理员面板** — 审核用户、管理内容（`/lynchpin-admin`）
 - 🖥️ **石棺彩蛋** — CRT 终端解密页面，访问代码验证，自运行程序效果
 - 🎵 **BGM 系统** — 赛博朋克风背景音乐，路由切换，循环+间隔播放
-- 🖼️ **用户头像** — 上传+拖拽裁剪，全站统一展示
+- 🖼️ **用户头像** — 上传+拖拽定位+缩放裁剪，CSS transform + Canvas 两步渲染
 
 ---
 
@@ -99,11 +100,16 @@ bash verify.sh
 │   │   └── assets/audio/  # BGM 音频文件
 │   └── src/
 │       ├── components/    # 组件（Navbar, RichTextEditor, shadcn/ui 等）
-│       │   ├── AvatarDisplay.tsx    # 通用头像组件
-│       │   ├── AvatarUpload.tsx     # 头像上传+裁剪
-│       │   ├── BackgroundMusic.tsx  # 全局 BGM 管理
-│       │   ├── TerminalAutopilot.tsx # 终端自运行程序
-│       │   └── CommentSection.tsx   # 评论区（含折叠）
+│       │   ├── AvatarDisplay.tsx      # 通用头像组件
+│       │   ├── AvatarUpload.tsx       # 头像上传+拖动缩放裁剪
+│       │   ├── BackgroundMusic.tsx    # 全局 BGM 管理
+│       │   ├── NotificationTicker.tsx # 顶部站点信息滚动条
+│       │   ├── CountingNumber.tsx     # 数字计数动画
+│       │   ├── Skeleton.tsx           # 骨架屏加载组件
+│       │   ├── LikeButton.tsx         # 通用点赞按钮
+│       │   ├── RoleApply.tsx          # 角色申请组件
+│       │   ├── TerminalAutopilot.tsx  # 终端自运行程序
+│       │   └── CommentSection.tsx     # 评论区（含折叠）
 │       ├── pages/         # 页面
 │       │   ├── HomePage.tsx / LoginPage.tsx
 │       │   ├── MessageBoard.tsx     # 留言板
@@ -123,6 +129,16 @@ bash verify.sh
 ---
 
 ## 更新日志
+
+### 2026-06-22 — 前端视觉全面升级 + 头像裁剪重写
+
+- 🎨 **6 项视觉美化**：全宽沉浸式 Hero（状态面板+计数动画+进度条）/ 谜题威胁等级条+印章状态 / 解密记录档案色带+扫描线 / 统一骨架屏 / 页面入场淡入动画 / 全局通知滚动条
+- ♿ **A11y 增强**：`prefers-reduced-motion` 媒体查询，动效敏感用户自动停用全部动画
+- 🎯 **10 个新动画 Keyframe** 统一注册到 Tailwind config（fade-in-up / count-up / archive-scan / threat-pulse / seal-stamp 等）
+- 🎨 **差异化页面背景**：首页 hex-grid / 记录 archive-bg 扫描线 / 谜题 grid-dot 坐标纸 / Wiki book-spine 书脊 / 留言板 warm-glow 径向光晕
+- 🖼️ **头像裁剪完全重写**：修复 zoom + 拖动后坐标映射错误，采用 CSS `transform:scale` + 两步 Canvas 渲染方案
+- 🖊️ **马赛克功能修复**：CSS 简化为纯涂黑无溢出 / 零宽空格光标锚点 / 点击固定显示 / 重复按下取消马赛克 / 保留富文本格式
+- 👍 **点赞系统**：LikeButton 通用组件，支持记录/谜题/Wiki/留言/评论全实体
 
 ### 2026-06-21 #2 — BGM · 头像 · 评论折叠 · 终端自运行
 

@@ -135,6 +135,108 @@
     );
   }
 
+  /* Differentiated page backgrounds */
+  /* 解密记录 → 档案卷宗扫描线 */
+  .archive-bg {
+    background-image:
+      repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0, 210, 245, 0.012) 2px,
+        rgba(0, 210, 245, 0.012) 4px
+      ),
+      linear-gradient(rgba(0, 210, 245, 0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 210, 245, 0.02) 1px, transparent 1px);
+    background-size: 100% 4px, 60px 60px, 60px 60px;
+    background-position: center center;
+  }
+  /* 谜题 → 点阵坐标纸 */
+  .grid-dot-bg {
+    background-image: radial-gradient(circle, rgba(245, 158, 11, 0.06) 1px, transparent 1px);
+    background-size: 24px 24px;
+    background-position: center center;
+  }
+  /* Wiki → 对角条纹书脊 */
+  .book-spine-bg {
+    background-image:
+      repeating-linear-gradient(
+        -30deg,
+        transparent,
+        transparent 8px,
+        rgba(245, 158, 11, 0.012) 8px,
+        rgba(245, 158, 11, 0.012) 10px
+      ),
+      radial-gradient(ellipse at 15% 50%, rgba(0, 210, 245, 0.03) 0%, transparent 60%);
+  }
+  /* 留言板 → 柔和径向光晕 */
+  .warm-glow-bg {
+    background-image:
+      radial-gradient(ellipse at 50% 0%, rgba(245, 158, 11, 0.04) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 100%, rgba(0, 210, 245, 0.03) 0%, transparent 50%),
+      radial-gradient(ellipse at 20% 70%, rgba(139, 92, 246, 0.02) 0%, transparent 40%);
+  }
+
+  /* Page entry animation */
+  .page-enter {
+    animation: fade-in-up 0.5s ease-out both;
+  }
+  @keyframes fade-in-up {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Skeleton shimmer */
+  .skeleton {
+    background: linear-gradient(90deg, hsl(230, 18%, 10%) 25%, hsl(230, 18%, 15%) 50%, hsl(230, 18%, 10%) 75%);
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 2s linear infinite;
+    border-radius: var(--radius);
+  }
+  @keyframes skeleton-shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  /* Archive card vertical color band */
+  .archive-band-normal { border-left: 3px solid hsl(230, 18%, 18%); }
+  .archive-band-important { border-left: 3px solid rgba(245, 158, 11, 0.5); }
+  .archive-band-critical { border-left: 3px solid rgba(239, 68, 68, 0.5); }
+
+  /* Threat level bar gradient */
+  .threat-bar-easy { background: linear-gradient(90deg, rgba(74, 222, 128, 0.6), rgba(74, 222, 128, 0.05)); }
+  .threat-bar-medium { background: linear-gradient(90deg, rgba(250, 204, 21, 0.6), rgba(250, 204, 21, 0.05)); }
+  .threat-bar-hard { background: linear-gradient(90deg, rgba(251, 146, 60, 0.6), rgba(251, 146, 60, 0.05)); }
+  .threat-bar-extreme { background: linear-gradient(90deg, rgba(239, 68, 68, 0.6), rgba(239, 68, 68, 0.05)); }
+
+  /* Seal stamp style */
+  .seal-stamp {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    border: 2px dashed;
+    border-radius: 3px;
+    transform: rotate(-8deg);
+    opacity: 0.8;
+    pointer-events: none;
+  }
+  .seal-solved {
+    color: rgba(74, 222, 128, 0.8);
+    border-color: rgba(74, 222, 128, 0.4);
+    background: rgba(74, 222, 128, 0.05);
+  }
+  .seal-unsolved {
+    color: rgba(239, 68, 68, 0.7);
+    border-color: rgba(239, 68, 68, 0.3);
+    background: rgba(239, 68, 68, 0.04);
+  }
+
   /* Arknights-style scrollbar */
   ::-webkit-scrollbar {
     width: 6px;
@@ -166,34 +268,16 @@
   background: #1a1a2e !important;
   color: transparent !important;
   cursor: pointer;
-  padding: 2px 6px;
-  border-radius: 4px;
-  transition: all 0.2s ease;
+  padding: 1px 4px;
+  border-radius: 3px;
+  transition: background 0.15s ease, color 0.15s ease;
   user-select: none;
-  position: relative;
-  border: 1px solid rgba(0, 212, 255, 0.15);
 }
 .spoiler-text:hover,
 .spoiler-text.revealed {
-  background: rgba(0, 212, 255, 0.08) !important;
+  background: rgba(0, 212, 255, 0.1) !important;
   color: #00d4ff !important;
-  border-color: rgba(0, 212, 255, 0.4);
   user-select: text;
-}
-.spoiler-text::before {
-  content: '▮▮▮';
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: rgba(0, 212, 255, 0.4);
-  font-size: 0.8em;
-  letter-spacing: 2px;
-}
-.spoiler-text:hover::before,
-.spoiler-text.revealed::before {
-  display: none;
 }
 
 .rich-image-container {
@@ -500,4 +584,15 @@
 }
 .animate-header-sweep {
   animation: header-sweep 4s linear infinite;
+}
+
+/* ═══════════════════════════════════════════
+   Accessibility: Reduced Motion
+   ═══════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

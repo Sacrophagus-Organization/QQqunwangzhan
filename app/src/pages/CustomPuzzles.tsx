@@ -9,8 +9,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RichTextEditor } from '@/components/RichTextEditor';
+import { PuzzleCardSkeleton } from '@/components/Skeleton';
 import { apiGet, apiPost, apiPut, apiDelete, apiUpload } from '@/api/client';
-import { Puzzle, Plus, Search, User, Tag, Lightbulb, Key, CheckCircle2, HelpCircle, Brain, Zap, Filter, Sparkles, Trophy, Paperclip, Download, Edit3, Save, Loader2, Trash2 } from 'lucide-react';
+import { LikeButton } from '@/components/LikeButton';
+import { Puzzle, Plus, Search, User, Tag, Lightbulb, Key, CheckCircle2, HelpCircle, Brain, Zap, Filter, Sparkles, Trophy, Paperclip, Download, Edit3, Save, Trash2 } from 'lucide-react';
 import type { Puzzle as PuzzleType, FileAttachment } from '@/types';
 
 const catLabels: Record<string, string> = { cipher: '密码学', logic: '逻辑推理', pattern: '模式识别', math: '数学', lore: '剧情考据', other: '其他' };
@@ -89,10 +91,21 @@ export default function CustomPuzzles() {
 
   const downloadAtt = (att: FileAttachment) => { const a = document.createElement('a'); a.href = att.dataUrl; a.download = att.name; a.click(); };
 
-  if (loading) return <div className="min-h-screen bg-background hex-grid-bg flex items-center justify-center"><Loader2 className="h-8 w-8 text-accent animate-spin" /></div>;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background grid-dot-bg">
+        <div className="container mx-auto max-w-7xl px-4 py-8">
+          <div className="skeleton h-8 w-48 mb-6" />
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[...Array(6)].map((_, i) => <PuzzleCardSkeleton key={i} />)}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-background hex-grid-bg">
+    <div className="min-h-screen bg-background grid-dot-bg">
       <div className="container mx-auto max-w-7xl px-4 py-8">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
           <div><h1 className="text-2xl font-bold text-glow-cyan flex items-center gap-2"><Puzzle className="h-6 w-6 text-accent" />自制谜题</h1><p className="text-sm text-muted-foreground mt-1 mono-text">&gt; 总数: {puzzles.length} | 已解: {puzzles.filter(p => p.status === 'solved').length} | 未解: {puzzles.filter(p => p.status === 'unsolved').length}</p></div>
@@ -119,10 +132,41 @@ export default function CustomPuzzles() {
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.length === 0 ? <div className="col-span-full"><Card className="glass-card border-border/50"><CardContent className="p-12 text-center"><Puzzle className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-30" /><p className="text-muted-foreground">暂无谜题</p></CardContent></Card></div>
             : filtered.map(pz => (
-            <Card key={pz.id} className={`glass-card border-border/50 hover:border-accent/30 transition-all duration-200 ${pz.status === 'solved' ? 'opacity-75' : ''}`}>
-              <CardHeader className="pb-3"><div className="flex items-start justify-between gap-2"><div className="flex-1 min-w-0"><CardTitle className="text-base flex items-center gap-2">{pz.status === 'solved' ? <CheckCircle2 className="h-4 w-4 text-green-400 shrink-0" /> : <HelpCircle className="h-4 w-4 text-red-400 shrink-0" />}<span className="truncate">{pz.title}</span></CardTitle><CardDescription className="mt-1 text-xs">{pz.description}</CardDescription></div></div><div className="flex flex-wrap items-center gap-2 mt-3"><Badge variant="outline" className={`text-xs ${diffColors[pz.difficulty] || ''}`}>{diffLabels[pz.difficulty]}</Badge><Badge variant="secondary" className="text-xs">{catLabels[pz.category]}</Badge></div></CardHeader>
+            <Card key={pz.id} className={`glass-card border-border/50 hover:border-accent/30 transition-all duration-200 overflow-hidden group ${
+              pz.status === 'solved' ? 'opacity-75 hover:opacity-90' : ''
+            } hover:-translate-y-0.5 hover:shadow-lg hover:shadow-accent/5`}>
+              {/* Threat Level Bar */}
+              <div className={`h-1 w-full ${
+                pz.difficulty === 'easy' ? 'threat-bar-easy' :
+                pz.difficulty === 'medium' ? 'threat-bar-medium' :
+                pz.difficulty === 'hard' ? 'threat-bar-hard' :
+                'threat-bar-extreme'
+              }`} />
+
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <span className="truncate group-hover:text-accent transition-colors">{pz.title}</span>
+                    </CardTitle>
+                    <CardDescription className="mt-1 text-xs line-clamp-2">{pz.description}</CardDescription>
+                  </div>
+                  {/* Seal stamp status */}
+                  <div className="shrink-0">
+                    <span className={`seal-stamp ${pz.status === 'solved' ? 'seal-solved' : 'seal-unsolved'}`}>
+                      {pz.status === 'solved' ? <CheckCircle2 className="h-3 w-3 mr-1" /> : <HelpCircle className="h-3 w-3 mr-1" />}
+                      {pz.status === 'solved' ? 'SOLVED' : 'OPEN'}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 mt-3">
+                  <Badge variant="outline" className={`text-xs ${diffColors[pz.difficulty] || ''}`}>{diffLabels[pz.difficulty]}</Badge>
+                  <Badge variant="secondary" className="text-xs">{catLabels[pz.category]}</Badge>
+                </div>
+              </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex items-center justify-between text-xs text-muted-foreground"><span className="flex items-center gap-1"><User className="h-3 w-3" />{pz.author}</span><span className="flex items-center gap-1"><Brain className="h-3 w-3" />{pz.attempts}次</span></div>
+                <LikeButton entityType="puzzle" entityId={pz.id} likeCount={pz.likeCount} size="sm" />
                 {pz.status === 'solved' && pz.solvedBy && <div className="flex items-center gap-1.5 text-xs text-green-400"><Trophy className="h-3 w-3" />由 {pz.solvedBy} 破解</div>}
                 {pz.hint && <div className="flex items-start gap-1.5 text-xs bg-amber-500/10 border border-amber-500/20 rounded-md p-2"><Lightbulb className="h-3 w-3 text-amber-400 shrink-0 mt-0.5" /><span className="text-amber-400/80">{pz.hint}</span></div>}
                 <div className="flex gap-2 pt-1">
