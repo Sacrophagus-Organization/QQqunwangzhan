@@ -84,6 +84,8 @@ bash verify.sh
 │   │   ├── seed.ts        # 初始数据
 │   │   ├── middleware/
 │   │   │   └── auth.ts    # JWT 认证
+│   │   ├── lib/
+│   │   │   └── rateLimiter.ts # 频率限制
 │   │   └── routes/
 │   │       ├── auth.ts    # 注册/登录/头像上传
 │   │       ├── records.ts # 解密记录 CRUD
@@ -109,7 +111,9 @@ bash verify.sh
 │       │   ├── LikeButton.tsx         # 通用点赞按钮
 │       │   ├── RoleApply.tsx          # 角色申请组件
 │       │   ├── TerminalAutopilot.tsx  # 终端自运行程序
-│       │   └── CommentSection.tsx     # 评论区（含折叠）
+│       │   ├── CommentSection.tsx     # 评论区（含折叠）
+│       │   ├── AdminRoute.tsx         # 管理员路由守卫
+│       │   └── Footer.tsx             # 全局页脚
 │       ├── pages/         # 页面
 │       │   ├── HomePage.tsx / LoginPage.tsx
 │       │   ├── MessageBoard.tsx     # 留言板
@@ -129,6 +133,17 @@ bash verify.sh
 ---
 
 ## 更新日志
+
+### 2026-06-22 #2 — 安全加固 + 下载认证修复 + 频率限制
+
+- 🔒 **安全头完整覆盖**：Nginx 新增 CSP/Referrer-Policy/Permissions-Policy，服务端引入 helmet + morgan
+- 🔐 **Admin 密码环境变量化**：种子密码从硬编码改为 `ADMIN_PASSWORD` 环境变量读取，`bcrypt.compareSync` → `async compare` 防时序攻击
+- 🚦 **频率限制**：登录/注册/谜题提交接口增加 `express-rate-limit` 限流保护
+- 📏 **内容长度校验**：评论≤2000字符、留言≤5000字符，服务端强制校验
+- 🛡️ **AdminRoute 专属守卫**：`/lynchpin-admin` + `/sarcophagus/admin` 双重校验（登录+admin角色），Navbar 角色权限收窄仅 admin 可见控制台
+- 🐛 **下载认证修复**：新增 `apiDownload` 统一携带 JWT Token，修复附件下载 401 错误
+- 🦶 **全局 Footer**：版权信息 + ICP 备案号，flex 布局确保始终底部
+- 👍 **LikeButton 增强**：新增 `initialLiked` prop + `useEffect` 同步外部状态，刷新后保持点赞状态
 
 ### 2026-06-22 — 前端视觉全面升级 + 头像裁剪重写
 
@@ -176,7 +191,7 @@ bash verify.sh
 
 ## 安全
 
-- 所有 API 需 JWT 认证（除登录/注册/文件下载）
+- 所有 API 需 JWT 认证（除登录/注册/石棺下载令牌）
 - 内容编辑仅限作者本人 + admin
 - `lynchpin` SSH 密钥、`.env`、`*.db` 已加入 `.gitignore`
 - 后端端口 3001 不对外开放，仅 Nginx 反向代理
