@@ -44,7 +44,8 @@ app.use('/uploads/avatars', express.static(path.join(__dirname, '..', 'uploads',
 
 // Serve static frontend build
 const staticDir = path.join(__dirname, '..', '..', 'app', 'dist');
-app.use(express.static(staticDir));
+// index: false — 不让 express.static 直接返回 index.html，留给下边的 SPA fallback 处理（那里会设置 Cache-Control: no-cache）
+app.use(express.static(staticDir, { index: false }));
 
 // SPA fallback: all non-API routes serve index.html
 app.get(/^\/(?!api\/).*/, (_req, res) => {
