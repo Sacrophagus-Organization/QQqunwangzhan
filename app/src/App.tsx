@@ -5,6 +5,7 @@ import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { Navbar } from '@/components/Navbar';
 import { BackgroundMusic } from '@/components/BackgroundMusic';
 import { NotificationTicker } from '@/components/NotificationTicker';
+import { AutoRefresh } from '@/components/AutoRefresh';
 import LoginPage from '@/pages/LoginPage';
 import HomePage from '@/pages/HomePage';
 import DecryptRecords from '@/pages/DecryptRecords';
@@ -48,6 +49,7 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <AutoRefresh />
         <SpoilerClickHandler />
         <BackgroundMusic />
         <Routes>

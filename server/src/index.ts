@@ -48,6 +48,9 @@ app.use(express.static(staticDir));
 
 // SPA fallback: all non-API routes serve index.html
 app.get(/^\/(?!api\/).*/, (_req, res) => {
+  res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
   res.sendFile(path.join(staticDir, 'index.html'));
 });
 

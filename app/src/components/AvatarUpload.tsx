@@ -115,9 +115,9 @@ export function AvatarUpload() {
   }, [tempPreviewUrl]);
 
   return (
-    <>
+    <div>
       <div className="relative group cursor-pointer" onClick={() => inputRef.current?.click()}>
-        <div className={`h-14 w-14 rounded-full flex items-center justify-center flex-shrink-0 border-2 border-border/40 group-hover:border-primary/50 transition-colors ${previewUrl ? '' : 'bg-muted/30'}`}>
+        <div className={`h-14 w-14 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden border-2 group-hover:border-primary/50 transition-colors ${previewUrl ? 'border-border/40' : 'bg-primary/10 border-primary/20 text-primary'}`}>
           {previewUrl ? (
             <img src={previewUrl} alt="avatar" className="h-full w-full rounded-full object-cover" />
           ) : (
@@ -130,7 +130,7 @@ export function AvatarUpload() {
           <Camera className="h-5 w-5 text-white/80" />
         </div>
       </div>
-      <input ref={inputRef} type="file" accept="image/png,image/jpeg,image/gif,image/webp" className="hidden" onChange={handleFile} />
+      <input ref={inputRef} type="file" accept="image/png,image/jpeg,image/gif,image/webp" className="hidden" style={{ display: 'none' }} onChange={handleFile} />
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-md">
@@ -206,6 +206,6 @@ export function AvatarUpload() {
           </div>
         </DialogContent>
       </Dialog>
-    </>
+    </div>
   );
 }
