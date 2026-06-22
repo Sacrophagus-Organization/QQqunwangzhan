@@ -181,7 +181,7 @@ export default function AdminPage() {
     setSaving(false);
   };
 
-  if (!authLoading && (!isAuthenticated || (user?.role !== 'admin' && user?.role !== 'editor'))) {
+  if (!authLoading && (!isAuthenticated || user?.role !== 'admin')) {
     return (
       <div className="min-h-screen bg-background hex-grid-bg flex items-center justify-center">
         <Card className="glass-card border-border/50 max-w-md">
@@ -195,7 +195,7 @@ export default function AdminPage() {
     );
   }
 
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = true; // 此页面已仅限admin访问
 
   const pendingCount = users.filter(u => u.status === 'pending' || !!u.requested_role).length;
 

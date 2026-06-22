@@ -2,7 +2,9 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
+import { AdminRoute } from '@/components/AdminRoute';
 import { Navbar } from '@/components/Navbar';
+import { Footer } from '@/components/Footer';
 import { BackgroundMusic } from '@/components/BackgroundMusic';
 import { NotificationTicker } from '@/components/NotificationTicker';
 import { AutoRefresh } from '@/components/AutoRefresh';
@@ -15,6 +17,7 @@ import DecryptWiki from '@/pages/DecryptWiki';
 import MessageBoard from '@/pages/MessageBoard';
 import AdminPage from '@/pages/AdminPage';
 import SarcophagusTerminal from '@/pages/SarcophagusTerminal';
+import SarcophagusAdmin from '@/pages/SarcophagusAdmin';
 import './App.css';
 
 // 全局 spoiler 点击固定显示（覆盖所有 dangerouslySetInnerHTML 渲染区域）
@@ -35,12 +38,13 @@ function SpoilerClickHandler() {
 
 function AppLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <NotificationTicker />
       <Navbar />
-      <main className="pt-0 page-enter">
+      <main className="pt-0 page-enter flex-1">
         {children}
       </main>
+      <Footer />
     </div>
   );
 }
@@ -105,9 +109,9 @@ function App() {
           <Route
             path="/lynchpin-admin"
             element={
-              <ProtectedRoute>
+              <AdminRoute>
                 <AppLayout><AdminPage /></AppLayout>
-              </ProtectedRoute>
+              </AdminRoute>
             }
           />
           <Route
@@ -116,6 +120,14 @@ function App() {
               <ProtectedRoute>
                 <SarcophagusTerminal />
               </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/sarcophagus/admin"
+            element={
+              <AdminRoute>
+                <SarcophagusAdmin />
+              </AdminRoute>
             }
           />
           <Route path="*" element={<Navigate to="/" replace />} />

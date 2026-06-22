@@ -3,6 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Link } from 'react-router-dom';
 import { apiPost } from '@/api/client';
 import { TerminalAutopilot } from '@/components/TerminalAutopilot';
+import { Footer } from '@/components/Footer';
 import { Loader2, Terminal, Shield, X, Download, ArrowLeft } from 'lucide-react';
 
 type BootPhase = 'idle' | 'booting' | 'complete';
@@ -627,6 +628,7 @@ export default function SarcophagusTerminal() {
           </div>
         </div>
       )}
+      <Footer />
     </div>
   );
 }

@@ -39,8 +39,8 @@ router.post('/', authMiddleware, upload.array('files', 10), (req: AuthRequest, r
   res.json(attachments);
 });
 
-// Download file
-router.get('/:id', (req, res) => {
+// Download file (requires auth)
+router.get('/:id', authMiddleware, (req: AuthRequest, res) => {
   const att = db.prepare('SELECT * FROM attachments WHERE id = ?').get(req.params.id) as any;
   if (!att) { res.status(404).json({ error: '文件不存在' }); return; }
   if (!fs.existsSync(att.file_path)) { res.status(404).json({ error: '文件已丢失' }); return; }

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { v4 as uuid } from 'uuid';
 import { db } from '../db.js';
 import { authMiddleware, AuthRequest } from '../middleware/auth.js';
+import { solveLimiter } from '../lib/rateLimiter.js';
 
 const router = Router();
 router.use(authMiddleware);
@@ -50,7 +51,7 @@ router.put('/:id', (req: AuthRequest, res) => {
   res.json({ ...updated, tags: JSON.parse(updated.tags || '[]'), attachments: getAtts('puzzle', updated.id) });
 });
 
-router.post('/:id/solve', (req: AuthRequest, res) => {
+router.post('/:id/solve', solveLimiter, (req: AuthRequest, res) => {
   const puz = db.prepare('SELECT * FROM puzzles WHERE id = ?').get(req.params.id) as any;
   if (!puz) { res.status(404).json({ error: '谜题不存在' }); return; }
   if (puz.status === 'solved') { res.status(400).json({ error: '该谜题已被破解' }); return; }

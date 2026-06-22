@@ -1,5 +1,7 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import morgan from 'morgan';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import authRoutes from './routes/auth.js';
@@ -12,6 +14,7 @@ import messageRoutes from './routes/messages.js';
 import commentRoutes from './routes/comments.js';
 import likeRoutes from './routes/likes.js';
 import sarcophagusRoutes from './routes/sarcophagus.js';
+import { globalLimiter } from './lib/rateLimiter.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -23,9 +26,42 @@ if (!fs.existsSync(avatarDir)) fs.mkdirSync(avatarDir, { recursive: true });
 const app = express();
 const PORT = parseInt(process.env.PORT || '3001');
 
-// Middleware
-app.use(cors({ origin: true, credentials: true }));
-app.use(express.json({ limit: '50mb' }));
+// ─── 安全中间件层 ──────────────────────────────────────────────
+// 1. 请求日志 (morgan: combined 格式，输出到 stdout)
+app.use(morgan(':remote-addr - :method :url :status :res[content-length] - :response-time ms'));
+
+// 2. 安全头 (helmet 自动设置多种安全头)
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://cdn.jsdelivr.net"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdn.jsdelivr.net"],
+      imgSrc: ["'self'", "data:", "blob:", "https:"],
+      connectSrc: ["'self'", "https://sarcophagus.org.cn"],
+      mediaSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      frameAncestors: ["'self'"],
+      formAction: ["'self'"],
+      upgradeInsecureRequests: [],
+    },
+  },
+  crossOriginEmbedderPolicy: false,
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+}));
+
+// 3. CORS 仅允许本站域名
+app.use(cors({
+  origin: ['https://sarcophagus.org.cn', 'https://www.sarcophagus.org.cn'],
+  credentials: true,
+}));
+
+// 4. Body 限制 10MB (原50MB过大，存在内存耗尽风险)
+app.use(express.json({ limit: '10mb' }));
+
+// 5. API 全局限速：100次/15分钟/IP
+app.use('/api/', globalLimiter);
 
 // API routes
 app.use('/api/auth', authRoutes);

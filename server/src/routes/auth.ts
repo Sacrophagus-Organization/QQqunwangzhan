@@ -7,6 +7,7 @@ import { v4 as uuid } from 'uuid';
 import multer from 'multer';
 import { db } from '../db.js';
 import { generateToken, authMiddleware, AuthRequest } from '../middleware/auth.js';
+import { loginLimiter, registerLimiter } from '../lib/rateLimiter.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const AVATAR_DIR = path.join(__dirname, '..', '..', 'uploads', 'avatars');
@@ -30,7 +31,7 @@ const avatarUpload = multer({
 
 const router = Router();
 
-router.post('/register', (req: AuthRequest, res) => {
+router.post('/register', registerLimiter, (req: AuthRequest, res) => {
   const { username, password, qqNumber, registerReason } = req.body;
   if (!username || !password) {
     res.status(400).json({ error: '用户名和密码必填' });
@@ -56,7 +57,7 @@ router.post('/register', (req: AuthRequest, res) => {
   res.json({ success: true, message: '注册成功，请等待管理员审核通过后再登录' });
 });
 
-router.post('/login', (req: AuthRequest, res) => {
+router.post('/login', loginLimiter, async (req: AuthRequest, res) => {
   const { username, password } = req.body;
   if (!username || !password) {
     res.status(400).json({ error: '用户名和密码必填' });
@@ -75,7 +76,8 @@ router.post('/login', (req: AuthRequest, res) => {
     res.status(403).json({ error: '您的注册申请已被拒绝' });
     return;
   }
-  if (!bcrypt.compareSync(password, row.password)) {
+  const match = await bcrypt.compare(password, row.password);
+  if (!match) {
     res.status(401).json({ error: '用户名或密码错误' });
     return;
   }

@@ -4,6 +4,7 @@ import { Link, Navigate } from 'react-router-dom';
 import { apiGet, apiDelete } from '@/api/client';
 import { Loader2, Plus, Trash2, Upload, ArrowLeft, Terminal, Key, FileText, Clock, Shield } from 'lucide-react';
 import type { SarcophagusCode } from '@/types';
+import { Footer } from '@/components/Footer';
 
 export default function SarcophagusAdmin() {
   const { user } = useAuth();
@@ -356,6 +357,7 @@ export default function SarcophagusAdmin() {
             // ROOT_DASHBOARD_v1.7.3 // SARCOPHAGUS_INTERNAL //
           </p>
         </div>
+        <Footer />
       </div>
     </div>
   );

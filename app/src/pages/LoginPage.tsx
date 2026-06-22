@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DiamondLogo } from '@/components/DiamondLogo';
+import { Footer } from '@/components/Footer';
 import { Key, User, Hash, Eye, EyeOff, Sparkles } from 'lucide-react';
 
 export default function LoginPage() {
@@ -65,7 +66,8 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background relative overflow-hidden">
+    <div className="min-h-screen flex flex-col bg-background relative overflow-hidden">
+      <div className="flex-1 flex items-center justify-center">
       {/* Background Effects */}
       <div className="absolute inset-0 hex-grid-bg" />
       <div className="absolute inset-0 diagonal-lines" />
@@ -247,6 +249,8 @@ export default function LoginPage() {
           </CardContent>
         </Card>
       </div>
+      </div>
+      <Footer />
     </div>
   );
 }

@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RichTextEditor } from '@/components/RichTextEditor';
-import { apiGet, apiPost, apiPut, apiDelete, apiUpload } from '@/api/client';
+import { apiGet, apiPost, apiPut, apiDelete, apiUpload, apiDownload } from '@/api/client';
 import { LikeButton } from '@/components/LikeButton';
 import { BookOpen, Plus, Search, User, Tag, Clock, Bookmark, Sparkles, ChevronDown, Filter, Code2, Binary, Hash, Globe, FileCode, Paperclip, Download, Edit3, Save, Trash2 } from 'lucide-react';
 import type { WikiEntry, FileAttachment } from '@/types';
@@ -73,7 +73,7 @@ export default function DecryptWiki() {
     } catch (e: any) { alert(e.message); }
   };
 
-  const downloadAtt = (a: FileAttachment) => { const el = document.createElement('a'); el.href = a.dataUrl; el.download = a.name; el.click(); };
+  const downloadAtt = (a: FileAttachment) => { apiDownload(a.dataUrl, a.name).catch(e => alert(e.message)); };
 
   if (loading) {
     return (

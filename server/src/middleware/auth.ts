@@ -1,7 +1,13 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'arkoverseer-secret-change-in-production';
+// 启动时强制检查：禁止使用默认密钥
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  console.error('[FATAL] JWT_SECRET 环境变量未设置，出于安全原因拒绝启动');
+  console.error('请设置: export JWT_SECRET=<您的随机密钥>');
+  process.exit(1);
+}
 
 export interface AuthRequest extends Request {
   userId?: string;
@@ -13,7 +19,7 @@ export function generateToken(user: { id: string; role: string; username: string
   return jwt.sign(
     { id: user.id, role: user.role, username: user.username },
     JWT_SECRET,
-    { expiresIn: '7d' }
+    { expiresIn: '24h' }
   );
 }
 

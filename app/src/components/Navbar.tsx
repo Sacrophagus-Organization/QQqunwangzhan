@@ -115,12 +115,12 @@ export function Navbar() {
                 </div>
               </div>
               <RoleApply />
-              {(user.role === 'admin' || user.role === 'editor') && (
+              {user.role === 'admin' && (
                 <Link to="/lynchpin-admin">
                   <DropdownMenuItem className="cursor-pointer text-amber-400">
                     <Shield className="mr-2 h-4 w-4" />
                     <span>控制台</span>
-                    {user.role === 'admin' && pendingCount > 0 && (
+                    {pendingCount > 0 && (
                       <span className="ml-auto bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center">{pendingCount}</span>
                     )}
                   </DropdownMenuItem>

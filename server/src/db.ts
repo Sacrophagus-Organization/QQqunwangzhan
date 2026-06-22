@@ -147,12 +147,18 @@ try { db.exec('ALTER TABLE users ADD COLUMN avatar_url TEXT NOT NULL DEFAULT \"\
 try { db.exec('ALTER TABLE users ADD COLUMN requested_role TEXT NOT NULL DEFAULT \"\"'); console.log('[DB] Added requested_role column to users'); } catch {}
 try { db.exec('ALTER TABLE users ADD COLUMN requested_role_reason TEXT NOT NULL DEFAULT \"\"'); console.log('[DB] Added requested_role_reason column to users'); } catch {}
 
-// Seed admin
+// Seed admin - 密码从环境变量 ADMIN_PASSWORD 读取，未设置则跳过
 const existingAdmin = db.prepare('SELECT id FROM users WHERE username = ?').get('Admin');
 if (!existingAdmin) {
-  const hashed = bcrypt.hashSync('admin123', 10);
-  db.prepare('INSERT INTO users (id, username, password, qq_number, role, status) VALUES (?, ?, ?, ?, ?, ?)').run('admin-001', 'Admin', hashed, '10000', 'admin', 'active');
-  console.log('[DB] Default admin created (Admin / admin123)');
+  const adminPassword = process.env.ADMIN_PASSWORD;
+  if (!adminPassword) {
+    console.warn('[DB] WARNING: ADMIN_PASSWORD 环境变量未设置，跳过默认管理员创建');
+    console.warn('[DB] 请设置: export ADMIN_PASSWORD=<您的管理员密码>');
+  } else {
+    const hashed = bcrypt.hashSync(adminPassword, 10);
+    db.prepare('INSERT INTO users (id, username, password, qq_number, role, status) VALUES (?, ?, ?, ?, ?, ?)').run('admin-001', 'Admin', hashed, '10000', 'admin', 'active');
+    console.log('[DB] 管理员账号已创建 (Admin)');
+  }
 }
 
 export { db, DB_PATH };

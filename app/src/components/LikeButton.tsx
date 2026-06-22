@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { apiPost } from '@/api/client';
 import { Heart } from 'lucide-react';
 
@@ -6,14 +6,24 @@ interface LikeButtonProps {
   entityType: string;
   entityId: string;
   likeCount?: number;
+  initialLiked?: boolean;
   size?: 'sm' | 'md';
   className?: string;
 }
 
-export function LikeButton({ entityType, entityId, likeCount = 0, size = 'sm', className = '' }: LikeButtonProps) {
-  const [liked, setLiked] = useState(false);
+export function LikeButton({ entityType, entityId, likeCount = 0, initialLiked = false, size = 'sm', className = '' }: LikeButtonProps) {
+  const [liked, setLiked] = useState(initialLiked);
   const [count, setCount] = useState(likeCount);
   const [pending, setPending] = useState(false);
+
+  // 同步外部 props 变化（列表刷新时）
+  useEffect(() => {
+    setCount(likeCount);
+  }, [likeCount]);
+
+  useEffect(() => {
+    setLiked(initialLiked);
+  }, [initialLiked, entityId]);
 
   const handleToggle = async () => {
     if (pending) return;

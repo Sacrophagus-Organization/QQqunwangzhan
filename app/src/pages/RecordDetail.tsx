@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RichTextEditor } from '@/components/RichTextEditor';
 import CommentSection from '@/components/CommentSection';
-import { apiGet, apiPut, apiDelete, apiUpload } from '@/api/client';
+import { apiGet, apiPut, apiDelete, apiUpload, apiDownload } from '@/api/client';
 import {
   ArrowLeft, Calendar, User, Tag, AlertTriangle, Paperclip, Download,
   Edit3, Clock, Save, Loader2, Trash2, Pin,
@@ -72,7 +72,7 @@ export default function RecordDetail() {
   };
 
   const downloadAtt = (att: FileAttachment) => {
-    const a = document.createElement('a'); a.href = att.dataUrl; a.download = att.name; a.click();
+    apiDownload(att.dataUrl, att.name).catch(e => alert(e.message));
   };
 
   if (loading) return <div className="min-h-screen bg-background hex-grid-bg flex items-center justify-center"><Loader2 className="h-8 w-8 text-primary animate-spin" /></div>;

@@ -81,6 +81,25 @@ export async function apiUpload(entityType: string, entityId: string, files: Fil
   return res.json();
 }
 
+export async function apiDownload(url: string, filename: string) {
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${getToken()}` },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: '下载失败' }));
+    throw new Error(err.error || '下载失败');
+  }
+  const blob = await res.blob();
+  const blobUrl = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = blobUrl;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(blobUrl);
+}
+
 export async function apiUploadAvatar(blob: Blob): Promise<string> {
   const formData = new FormData();
   formData.append('avatar', blob, 'avatar.png');

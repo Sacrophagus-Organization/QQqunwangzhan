@@ -125,7 +125,7 @@ function CommentItem({
             <Clock className="h-2.5 w-2.5" />
             {formatRelativeTime(c.createdAt)}
           </span>
-          {c.isAnonymous && (
+          {!!c.isAnonymous && (
             <span className="text-[10px] text-muted-foreground">· 匿名</span>
           )}
         </div>

@@ -33,6 +33,10 @@ router.get('/', (_req: AuthRequest, res) => {
 router.post('/', (req: AuthRequest, res) => {
   const { content, isAnonymous } = req.body;
   if (!content) { res.status(400).json({ error: '留言内容不能为空' }); return; }
+  if (typeof content === 'string' && content.length > 5000) {
+    res.status(400).json({ error: '留言内容不能超过5000字符' });
+    return;
+  }
   const id = 'msg-' + uuid().slice(0, 8);
   db.prepare(`INSERT INTO messages (id, content, is_anonymous, author, author_id)
     VALUES (?, ?, ?, ?, ?)`).run(
@@ -64,6 +68,10 @@ router.put('/:id', (req: AuthRequest, res) => {
   }
   const { content } = req.body;
   if (!content) { res.status(400).json({ error: '内容不能为空' }); return; }
+  if (typeof content === 'string' && content.length > 5000) {
+    res.status(400).json({ error: '留言内容不能超过5000字符' });
+    return;
+  }
   const now = new Date().toISOString();
   db.prepare('UPDATE messages SET content = ?, updated_at = ? WHERE id = ?').run(content, now, req.params.id);
   const updated = db.prepare('SELECT * FROM messages WHERE id = ?').get(req.params.id) as any;

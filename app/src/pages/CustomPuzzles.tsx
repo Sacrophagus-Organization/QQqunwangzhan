@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RichTextEditor } from '@/components/RichTextEditor';
 import { PuzzleCardSkeleton } from '@/components/Skeleton';
-import { apiGet, apiPost, apiPut, apiDelete, apiUpload } from '@/api/client';
+import { apiGet, apiPost, apiPut, apiDelete, apiUpload, apiDownload } from '@/api/client';
 import { LikeButton } from '@/components/LikeButton';
 import { Puzzle, Plus, Search, User, Tag, Lightbulb, Key, CheckCircle2, HelpCircle, Brain, Zap, Filter, Sparkles, Trophy, Paperclip, Download, Edit3, Save, Trash2 } from 'lucide-react';
 import type { Puzzle as PuzzleType, FileAttachment } from '@/types';
@@ -89,7 +89,7 @@ export default function CustomPuzzles() {
     } catch (e: any) { alert(e.message); }
   };
 
-  const downloadAtt = (att: FileAttachment) => { const a = document.createElement('a'); a.href = att.dataUrl; a.download = att.name; a.click(); };
+  const downloadAtt = (att: FileAttachment) => { apiDownload(att.dataUrl, att.name).catch(e => alert(e.message)); };
 
   if (loading) {
     return (

@@ -78,7 +78,14 @@ function insertSpoiler(doc: Document, editorEl?: HTMLElement | null) {
 function insertImagePlaceholder(doc: Document) {
   const sel = doc.getSelection();
   if (!sel) return;
-  const range = sel.getRangeAt(0) || doc.createRange();
+  // 安全获取 range：rangeCount 可能为 0（失焦时）
+  let range: Range;
+  try {
+    range = sel.getRangeAt(0);
+  } catch {
+    range = doc.createRange();
+  }
+  if (!range) return;
   // Create a file input trigger
   const container = doc.createElement('div');
   container.className = 'rich-image-container';
@@ -218,8 +225,13 @@ export function RichTextEditor({
     handleInput();
   };
   const handleImage = () => {
-    insertImagePlaceholder(document);
-    handleInput();
+    // 先聚焦编辑器再插入，防止 toolbar 按钮偷走 selection
+    editorRef.current?.focus();
+    // 延迟一帧确保 focus 生效
+    requestAnimationFrame(() => {
+      insertImagePlaceholder(document);
+      handleInput();
+    });
   };
   const handleAlign = (align: string) => execCmd('justify' + align);
 
