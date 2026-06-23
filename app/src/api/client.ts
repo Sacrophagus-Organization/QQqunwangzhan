@@ -100,9 +100,22 @@ export async function apiDownload(url: string, filename: string) {
   URL.revokeObjectURL(blobUrl);
 }
 
-export async function apiUploadAvatar(blob: Blob): Promise<string> {
+export async function apiUploadAvatar(blob: Blob, ext?: string): Promise<string> {
   const formData = new FormData();
-  formData.append('avatar', blob, 'avatar.png');
+  // 根据 blob MIME 类型或传入的扩展名确定文件名
+  let filename: string;
+  if (ext) {
+    filename = 'avatar' + (ext.startsWith('.') ? ext : '.' + ext);
+  } else if (blob.type === 'image/gif') {
+    filename = 'avatar.gif';
+  } else if (blob.type === 'image/webp') {
+    filename = 'avatar.webp';
+  } else if (blob.type === 'image/jpeg') {
+    filename = 'avatar.jpg';
+  } else {
+    filename = 'avatar.png';
+  }
+  formData.append('avatar', blob, filename);
   const res = await fetch(`${API_BASE}/auth/avatar`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${getToken()}` },

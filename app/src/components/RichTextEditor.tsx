@@ -151,6 +151,14 @@ function insertImagePlaceholder(doc: Document) {
   });
   container.appendChild(sizeToolbar);
 
+  // GIF 动图徽章（右上角）
+  const gifBadge = doc.createElement('div');
+  gifBadge.className = 'rich-image-gif-badge';
+  gifBadge.style.cssText =
+    'position:absolute;top:4px;right:4px;display:none;align-items:center;gap:3px;padding:2px 7px;background:rgba(147,51,234,0.85);color:#fff;font-size:10px;font-weight:600;border-radius:4px;z-index:18;backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,0.15);';
+  gifBadge.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink:0"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M8 10h2l-1 4"/><path d="M13 10l1 4"/><path d="M16 10v4"/></svg>GIF';
+  container.appendChild(gifBadge);
+
   const placeholder = doc.createElement('div');
   placeholder.className = 'rich-image-placeholder';
   placeholder.style.cssText =
@@ -178,6 +186,7 @@ function insertImagePlaceholder(doc: Document) {
   fileInput.addEventListener('change', () => {
     const file = fileInput.files?.[0];
     if (!file) return;
+    const isGifFile = file.type === 'image/gif';
     const reader = new FileReader();
     reader.onload = () => {
       const img = doc.createElement('img');
@@ -206,6 +215,7 @@ function insertImagePlaceholder(doc: Document) {
       container.insertBefore(img, container.firstChild);
       resizeHandle.style.display = 'flex';
       sizeToolbar.style.display = 'flex';
+      if (isGifFile) gifBadge.style.display = 'flex';
 
       // 拖拽缩放逻辑
       let startX = 0, startW = 0, startH = 0;
@@ -311,6 +321,22 @@ function bindImageInteractions(container: HTMLElement, doc: Document) {
       sizeLabel = doc.createElement('div');
       sizeLabel.className = 'rich-image-size-label';
       ctr.appendChild(sizeLabel);
+    }
+
+    // 检测 GIF 并确保徽章存在
+    let gifBadge = ctr.querySelector('.rich-image-gif-badge') as HTMLElement | null;
+    const isGif = img.src.startsWith('data:image/gif') || img.src.toLowerCase().endsWith('.gif');
+    if (isGif) {
+      if (!gifBadge) {
+        gifBadge = doc.createElement('div');
+        gifBadge.className = 'rich-image-gif-badge';
+        gifBadge.style.cssText =
+          'position:absolute;top:4px;right:4px;display:flex;align-items:center;gap:3px;padding:2px 7px;background:rgba(147,51,234,0.85);color:#fff;font-size:10px;font-weight:600;border-radius:4px;z-index:18;backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,0.15);';
+        gifBadge.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink:0"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M8 10h2l-1 4"/><path d="M13 10l1 4"/><path d="M16 10v4"/></svg>GIF';
+        ctr.appendChild(gifBadge);
+      } else {
+        gifBadge.style.display = 'flex';
+      }
     }
 
     // 重新绑定鼠标事件
