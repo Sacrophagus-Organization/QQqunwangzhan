@@ -159,7 +159,7 @@ function insertImagePlaceholder(doc: Document, editorEl?: HTMLElement | null) {
   const gifBadge = doc.createElement('div');
   gifBadge.className = 'rich-image-gif-badge';
   gifBadge.style.cssText =
-    'position:absolute;top:4px;right:4px;display:none;align-items:center;gap:3px;padding:2px 7px;background:rgba(147,51,234,0.85);color:#fff;font-size:10px;font-weight:600;border-radius:4px;z-index:18;backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,0.15);';
+    'position:absolute;top:4px;right:4px;align-items:center;gap:3px;padding:2px 7px;background:rgba(147,51,234,0.85);color:#fff;font-size:10px;font-weight:600;border-radius:4px;z-index:18;backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,0.15);';
   gifBadge.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink:0"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M8 10h2l-1 4"/><path d="M13 10l1 4"/><path d="M16 10v4"/></svg>GIF';
   container.appendChild(gifBadge);
 
@@ -219,9 +219,9 @@ function insertImagePlaceholder(doc: Document, editorEl?: HTMLElement | null) {
 
       placeholder.remove();
       container.insertBefore(img, container.firstChild);
-      resizeHandle.style.display = 'flex';
-      sizeToolbar.style.display = 'flex';
-      if (isGifFile) gifBadge.style.display = 'flex';
+      // 交互元素通过 CSS class + hover 控制显示，不写内联样式以防污染保存的 HTML
+      container.classList.add('image-loaded');
+      if (isGifFile) container.classList.add('is-gif');
 
       // 拖拽缩放逻辑
       let startX = 0, startW = 0, startH = 0;
@@ -251,16 +251,13 @@ function insertImagePlaceholder(doc: Document, editorEl?: HTMLElement | null) {
         doc.addEventListener('mouseup', onUp);
       });
 
-      // 鼠标悬停容器 → 显示工具栏和手柄
+      // 鼠标悬停容器 → 显示工具栏和手柄（用 CSS class，不污染内联样式）
       container.addEventListener('mouseenter', () => {
-        sizeToolbar.style.display = 'flex';
-        resizeHandle.style.display = 'flex';
+        container.classList.add('show-tools');
       });
       container.addEventListener('mouseleave', () => {
-        // 如果正在拖拽，不隐藏
         if (!(doc.body.style.cursor === 'nwse-resize')) {
-          sizeToolbar.style.display = 'none';
-          resizeHandle.style.display = 'none';
+          container.classList.remove('show-tools');
         }
       });
     };
@@ -272,12 +269,6 @@ function insertImagePlaceholder(doc: Document, editorEl?: HTMLElement | null) {
     if (e.key === 'Backspace' || e.key === 'Delete') {
       container.remove();
     }
-  });
-
-  // Hover events for placeholder too
-  container.addEventListener('mouseenter', () => {
-    sizeToolbar.style.display = 'none'; // No toolbar until image loaded
-    resizeHandle.style.display = 'none';
   });
 
   range.insertNode(container);
@@ -342,24 +333,20 @@ function bindImageInteractions(container: HTMLElement, doc: Document) {
       if (!gifBadge) {
         gifBadge = doc.createElement('div');
         gifBadge.className = 'rich-image-gif-badge';
-        gifBadge.style.cssText =
-          'position:absolute;top:4px;right:4px;display:flex;align-items:center;gap:3px;padding:2px 7px;background:rgba(147,51,234,0.85);color:#fff;font-size:10px;font-weight:600;border-radius:4px;z-index:18;backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,0.15);';
         gifBadge.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink:0"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M8 10h2l-1 4"/><path d="M13 10l1 4"/><path d="M16 10v4"/></svg>GIF';
         ctr.appendChild(gifBadge);
-      } else {
-        gifBadge.style.display = 'flex';
       }
     }
 
-    // 重新绑定鼠标事件
+    // 重新绑定鼠标事件（CSS class 控制，不写内联样式）
+    ctr.classList.add('image-loaded');
+    if (isGif) ctr.classList.add('is-gif');
     ctr.addEventListener('mouseenter', () => {
-      sizeToolbar && (sizeToolbar.style.display = 'flex');
-      resizeHandle && (resizeHandle.style.display = 'flex');
+      ctr.classList.add('show-tools');
     });
     ctr.addEventListener('mouseleave', () => {
       if (doc.body.style.cursor !== 'nwse-resize') {
-        sizeToolbar && (sizeToolbar.style.display = 'none');
-        resizeHandle && (resizeHandle.style.display = 'none');
+        ctr.classList.remove('show-tools');
       }
     });
 

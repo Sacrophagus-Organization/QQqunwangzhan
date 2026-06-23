@@ -299,7 +299,7 @@
   box-shadow: 0 0 0 1px rgba(0, 212, 255, 0.15);
 }
 
-/* 图片尺寸预设工具栏 — 悬浮在图片顶部居中 */
+/* 图片尺寸预设工具栏 — 悬浮在图片顶部居中（仅在编辑器编辑态显示） */
 .rich-image-toolbar {
   display: none;
   gap: 3px;
@@ -309,7 +309,8 @@
   transform: translateX(-50%);
   z-index: 20;
 }
-.rich-image-container:hover .rich-image-toolbar {
+.rich-editor-wrapper .rich-image-container:hover .rich-image-toolbar,
+.rich-editor-wrapper .rich-image-container.show-tools .rich-image-toolbar {
   display: flex !important;
 }
 
@@ -358,7 +359,8 @@
   transform: scale(1.15);
   background: rgba(0, 212, 255, 1);
 }
-.rich-image-container:hover .rich-image-resize {
+.rich-editor-wrapper .rich-image-container:hover .rich-image-resize,
+.rich-editor-wrapper .rich-image-container.show-tools .rich-image-resize {
   display: flex !important;
 }
 
@@ -378,9 +380,12 @@
   z-index: 15;
 }
 
-/* GIF 动图徽章 — 右上角，始终可见 */
+/* GIF 动图徽章 — 右上角，仅编辑模式可见 */
 .rich-image-gif-badge {
-  display: flex;
+  display: none;
+  position: absolute;
+  top: 4px;
+  right: 4px;
   align-items: center;
   gap: 3px;
   padding: 2px 7px;
@@ -395,8 +400,11 @@
   border: 1px solid rgba(255, 255, 255, 0.15);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
+.rich-editor-wrapper .rich-image-container.is-gif .rich-image-gif-badge {
+  display: flex !important;
+}
 /* 工具栏与徽章同现时不遮挡 */
-.rich-image-container:hover .rich-image-gif-badge {
+.rich-editor-wrapper .rich-image-container:hover .rich-image-gif-badge {
   opacity: 0.5;
 }
 
