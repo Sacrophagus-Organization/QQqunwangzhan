@@ -299,7 +299,7 @@
   box-shadow: 0 0 0 1px rgba(0, 212, 255, 0.15);
 }
 
-/* 图片尺寸预设工具栏 — 悬浮在图片顶部居中（仅在编辑器编辑态显示） */
+/* 图片尺寸预设工具栏 — 悬浮在图片顶部居中 */
 .rich-image-toolbar {
   display: none;
   gap: 3px;
@@ -309,8 +309,9 @@
   transform: translateX(-50%);
   z-index: 20;
 }
-.rich-editor-wrapper .rich-image-container:hover .rich-image-toolbar,
-.rich-editor-wrapper .rich-image-container.show-tools .rich-image-toolbar {
+/* 编辑态中 hover 或 JS class 触发显示 */
+.rich-editor-content[contenteditable] .rich-image-container:hover .rich-image-toolbar,
+.rich-editor-content[contenteditable] .rich-image-container.show-tools .rich-image-toolbar {
   display: flex !important;
 }
 
@@ -359,8 +360,8 @@
   transform: scale(1.15);
   background: rgba(0, 212, 255, 1);
 }
-.rich-editor-wrapper .rich-image-container:hover .rich-image-resize,
-.rich-editor-wrapper .rich-image-container.show-tools .rich-image-resize {
+.rich-editor-content[contenteditable] .rich-image-container:hover .rich-image-resize,
+.rich-editor-content[contenteditable] .rich-image-container.show-tools .rich-image-resize {
   display: flex !important;
 }
 
@@ -400,12 +401,20 @@
   border: 1px solid rgba(255, 255, 255, 0.15);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
-.rich-editor-wrapper .rich-image-container.is-gif .rich-image-gif-badge {
+.rich-editor-content[contenteditable] .rich-image-container.is-gif .rich-image-gif-badge {
   display: flex !important;
 }
 /* 工具栏与徽章同现时不遮挡 */
-.rich-editor-wrapper .rich-image-container:hover .rich-image-gif-badge {
+.rich-editor-content[contenteditable] .rich-image-container:hover .rich-image-gif-badge {
   opacity: 0.5;
+}
+
+/* ═══ 预览模式安全网：无条件隐藏所有编辑器交互元素 ═══ */
+.rich-editor-content:not([contenteditable]) .rich-image-toolbar,
+.rich-editor-content:not([contenteditable]) .rich-image-resize,
+.rich-editor-content:not([contenteditable]) .rich-image-gif-badge,
+.rich-editor-content:not([contenteditable]) .rich-image-size-label {
+  display: none !important;
 }
 
 /* 图片占位框 */
