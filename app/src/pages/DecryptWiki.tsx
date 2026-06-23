@@ -124,7 +124,7 @@ export default function DecryptWiki() {
                       <div className="flex flex-wrap items-center gap-3 mt-2">
                         <Badge variant="secondary" className="text-xs"><Bookmark className="h-3 w-3 mr-1" />{entry.category}</Badge>
                         <span className="flex items-center gap-1 text-xs text-muted-foreground"><User className="h-3 w-3" />{entry.author}</span>
-                        <span className="flex items-center gap-1 text-xs text-muted-foreground"><Clock className="h-3 w-3" />{entry.lastUpdated?.split('T')[0]}</span>
+                        <span className="flex items-center gap-1 text-xs text-muted-foreground"><Clock className="h-3 w-3" />{entry.lastUpdated ? new Date(entry.lastUpdated).toLocaleDateString('zh-CN') : ''}</span>
                         {entry.attachments?.length > 0 && <span className="flex items-center gap-1 text-xs text-muted-foreground"><Paperclip className="h-3 w-3" />{entry.attachments.length}</span>}
                         <div onClick={e => e.stopPropagation()}><LikeButton entityType="wiki" entityId={entry.id} likeCount={entry.likeCount} size="sm" /></div>
                       </div>

@@ -75,7 +75,27 @@ function insertSpoiler(doc: Document, editorEl?: HTMLElement | null) {
   if (editorEl) editorEl.focus();
 }
 
-function insertImagePlaceholder(doc: Document) {
+// 图片尺寸预设（像素宽度）
+const IMAGE_SIZE_PRESETS = [
+  { label: '小', width: 200 },
+  { label: '中', width: 400 },
+  { label: '大', width: 600 },
+  { label: '100%', width: -1 }, // -1 = 全宽
+] as const;
+const IMAGE_DEFAULT_WIDTH = 400; // 新图片默认宽度
+
+function setImageSize(img: HTMLImageElement, width: number) {
+  if (width === -1) {
+    // 全宽：移除固定宽高，依赖 max-width:100%
+    img.style.removeProperty('width');
+    img.style.removeProperty('height');
+  } else {
+    img.style.width = width + 'px';
+    img.style.removeProperty('height'); // 改宽时放开高度，让 auto 自适应
+  }
+}
+
+function insertImagePlaceholder(doc: Document, editorEl?: HTMLElement | null) {
   const sel = doc.getSelection();
   if (!sel) return;
   // 安全获取 range：rangeCount 可能为 0（失焦时）
@@ -90,7 +110,7 @@ function insertImagePlaceholder(doc: Document) {
   const container = doc.createElement('div');
   container.className = 'rich-image-container';
   container.contentEditable = 'false';
-  container.style.cssText = 'display:inline-block;position:relative;margin:4px;vertical-align:top;';
+  container.style.cssText = 'display:inline-block;position:relative;margin:4px;vertical-align:top;border-radius:8px;overflow:hidden;';
 
   const fileInput = doc.createElement('input');
   fileInput.type = 'file';
@@ -98,35 +118,112 @@ function insertImagePlaceholder(doc: Document) {
   fileInput.style.display = 'none';
   container.appendChild(fileInput);
 
+  // 尺寸预设工具栏
+  const sizeToolbar = doc.createElement('div');
+  sizeToolbar.className = 'rich-image-toolbar';
+  sizeToolbar.style.cssText =
+    'position:absolute;top:6px;left:50%;transform:translateX(-50%);display:none;gap:3px;z-index:20;';
+  IMAGE_SIZE_PRESETS.forEach((preset) => {
+    const btn = doc.createElement('button');
+    btn.textContent = preset.label;
+    btn.className = 'rich-image-size-btn';
+    btn.style.cssText =
+      'padding:2px 8px;font-size:11px;border:none;border-radius:4px;background:rgba(0,0,0,0.75);color:#e2e8f0;cursor:pointer;backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,0.1);transition:all 0.15s;white-space:nowrap;';
+    btn.addEventListener('mouseenter', () => {
+      btn.style.background = 'rgba(0,212,255,0.6)';
+      btn.style.color = '#fff';
+    });
+    btn.addEventListener('mouseleave', () => {
+      btn.style.background = 'rgba(0,0,0,0.75)';
+      btn.style.color = '#e2e8f0';
+    });
+    btn.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    });
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const img = container.querySelector('.rich-image') as HTMLImageElement | null;
+      if (img) {
+        setImageSize(img, preset.width);
+        // 尺寸变更 → 通知编辑器状态更新
+        if (editorEl) editorEl.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    });
+    sizeToolbar.appendChild(btn);
+  });
+  container.appendChild(sizeToolbar);
+
+  // GIF 动图徽章（右上角）
+  const gifBadge = doc.createElement('div');
+  gifBadge.className = 'rich-image-gif-badge';
+  gifBadge.style.cssText =
+    'position:absolute;top:4px;right:4px;align-items:center;gap:3px;padding:2px 7px;background:rgba(147,51,234,0.85);color:#fff;font-size:10px;font-weight:600;border-radius:4px;z-index:18;backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,0.15);';
+  gifBadge.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink:0"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M8 10h2l-1 4"/><path d="M13 10l1 4"/><path d="M16 10v4"/></svg>GIF';
+  container.appendChild(gifBadge);
+
   const placeholder = doc.createElement('div');
   placeholder.className = 'rich-image-placeholder';
   placeholder.style.cssText =
-    'width:200px;height:150px;border:2px dashed hsl(228,20%,25%);border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:hsl(215,20%,60%);font-size:13px;gap:6px;transition:all 0.2s;';
+    'width:400px;height:200px;border:2px dashed hsl(228,20%,25%);border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:hsl(215,20%,60%);font-size:13px;gap:6px;transition:all 0.2s;background:rgba(0,0,0,0.15);';
   placeholder.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg> 点击上传图片';
   placeholder.addEventListener('click', () => fileInput.click());
   container.appendChild(placeholder);
 
+  // 缩放拖拽手柄（右下角）
   const resizeHandle = doc.createElement('div');
   resizeHandle.className = 'rich-image-resize';
   resizeHandle.style.cssText =
-    'position:absolute;right:-6px;bottom:-6px;width:14px;height:14px;background:hsl(190,100%,50%);border-radius:3px;cursor:nwse-resize;display:none;z-index:10;';
+    'position:absolute;right:2px;bottom:2px;width:22px;height:22px;background:rgba(0,212,255,0.85);border-radius:4px;cursor:nwse-resize;display:none;z-index:10;border:2px solid rgba(255,255,255,0.4);box-shadow:0 0 6px rgba(0,0,0,0.5);';
+  // 手柄内加一个右下角箭头图标
+  resizeHandle.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" style="position:absolute;right:1px;bottom:1px;"><path d="M22 2L22 22L2 22"/></svg>';
   container.appendChild(resizeHandle);
+
+  // 尺寸百分比标签（拖拽时显示）
+  const sizeLabel = doc.createElement('div');
+  sizeLabel.className = 'rich-image-size-label';
+  sizeLabel.style.cssText =
+    'position:absolute;bottom:4px;right:28px;display:none;font-size:10px;color:#fff;background:rgba(0,0,0,0.7);padding:1px 5px;border-radius:3px;pointer-events:none;z-index:15;';
+  container.appendChild(sizeLabel);
 
   fileInput.addEventListener('change', () => {
     const file = fileInput.files?.[0];
     if (!file) return;
+    const isGifFile = file.type === 'image/gif';
     const reader = new FileReader();
     reader.onload = () => {
       const img = doc.createElement('img');
       img.src = reader.result as string;
       img.className = 'rich-image';
-      img.style.cssText = 'max-width:100%;height:auto;display:block;border-radius:6px;';
+      // 不给默认宽度，先让浏览器自然加载，然后用 onload 设置
+      img.style.cssText = 'display:block;border-radius:6px;';
       img.setAttribute('data-image', reader.result as string);
+
+      // 图片加载完成后设置默认尺寸 + 通知编辑器状态更新
+      img.onload = () => {
+        const naturalW = img.naturalWidth;
+        const naturalH = img.naturalHeight;
+        // 如果原图比默认值小，保持原图大小；否则缩到默认宽度
+        const targetW = Math.min(naturalW, IMAGE_DEFAULT_WIDTH);
+        img.style.width = targetW + 'px';
+        // 如果有实际像素宽高，等比设置
+        if (naturalW > 0 && naturalH > 0) {
+          img.style.height = Math.round(targetW * naturalH / naturalW) + 'px';
+        } else {
+          img.style.height = 'auto';
+        }
+        // 通知编辑器内容已变更（替代占位框→图片的 DOM 变化不会自动触发 onInput）
+        if (editorEl) editorEl.dispatchEvent(new Event('input', { bubbles: true }));
+      };
+
       placeholder.remove();
       container.insertBefore(img, container.firstChild);
-      resizeHandle.style.display = 'block';
+      // 交互元素通过 CSS class + hover 控制显示，不写内联样式以防污染保存的 HTML
+      container.classList.add('image-loaded');
+      if (isGifFile) container.classList.add('is-gif');
 
-      // Resize logic
+      // 拖拽缩放逻辑
       let startX = 0, startW = 0, startH = 0;
       resizeHandle.addEventListener('mousedown', (e) => {
         e.preventDefault();
@@ -134,24 +231,40 @@ function insertImagePlaceholder(doc: Document) {
         startX = e.clientX;
         startW = img.offsetWidth;
         startH = img.offsetHeight;
+        sizeLabel.style.display = 'block';
         const onMove = (ev: MouseEvent) => {
-          const newW = Math.max(60, startW + (ev.clientX - startX));
+          const dx = ev.clientX - startX;
+          const newW = Math.max(60, Math.min(1200, startW + dx));
           const ratio = startH / startW;
           img.style.width = newW + 'px';
-          img.style.height = (newW * ratio) + 'px';
+          img.style.height = Math.round(newW * ratio) + 'px';
+          sizeLabel.textContent = newW + 'px';
         };
         const onUp = () => {
           doc.removeEventListener('mousemove', onMove);
           doc.removeEventListener('mouseup', onUp);
+          sizeLabel.style.display = 'none';
+          // 缩放结束 → 通知编辑器状态更新
+          if (editorEl) editorEl.dispatchEvent(new Event('input', { bubbles: true }));
         };
         doc.addEventListener('mousemove', onMove);
         doc.addEventListener('mouseup', onUp);
+      });
+
+      // 鼠标悬停容器 → 显示工具栏和手柄（用 CSS class，不污染内联样式）
+      container.addEventListener('mouseenter', () => {
+        container.classList.add('show-tools');
+      });
+      container.addEventListener('mouseleave', () => {
+        if (!(doc.body.style.cursor === 'nwse-resize')) {
+          container.classList.remove('show-tools');
+        }
       });
     };
     reader.readAsDataURL(file);
   });
 
-  // Delete on backspace when selected
+  // Delete on backspace/delete when selected
   container.addEventListener('keydown', (e) => {
     if (e.key === 'Backspace' || e.key === 'Delete') {
       container.remove();
@@ -161,6 +274,118 @@ function insertImagePlaceholder(doc: Document) {
   range.insertNode(container);
   range.collapse(false);
   sel.removeAllRanges();
+}
+
+// 为已保存 HTML 中的图片容器重新绑定交互事件
+function bindImageInteractions(container: HTMLElement, doc: Document) {
+  const imageContainers = container.querySelectorAll('.rich-image-container');
+  imageContainers.forEach((ctr) => {
+    if (ctr.querySelector('.rich-image-placeholder')) return; // 还未上传，跳过
+
+    const img = ctr.querySelector('.rich-image') as HTMLImageElement | null;
+    if (!img) return;
+
+    // 确保已存在或创建尺寸工具栏
+    let sizeToolbar = ctr.querySelector('.rich-image-toolbar') as HTMLElement | null;
+    if (!sizeToolbar) {
+      sizeToolbar = doc.createElement('div');
+      sizeToolbar.className = 'rich-image-toolbar';
+      IMAGE_SIZE_PRESETS.forEach((preset) => {
+        const btn = doc.createElement('button');
+        btn.textContent = preset.label;
+        btn.className = 'rich-image-size-btn';
+        btn.addEventListener('mousedown', (e) => { e.preventDefault(); e.stopPropagation(); });
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (img) {
+            setImageSize(img, preset.width);
+            // 尺寸变更 → 通知编辑器状态更新
+            container.dispatchEvent(new Event('input', { bubbles: true }));
+          }
+        });
+        sizeToolbar!.appendChild(btn);
+      });
+      ctr.appendChild(sizeToolbar);
+    }
+
+    // 确保已存在或创建缩放手柄
+    let resizeHandle = ctr.querySelector('.rich-image-resize') as HTMLElement | null;
+    if (!resizeHandle) {
+      resizeHandle = doc.createElement('div');
+      resizeHandle.className = 'rich-image-resize';
+      resizeHandle.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" style="position:absolute;right:1px;bottom:1px;"><path d="M22 2L22 22L2 22"/></svg>';
+      ctr.appendChild(resizeHandle);
+    }
+
+    // 确保已存在尺寸标签
+    let sizeLabel = ctr.querySelector('.rich-image-size-label') as HTMLElement | null;
+    if (!sizeLabel) {
+      sizeLabel = doc.createElement('div');
+      sizeLabel.className = 'rich-image-size-label';
+      ctr.appendChild(sizeLabel);
+    }
+
+    // 检测 GIF 并确保徽章存在
+    let gifBadge = ctr.querySelector('.rich-image-gif-badge') as HTMLElement | null;
+    const isGif = img.src.startsWith('data:image/gif') || img.src.toLowerCase().endsWith('.gif');
+    if (isGif) {
+      if (!gifBadge) {
+        gifBadge = doc.createElement('div');
+        gifBadge.className = 'rich-image-gif-badge';
+        gifBadge.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink:0"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M8 10h2l-1 4"/><path d="M13 10l1 4"/><path d="M16 10v4"/></svg>GIF';
+        ctr.appendChild(gifBadge);
+      }
+    }
+
+    // 重新绑定鼠标事件（CSS class 控制，不写内联样式）
+    ctr.classList.add('image-loaded');
+    if (isGif) ctr.classList.add('is-gif');
+    ctr.addEventListener('mouseenter', () => {
+      ctr.classList.add('show-tools');
+    });
+    ctr.addEventListener('mouseleave', () => {
+      if (doc.body.style.cursor !== 'nwse-resize') {
+        ctr.classList.remove('show-tools');
+      }
+    });
+
+    // 重新绑定拖拽缩放
+    resizeHandle.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const startX = (e as MouseEvent).clientX;
+      const startW = img.offsetWidth;
+      const startH = img.offsetHeight;
+      sizeLabel && (sizeLabel.style.display = 'block');
+      const onMove = (ev: MouseEvent) => {
+        const dx = ev.clientX - startX;
+        const newW = Math.max(60, Math.min(1200, startW + dx));
+        const ratio = startH / startW;
+        img.style.width = newW + 'px';
+        img.style.height = Math.round(newW * ratio) + 'px';
+        sizeLabel && (sizeLabel.textContent = newW + 'px');
+      };
+      const onUp = () => {
+        doc.removeEventListener('mousemove', onMove);
+        doc.removeEventListener('mouseup', onUp);
+        sizeLabel && (sizeLabel.style.display = 'none');
+        // 缩放结束 → 通知编辑器状态更新
+        container.dispatchEvent(new Event('input', { bubbles: true }));
+      };
+      doc.addEventListener('mousemove', onMove);
+      doc.addEventListener('mouseup', onUp);
+    });
+
+    // 删除快捷键
+    const el = ctr as HTMLElement;
+    el.addEventListener('keydown', (e) => {
+      const ke = e as unknown as KeyboardEvent;
+      if (ke.key === 'Backspace' || ke.key === 'Delete') {
+        el.remove();
+      }
+    });
+  });
 }
 
 export function RichTextEditor({
@@ -183,6 +408,12 @@ export function RichTextEditor({
       const currentContent = editorRef.current.innerHTML;
       if (currentContent !== value && value !== undefined) {
         editorRef.current.innerHTML = value;
+        // 重新绑定图片交互（加载已保存内容时）
+        requestAnimationFrame(() => {
+          if (editorRef.current) {
+            bindImageInteractions(editorRef.current, document);
+          }
+        });
       }
     }
     isInternalChange.current = false;
@@ -229,7 +460,7 @@ export function RichTextEditor({
     editorRef.current?.focus();
     // 延迟一帧确保 focus 生效
     requestAnimationFrame(() => {
-      insertImagePlaceholder(document);
+      insertImagePlaceholder(document, editorRef.current);
       handleInput();
     });
   };

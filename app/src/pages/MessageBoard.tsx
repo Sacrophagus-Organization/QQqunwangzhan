@@ -265,7 +265,7 @@ export default function MessageBoard() {
                         <AvatarDisplay
                           avatarUrl={msg.authorAvatar}
                           username={msg.author}
-                          size="md"
+                          size="lg"
                           isAnonymous={!!msg.isAnonymous}
                         />
                         <div>

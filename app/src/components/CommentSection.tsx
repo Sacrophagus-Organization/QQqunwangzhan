@@ -60,7 +60,7 @@ function formatRelativeTime(dateStr: string): string {
   if (hours < 24) return `${hours}小时前`;
   const days = Math.floor(hours / 24);
   if (days < 7) return `${days}天前`;
-  return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
+  return date.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
 // depth colors for left border (Reddit-style)
@@ -115,7 +115,7 @@ function CommentItem({
           <AvatarDisplay
             avatarUrl={c.authorAvatar}
             username={c.author}
-            size="sm"
+            size="md"
             isAnonymous={!!c.isAnonymous}
           />
           <span className="text-xs font-medium">

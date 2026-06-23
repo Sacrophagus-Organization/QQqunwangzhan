@@ -49,13 +49,14 @@ router.post('/', (req: AuthRequest, res) => {
     res.status(400).json({ error: '评论内容不能为空' });
     return;
   }
-  if (typeof content === 'string' && content.length > 2000) {
-    res.status(400).json({ error: '评论内容不能超过2000字符' });
+  if (typeof content === 'string' && content.length > 20_000_000) {
+    res.status(400).json({ error: '评论内容不能超过20,000,000字符' });
     return;
   }
   const id = 'cmt-' + uuid().slice(0, 8);
-  db.prepare(`INSERT INTO comments (id, entity_type, entity_id, parent_id, content, is_anonymous, author, author_id)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)`).run(
+  const now = new Date().toISOString();
+  db.prepare(`INSERT INTO comments (id, entity_type, entity_id, parent_id, content, is_anonymous, author, author_id, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
     id,
     entityType,
     entityId,
@@ -64,6 +65,7 @@ router.post('/', (req: AuthRequest, res) => {
     isAnonymous ? 1 : 0,
     req.userName,
     req.userId,
+    now,
   );
   const created = db.prepare('SELECT * FROM comments WHERE id = ?').get(id) as any;
   res.status(201).json(mapComment(created));
