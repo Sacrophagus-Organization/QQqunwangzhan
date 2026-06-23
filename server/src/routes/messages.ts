@@ -33,8 +33,8 @@ router.get('/', (_req: AuthRequest, res) => {
 router.post('/', (req: AuthRequest, res) => {
   const { content, isAnonymous } = req.body;
   if (!content) { res.status(400).json({ error: '留言内容不能为空' }); return; }
-  if (typeof content === 'string' && content.length > 5000) {
-    res.status(400).json({ error: '留言内容不能超过5000字符' });
+  if (typeof content === 'string' && content.length > 100000) {
+    res.status(400).json({ error: '留言内容不能超过100000字符（含图片）' });
     return;
   }
   const id = 'msg-' + uuid().slice(0, 8);
@@ -68,8 +68,8 @@ router.put('/:id', (req: AuthRequest, res) => {
   }
   const { content } = req.body;
   if (!content) { res.status(400).json({ error: '内容不能为空' }); return; }
-  if (typeof content === 'string' && content.length > 5000) {
-    res.status(400).json({ error: '留言内容不能超过5000字符' });
+  if (typeof content === 'string' && content.length > 100000) {
+    res.status(400).json({ error: '留言内容不能超过100000字符（含图片）' });
     return;
   }
   const now = new Date().toISOString();

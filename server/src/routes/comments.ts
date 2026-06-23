@@ -49,8 +49,8 @@ router.post('/', (req: AuthRequest, res) => {
     res.status(400).json({ error: '评论内容不能为空' });
     return;
   }
-  if (typeof content === 'string' && content.length > 2000) {
-    res.status(400).json({ error: '评论内容不能超过2000字符' });
+  if (typeof content === 'string' && content.length > 100000) {
+    res.status(400).json({ error: '评论内容不能超过100000字符（含图片）' });
     return;
   }
   const id = 'cmt-' + uuid().slice(0, 8);

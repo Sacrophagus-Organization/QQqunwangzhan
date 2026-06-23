@@ -22,6 +22,9 @@ router.get('/:id', (req: AuthRequest, res) => {
 router.post('/', (req: AuthRequest, res) => {
   const { title, content, category, tags } = req.body;
   if (!title || !category) { res.status(400).json({ error: '标题和分类必填' }); return; }
+  if (typeof content === 'string' && content.length > 500000) {
+    res.status(400).json({ error: '词条内容不能超过500000字符（含图片）' }); return;
+  }
   const id = 'wiki-' + uuid().slice(0, 8);
   const now = new Date().toISOString();
   db.prepare(`INSERT INTO wiki_entries (id, title, content, category, tags, author, author_id, last_updated, created_at)
@@ -39,6 +42,9 @@ router.put('/:id', (req: AuthRequest, res) => {
     res.status(403).json({ error: '无权限编辑' }); return;
   }
   const { title, content, category, tags } = req.body;
+  if (typeof content === 'string' && content.length > 500000) {
+    res.status(400).json({ error: '词条内容不能超过500000字符（含图片）' }); return;
+  }
   db.prepare(`UPDATE wiki_entries SET title=?, content=?, category=?, tags=?, last_updated=? WHERE id=?`).run(
     title ?? entry.title, content ?? entry.content, category ?? entry.category,
     JSON.stringify(tags ?? JSON.parse(entry.tags || '[]')), new Date().toISOString(), req.params.id
