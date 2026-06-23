@@ -181,6 +181,7 @@ router.put('/codes/:id', authMiddleware, adminOnly, upload.single('file'), (req:
 
   const { code: newCode } = req.body;
   const file = req.file;
+  const now = new Date().toISOString();
 
   if (newCode !== undefined) {
     const dup = db.prepare('SELECT id FROM sarcophagus_codes WHERE code = ? AND id != ?')
@@ -190,16 +191,16 @@ router.put('/codes/:id', authMiddleware, adminOnly, upload.single('file'), (req:
       res.status(409).json({ error: '该访问代码已被其他记录使用' });
       return;
     }
-    db.prepare('UPDATE sarcophagus_codes SET code = ?, updated_at = datetime("now") WHERE id = ?')
-      .run(newCode.trim().toUpperCase(), req.params.id);
+    db.prepare('UPDATE sarcophagus_codes SET code = ?, updated_at = ? WHERE id = ?')
+      .run(newCode.trim().toUpperCase(), now, req.params.id);
   }
 
   if (file) {
     const fileName = Buffer.from(file.originalname, 'latin1').toString('utf8');
     // Delete old file
     try { fs.unlinkSync(existing.file_path); } catch {}
-    db.prepare('UPDATE sarcophagus_codes SET file_name = ?, file_path = ?, updated_at = datetime("now") WHERE id = ?')
-      .run(fileName, file.path, req.params.id);
+    db.prepare('UPDATE sarcophagus_codes SET file_name = ?, file_path = ?, updated_at = ? WHERE id = ?')
+      .run(fileName, file.path, now, req.params.id);
   }
 
   res.json({ success: true });

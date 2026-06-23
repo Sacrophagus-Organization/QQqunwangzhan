@@ -284,7 +284,7 @@ export default function AdminPage() {
                       </div>
                       <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
                         <span>QQ: {u.qq_number || '-'}</span>
-                        <span>注册于 {u.created_at?.split('T')[0]}</span>
+                        <span>注册于 {u.created_at ? new Date(u.created_at).toLocaleDateString('zh-CN') : '-'}</span>
                         <span className="mono-text">ID: {u.id}</span>
                       </div>
                       {u.register_reason && (

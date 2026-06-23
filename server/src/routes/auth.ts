@@ -52,8 +52,9 @@ router.post('/register', registerLimiter, (req: AuthRequest, res) => {
   }
   const id = 'user-' + uuid().slice(0, 8);
   const hashed = bcrypt.hashSync(password, 10);
-  db.prepare('INSERT INTO users (id, username, password, qq_number, role, status, register_reason) VALUES (?, ?, ?, ?, ?, ?, ?)')
-    .run(id, username, hashed, qqNumber || '', 'member', 'pending', registerReason || '');
+  const now = new Date().toISOString();
+  db.prepare('INSERT INTO users (id, username, password, qq_number, role, status, register_reason, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+    .run(id, username, hashed, qqNumber || '', 'member', 'pending', registerReason || '', now);
   res.json({ success: true, message: '注册成功，请等待管理员审核通过后再登录' });
 });
 

@@ -38,13 +38,16 @@ router.post('/', (req: AuthRequest, res) => {
     return;
   }
   const id = 'msg-' + uuid().slice(0, 8);
-  db.prepare(`INSERT INTO messages (id, content, is_anonymous, author, author_id)
-    VALUES (?, ?, ?, ?, ?)`).run(
+  const now = new Date().toISOString();
+  db.prepare(`INSERT INTO messages (id, content, is_anonymous, author, author_id, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?)`).run(
     id,
     content,
     isAnonymous ? 1 : 0,
     req.userName,
     req.userId,
+    now,
+    now,
   );
   const created = db.prepare('SELECT * FROM messages WHERE id = ?').get(id) as any;
   res.status(201).json({
