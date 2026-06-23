@@ -95,7 +95,7 @@ function setImageSize(img: HTMLImageElement, width: number) {
   }
 }
 
-function insertImagePlaceholder(doc: Document) {
+function insertImagePlaceholder(doc: Document, editorEl?: HTMLElement | null) {
   const sel = doc.getSelection();
   if (!sel) return;
   // 安全获取 range：rangeCount 可能为 0（失焦时）
@@ -145,7 +145,11 @@ function insertImagePlaceholder(doc: Document) {
       e.preventDefault();
       e.stopPropagation();
       const img = container.querySelector('.rich-image') as HTMLImageElement | null;
-      if (img) setImageSize(img, preset.width);
+      if (img) {
+        setImageSize(img, preset.width);
+        // 尺寸变更 → 通知编辑器状态更新
+        if (editorEl) editorEl.dispatchEvent(new Event('input', { bubbles: true }));
+      }
     });
     sizeToolbar.appendChild(btn);
   });
@@ -196,7 +200,7 @@ function insertImagePlaceholder(doc: Document) {
       img.style.cssText = 'display:block;border-radius:6px;';
       img.setAttribute('data-image', reader.result as string);
 
-      // 图片加载完成后设置默认尺寸
+      // 图片加载完成后设置默认尺寸 + 通知编辑器状态更新
       img.onload = () => {
         const naturalW = img.naturalWidth;
         const naturalH = img.naturalHeight;
@@ -209,6 +213,8 @@ function insertImagePlaceholder(doc: Document) {
         } else {
           img.style.height = 'auto';
         }
+        // 通知编辑器内容已变更（替代占位框→图片的 DOM 变化不会自动触发 onInput）
+        if (editorEl) editorEl.dispatchEvent(new Event('input', { bubbles: true }));
       };
 
       placeholder.remove();
@@ -238,6 +244,8 @@ function insertImagePlaceholder(doc: Document) {
           doc.removeEventListener('mousemove', onMove);
           doc.removeEventListener('mouseup', onUp);
           sizeLabel.style.display = 'none';
+          // 缩放结束 → 通知编辑器状态更新
+          if (editorEl) editorEl.dispatchEvent(new Event('input', { bubbles: true }));
         };
         doc.addEventListener('mousemove', onMove);
         doc.addEventListener('mouseup', onUp);
@@ -299,7 +307,11 @@ function bindImageInteractions(container: HTMLElement, doc: Document) {
         btn.addEventListener('click', (e) => {
           e.preventDefault();
           e.stopPropagation();
-          if (img) setImageSize(img, preset.width);
+          if (img) {
+            setImageSize(img, preset.width);
+            // 尺寸变更 → 通知编辑器状态更新
+            container.dispatchEvent(new Event('input', { bubbles: true }));
+          }
         });
         sizeToolbar!.appendChild(btn);
       });
@@ -371,6 +383,8 @@ function bindImageInteractions(container: HTMLElement, doc: Document) {
         doc.removeEventListener('mousemove', onMove);
         doc.removeEventListener('mouseup', onUp);
         sizeLabel && (sizeLabel.style.display = 'none');
+        // 缩放结束 → 通知编辑器状态更新
+        container.dispatchEvent(new Event('input', { bubbles: true }));
       };
       doc.addEventListener('mousemove', onMove);
       doc.addEventListener('mouseup', onUp);
@@ -459,7 +473,7 @@ export function RichTextEditor({
     editorRef.current?.focus();
     // 延迟一帧确保 focus 生效
     requestAnimationFrame(() => {
-      insertImagePlaceholder(document);
+      insertImagePlaceholder(document, editorRef.current);
       handleInput();
     });
   };
