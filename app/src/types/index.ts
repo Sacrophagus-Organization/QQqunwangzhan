@@ -121,3 +121,11 @@ export interface AuthState {
   token: string | null;
   isAuthenticated: boolean;
 }
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}

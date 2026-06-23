@@ -20,22 +20,38 @@ const mapComment = (r: any) => ({
   createdAt: r.created_at,
 });
 
-// GET / — 获取某实体的所有评论，按 created_at ASC 排序
+// GET / — 分页获取某实体的评论，按 created_at ASC 排序
 router.get('/', (req: AuthRequest, res) => {
   const { entityType, entityId } = req.query;
   if (!entityType || !entityId) {
     res.status(400).json({ error: '缺少 entityType 或 entityId 参数' });
     return;
   }
+  const page = Math.max(1, parseInt(req.query.page as string) || 1);
+  const limit = Math.min(Math.max(1, parseInt(req.query.limit as string) || 30), 50);
+  const offset = (page - 1) * limit;
+
+  const { total } = db.prepare(
+    'SELECT COUNT(*) as total FROM comments WHERE entity_type = ? AND entity_id = ?'
+  ).get(entityType as string, entityId as string) as any;
+
   const rows = db.prepare(
     `SELECT c.*, u.avatar_url,
       (SELECT COUNT(*) FROM likes WHERE entity_type='comment' AND entity_id=c.id) as like_count
      FROM comments c
      LEFT JOIN users u ON c.author_id = u.id
      WHERE c.entity_type = ? AND c.entity_id = ?
-     ORDER BY c.created_at ASC`
-  ).all(entityType as string, entityId as string) as any[];
-  res.json(rows.map(mapComment));
+     ORDER BY c.created_at ASC
+     LIMIT ? OFFSET ?`
+  ).all(entityType as string, entityId as string, limit, offset) as any[];
+
+  res.json({
+    data: rows.map(mapComment),
+    page,
+    limit,
+    total,
+    totalPages: Math.ceil(total / limit),
+  });
 });
 
 // POST / — 创建评论（支持嵌套 parentId）
@@ -49,8 +65,8 @@ router.post('/', (req: AuthRequest, res) => {
     res.status(400).json({ error: '评论内容不能为空' });
     return;
   }
-  if (typeof content === 'string' && content.length > 1_000_000) {
-    res.status(400).json({ error: '评论内容不能超过1,000,000字符' });
+  if (typeof content === 'string' && content.length > 10_000_000) {
+    res.status(400).json({ error: '评论内容不能超过10,000,000字符' });
     return;
   }
   const id = 'cmt-' + uuid().slice(0, 8);

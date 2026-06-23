@@ -18,7 +18,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
-import type { Comment } from '@/types';
+import type { Comment, PaginatedResponse } from '@/types';
 
 interface CommentSectionProps {
   entityType: string;
@@ -209,6 +209,10 @@ const PREVIEW_COUNT = 3; // 默认显示前 3 条评论
 export default function CommentSection({ entityType, entityId }: CommentSectionProps) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
   const [collapsed, setCollapsed] = useState(true); // 默认折叠
   const [showNewComment, setShowNewComment] = useState(false);
   const [newContent, setNewContent] = useState('');
@@ -218,15 +222,31 @@ export default function CommentSection({ entityType, entityId }: CommentSectionP
   const [replyContent, setReplyContent] = useState('');
   const [replyAnonymous, setReplyAnonymous] = useState(false);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (pageNum = 1, append = false) => {
     try {
-      const data = await apiGet<Comment[]>(`/comments?entityType=${entityType}&entityId=${entityId}`);
-      setComments(data);
+      const res = await apiGet<PaginatedResponse<Comment>>(
+        `/comments?entityType=${entityType}&entityId=${entityId}&page=${pageNum}&limit=30`
+      );
+      if (append) {
+        setComments(prev => [...prev, ...res.data]);
+      } else {
+        setComments(res.data);
+      }
+      setPage(res.page);
+      setTotalPages(res.totalPages);
+      setTotal(res.total);
     } catch { /* ignore */ }
-    finally { setLoading(false); }
+    finally { setLoading(false); setLoadingMore(false); }
   }, [entityType, entityId]);
 
   useEffect(() => { load(); }, [load]);
+
+  const loadMore = () => {
+    if (page < totalPages && !loadingMore) {
+      setLoadingMore(true);
+      load(page + 1, true);
+    }
+  };
 
   const handleDelete = async (id: string) => {
     if (!window.confirm('确定删除这条评论及其所有回复？')) return;
@@ -276,7 +296,6 @@ export default function CommentSection({ entityType, entityId }: CommentSectionP
   };
 
   const tree = buildTree(comments);
-  const totalCount = comments.length;
 
   if (loading) {
     return <div className="flex items-center justify-center py-6"><Loader2 className="h-5 w-5 text-muted-foreground animate-spin" /></div>;
@@ -288,7 +307,7 @@ export default function CommentSection({ entityType, entityId }: CommentSectionP
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <MessageCircle className="h-4 w-4" />
-          <span>{totalCount > 0 ? `${totalCount} 条评论` : '暂无评论'}</span>
+          <span>{total > 0 ? `${total} 条评论` : '暂无评论'}</span>
         </div>
         <Button
           variant="ghost"
@@ -391,6 +410,25 @@ export default function CommentSection({ entityType, entityId }: CommentSectionP
                 </>
               )}
             </button>
+          )}
+
+          {/* 加载更多分页 */}
+          {page < totalPages && (
+            <div className="flex justify-center pt-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={loadMore}
+                disabled={loadingMore}
+                className="gap-1.5 text-xs text-muted-foreground hover:text-primary"
+              >
+                {loadingMore ? (
+                  <><Loader2 className="h-3.5 w-3.5 animate-spin" />加载中...</>
+                ) : (
+                  <><ChevronDown className="h-3.5 w-3.5" />加载更多评论 ({Math.min(page * 30, total)}/{total})</>
+                )}
+              </Button>
+            </div>
           )}
         </div>
       )}

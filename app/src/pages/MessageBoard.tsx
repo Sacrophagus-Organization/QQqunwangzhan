@@ -23,13 +23,18 @@ import {
   Pin,
   Save,
   MessageCircle,
+  ChevronDown,
 } from 'lucide-react';
-import type { Message } from '@/types';
+import type { Message, PaginatedResponse } from '@/types';
 
 export default function MessageBoard() {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
   const [showCreate, setShowCreate] = useState(false);
   const [content, setContent] = useState('');
   const [isAnonymous, setIsAnonymous] = useState(false);
@@ -40,17 +45,33 @@ export default function MessageBoard() {
   const [editId, setEditId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (pageNum = 1, append = false) => {
     try {
-      setMessages(await apiGet<Message[]>('/messages'));
+      const res = await apiGet<PaginatedResponse<Message>>(`/messages?page=${pageNum}&limit=10`);
+      if (append) {
+        setMessages(prev => [...prev, ...res.data]);
+      } else {
+        setMessages(res.data);
+      }
+      setPage(res.page);
+      setTotalPages(res.totalPages);
+      setTotal(res.total);
     } catch (e: any) {
       console.error('加载留言失败:', e);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  const loadMore = () => {
+    if (page < totalPages && !loadingMore) {
+      setLoadingMore(true);
+      load(page + 1, true);
+    }
+  };
 
   const canEdit = (msg: Message) =>
     user && (user.id === msg.authorId || user.role === 'admin');
@@ -168,7 +189,7 @@ export default function MessageBoard() {
                 <div>
                   <h1 className="text-xl font-bold text-glow-cyan">留言板</h1>
                   <p className="text-xs text-muted-foreground">
-                    共 {messages.length} 条留言 · 畅所欲言，分享你的想法
+                    共 {total} 条留言 · 畅所欲言，分享你的想法
                   </p>
                 </div>
               </div>
@@ -362,6 +383,25 @@ export default function MessageBoard() {
                 </Card>
               );
             })}
+          </div>
+        )}
+
+        {/* Load More */}
+        {page < totalPages && (
+          <div className="flex justify-center pt-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={loadMore}
+              disabled={loadingMore}
+              className="gap-2 text-muted-foreground hover:text-primary"
+            >
+              {loadingMore ? (
+                <><Loader2 className="h-4 w-4 animate-spin" />加载中...</>
+              ) : (
+                <><ChevronDown className="h-4 w-4" />加载更多 ({page}/{totalPages})</>
+              )}
+            </Button>
           </div>
         )}
       </div>

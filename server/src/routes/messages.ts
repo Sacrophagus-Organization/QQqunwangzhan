@@ -6,35 +6,48 @@ import { authMiddleware, AuthRequest } from '../middleware/auth.js';
 const router = Router();
 router.use(authMiddleware);
 
-// GET / — 获取全部留言，按置顶优先 + 时间倒序
-router.get('/', (_req: AuthRequest, res) => {
+// GET / — 分页获取留言，按置顶优先 + 时间倒序
+router.get('/', (req: AuthRequest, res) => {
+  const page = Math.max(1, parseInt(req.query.page as string) || 1);
+  const limit = Math.min(Math.max(1, parseInt(req.query.limit as string) || 20), 50);
+  const offset = (page - 1) * limit;
+
+  const { total } = db.prepare('SELECT COUNT(*) as total FROM messages').get() as any;
   const rows = db.prepare(`
     SELECT m.*, u.avatar_url,
       (SELECT COUNT(*) FROM likes WHERE entity_type='message' AND entity_id=m.id) as like_count
     FROM messages m
     LEFT JOIN users u ON m.author_id = u.id
     ORDER BY m.pinned DESC, m.created_at DESC
-  `).all() as any[];
-  res.json(rows.map(r => ({
-    id: r.id,
-    content: r.content,
-    isAnonymous: r.is_anonymous,
-    author: r.author,
-    authorId: r.author_id,
-    authorAvatar: r.avatar_url ? '/' + r.avatar_url : '',
-    likeCount: r.like_count,
-    pinned: r.pinned || 0,
-    createdAt: r.created_at,
-    updatedAt: r.updated_at || r.created_at,
-  })));
+    LIMIT ? OFFSET ?
+  `).all(limit, offset) as any[];
+
+  res.json({
+    data: rows.map(r => ({
+      id: r.id,
+      content: r.content,
+      isAnonymous: r.is_anonymous,
+      author: r.author,
+      authorId: r.author_id,
+      authorAvatar: r.avatar_url ? '/' + r.avatar_url : '',
+      likeCount: r.like_count,
+      pinned: r.pinned || 0,
+      createdAt: r.created_at,
+      updatedAt: r.updated_at || r.created_at,
+    })),
+    page,
+    limit,
+    total,
+    totalPages: Math.ceil(total / limit),
+  });
 });
 
 // POST / — 创建留言
 router.post('/', (req: AuthRequest, res) => {
   const { content, isAnonymous } = req.body;
   if (!content) { res.status(400).json({ error: '留言内容不能为空' }); return; }
-  if (typeof content === 'string' && content.length > 1_000_000) {
-    res.status(400).json({ error: '留言内容不能超过1,000,000字符' });
+  if (typeof content === 'string' && content.length > 10_000_000) {
+    res.status(400).json({ error: '留言内容不能超过10,000,000字符' });
     return;
   }
   const id = 'msg-' + uuid().slice(0, 8);
@@ -71,8 +84,8 @@ router.put('/:id', (req: AuthRequest, res) => {
   }
   const { content } = req.body;
   if (!content) { res.status(400).json({ error: '内容不能为空' }); return; }
-  if (typeof content === 'string' && content.length > 1_000_000) {
-    res.status(400).json({ error: '留言内容不能超过1,000,000字符' });
+  if (typeof content === 'string' && content.length > 10_000_000) {
+    res.status(400).json({ error: '留言内容不能超过10,000,000字符' });
     return;
   }
   const now = new Date().toISOString();
