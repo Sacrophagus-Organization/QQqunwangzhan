@@ -33,7 +33,7 @@ export function AvatarDisplay({
 
   return (
     <div
-      className={`rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden ${sz} ${className} ${
+      className={`rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden relative ${sz} ${className} ${
         avatarUrl
           ? 'border border-border/30'
           : 'bg-primary/10 border border-primary/20 text-primary'
@@ -45,7 +45,7 @@ export function AvatarDisplay({
         <img
           src={avatarUrl}
           alt={username || 'avatar'}
-          className="h-full w-full object-cover"
+          className="absolute inset-0 w-full h-full object-cover"
           onError={(e) => {
             // 图片加载失败时回退文字
             (e.target as HTMLImageElement).style.display = 'none';
