@@ -351,9 +351,11 @@ function bindImageInteractions(container: HTMLElement, doc: Document) {
     });
 
     // 删除快捷键
-    ctr.addEventListener('keydown', (e) => {
-      if (e.key === 'Backspace' || e.key === 'Delete') {
-        ctr.remove();
+    const el = ctr as HTMLElement;
+    el.addEventListener('keydown', (e) => {
+      const ke = e as unknown as KeyboardEvent;
+      if (ke.key === 'Backspace' || ke.key === 'Delete') {
+        el.remove();
       }
     });
   });
