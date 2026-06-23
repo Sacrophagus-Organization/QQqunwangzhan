@@ -115,7 +115,7 @@ function CommentItem({
           <AvatarDisplay
             avatarUrl={c.authorAvatar}
             username={c.author}
-            size="sm"
+            size="md"
             isAnonymous={!!c.isAnonymous}
           />
           <span className="text-xs font-medium">
