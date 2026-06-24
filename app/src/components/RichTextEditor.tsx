@@ -191,77 +191,125 @@ function insertImagePlaceholder(doc: Document, editorEl?: HTMLElement | null) {
     const file = fileInput.files?.[0];
     if (!file) return;
     const isGifFile = file.type === 'image/gif';
-    const reader = new FileReader();
-    reader.onload = () => {
-      const img = doc.createElement('img');
-      img.src = reader.result as string;
-      img.className = 'rich-image';
-      // 不给默认宽度，先让浏览器自然加载，然后用 onload 设置
-      img.style.cssText = 'display:block;border-radius:6px;';
-      img.setAttribute('data-image', reader.result as string);
 
-      // 图片加载完成后设置默认尺寸 + 通知编辑器状态更新
-      img.onload = () => {
-        const naturalW = img.naturalWidth;
-        const naturalH = img.naturalHeight;
-        // 如果原图比默认值小，保持原图大小；否则缩到默认宽度
-        const targetW = Math.min(naturalW, IMAGE_DEFAULT_WIDTH);
-        img.style.width = targetW + 'px';
-        // 如果有实际像素宽高，等比设置
-        if (naturalW > 0 && naturalH > 0) {
-          img.style.height = Math.round(targetW * naturalH / naturalW) + 'px';
-        } else {
-          img.style.height = 'auto';
-        }
-        // 通知编辑器内容已变更（替代占位框→图片的 DOM 变化不会自动触发 onInput）
-        if (editorEl) editorEl.dispatchEvent(new Event('input', { bubbles: true }));
-      };
+    // Update placeholder to show upload progress
+    placeholder.innerHTML = `
+      <div style="display:flex;flex-direction:column;align-items:center;gap:10px;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite;">
+          <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+        </svg>
+        <span>上传中... ${file.name}</span>
+        <div style="width:200px;height:4px;background:rgba(255,255,255,0.1);border-radius:2px;overflow:hidden;">
+          <div class="rich-upload-progress-bar" style="width:0%;height:100%;background:#00d4ff;border-radius:2px;transition:width 0.3s;"></div>
+        </div>
+      </div>`;
+    placeholder.style.cursor = 'default';
 
-      placeholder.remove();
-      container.insertBefore(img, container.firstChild);
-      // 交互元素通过 CSS class + hover 控制显示，不写内联样式以防污染保存的 HTML
-      container.classList.add('image-loaded');
-      if (isGifFile) container.classList.add('is-gif');
+    // Upload via API
+    const formData = new FormData();
+    formData.append('image', file);
+    const token = localStorage.getItem('arkoverseer_token');
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', '/api/images/upload');
+    xhr.setRequestHeader('Authorization', `Bearer ${token}`);
 
-      // 拖拽缩放逻辑
-      let startX = 0, startW = 0, startH = 0;
-      resizeHandle.addEventListener('mousedown', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        startX = e.clientX;
-        startW = img.offsetWidth;
-        startH = img.offsetHeight;
-        sizeLabel.style.display = 'block';
-        const onMove = (ev: MouseEvent) => {
-          const dx = ev.clientX - startX;
-          const newW = Math.max(60, Math.min(1200, startW + dx));
-          const ratio = startH / startW;
-          img.style.width = newW + 'px';
-          img.style.height = Math.round(newW * ratio) + 'px';
-          sizeLabel.textContent = newW + 'px';
-        };
-        const onUp = () => {
-          doc.removeEventListener('mousemove', onMove);
-          doc.removeEventListener('mouseup', onUp);
-          sizeLabel.style.display = 'none';
-          // 缩放结束 → 通知编辑器状态更新
+    xhr.upload.addEventListener('progress', (e) => {
+      if (e.lengthComputable) {
+        const pct = Math.round((e.loaded / e.total) * 100);
+        const bar = container.querySelector('.rich-upload-progress-bar') as HTMLElement | null;
+        if (bar) bar.style.width = pct + '%';
+      }
+    });
+
+    xhr.addEventListener('load', () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        const data = JSON.parse(xhr.responseText);
+        const imgUrl = data.url;
+
+        const img = doc.createElement('img');
+        img.src = imgUrl;
+        img.className = 'rich-image';
+        img.style.cssText = 'display:block;border-radius:6px;';
+        img.setAttribute('data-image', imgUrl);
+
+        img.onload = () => {
+          const naturalW = img.naturalWidth;
+          const naturalH = img.naturalHeight;
+          const targetW = Math.min(naturalW, IMAGE_DEFAULT_WIDTH);
+          img.style.width = targetW + 'px';
+          if (naturalW > 0 && naturalH > 0) {
+            img.style.height = Math.round(targetW * naturalH / naturalW) + 'px';
+          } else {
+            img.style.height = 'auto';
+          }
           if (editorEl) editorEl.dispatchEvent(new Event('input', { bubbles: true }));
         };
-        doc.addEventListener('mousemove', onMove);
-        doc.addEventListener('mouseup', onUp);
-      });
 
-      // 鼠标悬停容器 → 显示工具栏和手柄（用 CSS class，不污染内联样式）
-      container.addEventListener('mouseenter', () => {
-        container.classList.add('show-tools');
-      });
-      container.addEventListener('mouseleave', () => {
-        if (!(doc.body.style.cursor === 'nwse-resize')) {
-          container.classList.remove('show-tools');
-        }
-      });
-    };
-    reader.readAsDataURL(file);
+        img.onerror = () => {
+          placeholder.innerHTML = '<span style="color:#f87171;">图片加载失败</span>';
+        };
+
+        placeholder.remove();
+        container.insertBefore(img, container.firstChild);
+        container.classList.add('image-loaded');
+        if (isGifFile) container.classList.add('is-gif');
+
+        // Resize logic
+        let startX = 0, startW = 0, startH = 0;
+        resizeHandle.addEventListener('mousedown', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          startX = e.clientX;
+          startW = img.offsetWidth;
+          startH = img.offsetHeight;
+          sizeLabel.style.display = 'block';
+          const onMove = (ev: MouseEvent) => {
+            const dx = ev.clientX - startX;
+            const newW = Math.max(60, Math.min(1200, startW + dx));
+            const ratio = startH / startW;
+            img.style.width = newW + 'px';
+            img.style.height = Math.round(newW * ratio) + 'px';
+            sizeLabel.textContent = newW + 'px';
+          };
+          const onUp = () => {
+            doc.removeEventListener('mousemove', onMove);
+            doc.removeEventListener('mouseup', onUp);
+            sizeLabel.style.display = 'none';
+            if (editorEl) editorEl.dispatchEvent(new Event('input', { bubbles: true }));
+          };
+          doc.addEventListener('mousemove', onMove);
+          doc.addEventListener('mouseup', onUp);
+        });
+
+        container.addEventListener('mouseenter', () => {
+          container.classList.add('show-tools');
+        });
+        container.addEventListener('mouseleave', () => {
+          if (!(doc.body.style.cursor === 'nwse-resize')) {
+            container.classList.remove('show-tools');
+          }
+        });
+      } else {
+        let errMsg = '上传失败';
+        try {
+          const errData = JSON.parse(xhr.responseText);
+          errMsg = errData.error || errMsg;
+        } catch { /* ignore */ }
+        placeholder.innerHTML = `<span style="color:#f87171;display:flex;align-items:center;gap:4px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
+          ${errMsg}</span>`;
+        placeholder.style.cursor = 'pointer';
+        placeholder.addEventListener('click', () => fileInput.click(), { once: true });
+      }
+    });
+
+    xhr.addEventListener('error', () => {
+      placeholder.innerHTML = '<span style="color:#f87171;">网络错误，请重试</span>';
+      placeholder.style.cursor = 'pointer';
+      placeholder.addEventListener('click', () => fileInput.click(), { once: true });
+    });
+
+    xhr.send(formData);
   });
 
   // Delete on backspace/delete when selected

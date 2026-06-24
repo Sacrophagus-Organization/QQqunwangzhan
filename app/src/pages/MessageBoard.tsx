@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,8 @@ import CommentSection from '@/components/CommentSection';
 import { AvatarDisplay } from '@/components/AvatarDisplay';
 import { LikeButton } from '@/components/LikeButton';
 import { apiGet, apiPost, apiPut, apiDelete } from '@/api/client';
+import { useImageLazyLoad, processContentForLazyImages } from '@/hooks/useImageLazyLoad';
+import { sanitizeHtml } from '@/lib/sanitize';
 import {
   MessagesSquare,
   Plus,
@@ -44,6 +46,10 @@ export default function MessageBoard() {
   // Edit state
   const [editId, setEditId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
+
+  // Lazy loading images
+  const messageListRef = useRef<HTMLDivElement>(null);
+  useImageLazyLoad(messageListRef, [messages]);
 
   const load = useCallback(async (pageNum = 1, append = false) => {
     try {
@@ -160,9 +166,12 @@ export default function MessageBoard() {
     return (
       <div className="min-h-screen bg-background warm-glow-bg">
         <div className="container mx-auto max-w-4xl px-4 py-8 space-y-4">
-          <div className="skeleton h-8 w-48 mb-6" />
+          <div className="card-elevated rounded-2xl p-6 mb-6">
+            <div className="skeleton h-8 w-48 mb-2" />
+            <div className="skeleton h-4 w-32" />
+          </div>
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="glass-card border-border/50 p-5 space-y-3">
+            <div key={i} className="glass-card border-border/50 p-5 space-y-3 anim-fade-up" style={{ animationDelay: `${i * 0.1}s` }}>
               <div className="flex items-center gap-3"><div className="skeleton h-8 w-8 rounded-full" /><div className="skeleton h-4 w-24" /></div>
               <div className="skeleton h-4 w-full" />
               <div className="skeleton h-4 w-3/4" />
@@ -174,21 +183,30 @@ export default function MessageBoard() {
   }
 
   return (
-    <div className="min-h-screen bg-background warm-glow-bg">
-      <div className="container mx-auto max-w-4xl px-4 py-8">
+    <div className="min-h-screen bg-background warm-glow-bg relative overflow-hidden">
+      {/* 装饰闪烁点 */}
+      <div className="absolute top-20 left-10 w-1 h-1 rounded-full bg-primary/60 animate-twinkle pointer-events-none" style={{ animationDelay: '0.3s' }} />
+      <div className="absolute top-40 right-16 w-1 h-1 rounded-full bg-accent/60 animate-twinkle pointer-events-none" style={{ animationDelay: '1.1s' }} />
+      <div className="absolute bottom-32 left-1/4 w-1 h-1 rounded-full bg-primary/60 animate-twinkle pointer-events-none" style={{ animationDelay: '1.8s' }} />
+      <div className="absolute top-1/2 right-8 w-1 h-1 rounded-full bg-accent/60 animate-twinkle pointer-events-none" style={{ animationDelay: '2.4s' }} />
+      <div className="container mx-auto max-w-4xl px-4 py-8 relative z-10">
         {/* Header */}
-        <div className="relative mb-8 overflow-hidden rounded-2xl">
+        <div className="relative mb-8 overflow-hidden rounded-2xl anim-blur-in">
           <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-purple-500/5 to-accent/5 rounded-2xl blur-xl" />
           <div className="absolute top-0 right-0 w-40 h-40 rounded-full bg-primary/[0.03] blur-3xl" />
-          <div className="relative glass-card rounded-2xl p-6 border-glow">
+          {/* Hero 扫描线 */}
+          <div className="absolute top-0 left-0 right-0 h-px overflow-hidden z-10 pointer-events-none">
+            <div className="h-full w-1/3 bg-gradient-to-r from-transparent via-primary/70 to-transparent animate-data-sweep" />
+          </div>
+          <div className="relative card-elevated rounded-2xl p-6 border-glow">
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div className="flex items-center gap-3">
-                <div className="h-11 w-11 rounded-xl bg-primary/10 border border-primary/30 flex items-center justify-center originium-pulse">
+                <div className="h-11 w-11 rounded-xl bg-primary/10 border border-primary/30 flex items-center justify-center animate-breathe-glow">
                   <MessagesSquare className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-bold text-glow-cyan">留言板</h1>
-                  <p className="text-xs text-muted-foreground">
+                  <h1 className="text-2xl sm:text-3xl font-display text-gradient-flow text-glow-cyan">留言板</h1>
+                  <p className="text-xs text-muted-foreground/90">
                     共 {total} 条留言 · 畅所欲言，分享你的想法
                   </p>
                 </div>
@@ -256,28 +274,29 @@ export default function MessageBoard() {
 
         {/* Message List */}
         {messages.length === 0 ? (
-          <div className="glass-card rounded-2xl p-12 border-border/50 text-center">
-            <div className="h-16 w-16 mx-auto rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center mb-4">
+          <div className="glass-card rounded-2xl p-12 border-border/50 text-center anim-scale-in">
+            <div className="h-16 w-16 mx-auto rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center mb-4 animate-float-soft">
               <MessagesSquare className="h-8 w-8 text-primary/50" />
             </div>
-            <h3 className="text-lg font-medium mb-2">还没有留言</h3>
-            <p className="text-sm text-muted-foreground mb-4">成为第一个留言的人吧！</p>
+            <h3 className="text-lg font-medium mb-2 font-heading tracking-wide">还没有留言</h3>
+            <p className="text-sm text-muted-foreground/90 mb-4">成为第一个留言的人吧！</p>
             <Button onClick={() => setShowCreate(true)} className="gap-2 bg-primary hover:bg-primary/80 text-primary-foreground">
               <Plus className="h-4 w-4" />发表留言
             </Button>
           </div>
         ) : (
-          <div className="space-y-4">
-            {messages.map((msg) => {
+          <div ref={messageListRef} className="space-y-4">
+            {messages.map((msg, idx) => {
               const isExpanded = expandedId === msg.id;
               const previewText = htmlToSummary(msg.content, 200);
 
               return (
                 <Card
                   key={msg.id}
-                  className={`glass-card border-border/50 hover:border-primary/20 transition-all duration-200 ${
+                  className={`glass-card glass-card-hover border-border/50 hover:border-primary/20 transition-all duration-200 anim-fade-up ${
                     msg.pinned ? 'border-amber-500/30 ring-1 ring-amber-500/10' : ''
                   } ${isExpanded ? 'border-primary/30' : ''}`}
+                  style={{ animationDelay: `${(idx % 10) * 0.05}s` }}
                 >
                   <CardContent className="p-5">
                     {/* Author Row */}
@@ -291,7 +310,7 @@ export default function MessageBoard() {
                         />
                         <div>
                           <div className="flex items-center gap-1.5">
-                            <span className="text-sm font-medium">
+                            <span className="text-sm font-medium font-heading tracking-wide">
                               {msg.isAnonymous ? '匿名用户' : msg.author}
                             </span>
                             {msg.pinned ? (
@@ -300,7 +319,7 @@ export default function MessageBoard() {
                               </Badge>
                             ) : null}
                           </div>
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground/90">
                             <Clock className="h-3 w-3" />
                             <span>{formatTime(msg.createdAt)}</span>
                             {msg.updatedAt && msg.updatedAt !== msg.createdAt && (
@@ -355,8 +374,8 @@ export default function MessageBoard() {
 
                     {/* Content */}
                     <div
-                      className={`rich-editor-content text-sm leading-relaxed ${!isExpanded ? 'line-clamp-4' : ''}`}
-                      dangerouslySetInnerHTML={{ __html: msg.content }}
+                      className={`rich-editor-content text-sm leading-relaxed text-muted-foreground/90 ${!isExpanded ? 'line-clamp-4' : ''}`}
+                      dangerouslySetInnerHTML={{ __html: processContentForLazyImages(sanitizeHtml(msg.content)) }}
                     />
 
                     {/* Expand/Collapse */}
@@ -394,7 +413,7 @@ export default function MessageBoard() {
               size="sm"
               onClick={loadMore}
               disabled={loadingMore}
-              className="gap-2 text-muted-foreground hover:text-primary"
+              className="gap-2 text-muted-foreground/90 hover:text-primary anim-fade-up"
             >
               {loadingMore ? (
                 <><Loader2 className="h-4 w-4 animate-spin" />加载中...</>

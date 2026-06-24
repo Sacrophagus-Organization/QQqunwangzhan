@@ -2,6 +2,9 @@ import { Router } from 'express';
 import { v4 as uuid } from 'uuid';
 import { db } from '../db.js';
 import { authMiddleware, AuthRequest } from '../middleware/auth.js';
+import { extractBase64Images } from '../lib/imageExtractor.js';
+import { sanitizeRichHtml } from '../lib/sanitize.js';
+import { deleteUnusedImages, deleteImagesFromHtml } from '../lib/imageCleanup.js';
 
 const router = Router();
 router.use(authMiddleware);
@@ -52,10 +55,12 @@ router.post('/', (req: AuthRequest, res) => {
   }
   const id = 'msg-' + uuid().slice(0, 8);
   const now = new Date().toISOString();
+  // Extract base64 images → file URLs, then sanitize HTML (defense-in-depth) before storing
+  const processedContent = sanitizeRichHtml(extractBase64Images(content));
   db.prepare(`INSERT INTO messages (id, content, is_anonymous, author, author_id, created_at, updated_at)
     VALUES (?, ?, ?, ?, ?, ?, ?)`).run(
     id,
-    content,
+    processedContent,
     isAnonymous ? 1 : 0,
     req.userName,
     req.userId,
@@ -89,7 +94,10 @@ router.put('/:id', (req: AuthRequest, res) => {
     return;
   }
   const now = new Date().toISOString();
-  db.prepare('UPDATE messages SET content = ?, updated_at = ? WHERE id = ?').run(content, now, req.params.id);
+  const processedContent = sanitizeRichHtml(extractBase64Images(content));
+  // 清理旧内容中不再被引用的图片文件，防止磁盘泄漏
+  deleteUnusedImages(msg.content, processedContent);
+  db.prepare('UPDATE messages SET content = ?, updated_at = ? WHERE id = ?').run(processedContent, now, req.params.id);
   const updated = db.prepare('SELECT * FROM messages WHERE id = ?').get(req.params.id) as any;
   res.json({
     id: updated.id,
@@ -115,6 +123,10 @@ router.delete('/:id', (req: AuthRequest, res) => {
   db.prepare('DELETE FROM attachments WHERE entity_type=? AND entity_id=?').run('message', req.params.id);
   // 清理关联的评论
   db.prepare('DELETE FROM comments WHERE entity_type=? AND entity_id=?').run('message', req.params.id);
+  // 清理关联的点赞
+  db.prepare('DELETE FROM likes WHERE entity_type=? AND entity_id=?').run('message', req.params.id);
+  // 清理留言内容中引用的图片文件
+  deleteImagesFromHtml(msg.content);
   db.prepare('DELETE FROM messages WHERE id = ?').run(req.params.id);
   res.json({ success: true });
 });

@@ -2,6 +2,9 @@ import { Router } from 'express';
 import { v4 as uuid } from 'uuid';
 import { db } from '../db.js';
 import { authMiddleware, AuthRequest } from '../middleware/auth.js';
+import { extractBase64Images } from '../lib/imageExtractor.js';
+import { sanitizeRichHtml } from '../lib/sanitize.js';
+import { deleteImagesFromHtml } from '../lib/imageCleanup.js';
 
 const router = Router();
 router.use(authMiddleware);
@@ -71,13 +74,15 @@ router.post('/', (req: AuthRequest, res) => {
   }
   const id = 'cmt-' + uuid().slice(0, 8);
   const now = new Date().toISOString();
+  // Extract base64 images → file URLs, then sanitize HTML (defense-in-depth) before storing
+  const processedContent = sanitizeRichHtml(extractBase64Images(content));
   db.prepare(`INSERT INTO comments (id, entity_type, entity_id, parent_id, content, is_anonymous, author, author_id, created_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
     id,
     entityType,
     entityId,
     parentId || null,
-    content,
+    processedContent,
     isAnonymous ? 1 : 0,
     req.userName,
     req.userId,
@@ -98,16 +103,26 @@ router.delete('/:id', (req: AuthRequest, res) => {
     res.status(404).json({ error: '评论不存在' });
     return;
   }
-  // 递归删除所有子评论
-  const deleteChildren = (parentId: string) => {
-    const children = db.prepare('SELECT id FROM comments WHERE parent_id = ?').all(parentId) as any[];
-    for (const child of children) {
-      deleteChildren(child.id);
-      db.prepare('DELETE FROM comments WHERE id = ?').run(child.id);
+  // 递归 CTE 一次性查出本评论及所有后代，避免逐条 DELETE 的 N+1 问题
+  const rows = db.prepare(`
+    WITH RECURSIVE descendants(id) AS (
+      SELECT id FROM comments WHERE id = ?
+      UNION ALL
+      SELECT c.id FROM comments c JOIN descendants d ON c.parent_id = d.id
+    )
+    SELECT id, content FROM comments WHERE id IN (SELECT id FROM descendants)
+  `).all(req.params.id) as any[];
+  const ids = rows.map(r => r.id);
+  const placeholders = ids.map(() => '?').join(',');
+  const del = db.transaction(() => {
+    // 清理每条评论内容中引用的图片文件
+    for (const r of rows) deleteImagesFromHtml(r.content);
+    if (ids.length > 0) {
+      db.prepare(`DELETE FROM likes WHERE entity_type='comment' AND entity_id IN (${placeholders})`).run(...ids);
+      db.prepare(`DELETE FROM comments WHERE id IN (${placeholders})`).run(...ids);
     }
-  };
-  deleteChildren(req.params.id);
-  db.prepare('DELETE FROM comments WHERE id = ?').run(req.params.id);
+  });
+  del();
   res.json({ success: true });
 });
 

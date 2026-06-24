@@ -54,6 +54,14 @@ function resetFails(ip: string) {
   ipFailMap.delete(ip);
 }
 
+// 定期清理过期的限速条目，防止 ipFailMap 内存无限增长
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, entry] of ipFailMap) {
+    if (entry.lockedUntil > 0 && entry.lockedUntil < now) ipFailMap.delete(ip);
+  }
+}, 60_000).unref();
+
 // ─── POST /verify ────────────────────────────────────────────────────
 // Requires JWT auth. Body: { code }. Returns download token on success.
 router.post('/verify', authMiddleware, (req: AuthRequest, res) => {

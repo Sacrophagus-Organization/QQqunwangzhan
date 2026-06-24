@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Orbitron:wght@500;600;700;800;900&family=Rajdhani:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -37,6 +37,8 @@
 
     --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
     --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+    --font-display: 'Orbitron', 'Inter', sans-serif;
+    --font-heading: 'Rajdhani', 'Inter', sans-serif;
   }
 
   .dark {
@@ -70,6 +72,30 @@
     @apply bg-background text-foreground;
     font-family: var(--font-sans);
   }
+  h1, h2, h3 {
+    letter-spacing: -0.01em;
+  }
+}
+
+/* Display & heading font utilities */
+@layer utilities {
+  .font-display {
+    font-family: var(--font-display);
+    letter-spacing: 0.04em;
+  }
+  .font-heading {
+    font-family: var(--font-heading);
+    letter-spacing: 0.02em;
+  }
+  /* 渐变流光文字 — 用于大标题 */
+  .text-gradient-flow {
+    background: linear-gradient(110deg, hsl(190 100% 60%) 0%, hsl(190 100% 80%) 30%, hsl(35 90% 60%) 55%, hsl(190 100% 70%) 80%, hsl(190 100% 60%) 100%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: text-flow 6s linear infinite;
+  }
 }
 
 /* Sarcophagus theme utility classes */
@@ -101,6 +127,44 @@
   }
   .glass-card {
     @apply bg-card/85 backdrop-blur-xl border border-border/40;
+    transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+  }
+  .glass-card-hover:hover {
+    transform: translateY(-3px);
+    border-color: rgba(0, 210, 245, 0.28);
+    box-shadow: 0 8px 30px rgba(0, 210, 245, 0.08), 0 0 0 1px rgba(0, 210, 245, 0.05);
+  }
+  /* 重层级 — Hero / 详情头：实色背景 + 强边框 + 明显阴影 */
+  .card-elevated {
+    @apply bg-card border border-border/70;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(0, 210, 245, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  /* 轻层级 — 次要信息容器：弱背景 + 无强调边框 */
+  .card-subtle {
+    @apply bg-muted/40 border border-border/25;
+  }
+  /* 光流边框 — 卡片 hover 时的旋转光晕 */
+  .card-glow-border {
+    position: relative;
+  }
+  .card-glow-border::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    padding: 1px;
+    background: conic-gradient(from var(--cg-angle, 0deg), transparent 0%, rgba(0, 210, 245, 0.5) 12%, transparent 25%, transparent 50%, rgba(245, 158, 11, 0.4) 62%, transparent 75%);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 0;
+    transition: opacity 0.35s ease;
+    animation: cg-rotate 4s linear infinite;
+    pointer-events: none;
+  }
+  .card-glow-border:hover::before {
+    opacity: 1;
   }
   /* Sarcophagus stone grid background */
   .hex-grid-bg {
@@ -184,6 +248,57 @@
   @keyframes fade-in-up {
     from { opacity: 0; transform: translateY(12px); }
     to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ═══ 入场动画库（配合内联 animation-delay 实现交错） ═══ */
+  .anim-fade-up { animation: fade-in-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .anim-fade-in { animation: anim-fade-in 0.6s ease-out both; }
+  .anim-scale-in { animation: anim-scale-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+  .anim-slide-left { animation: anim-slide-left 0.6s cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .anim-slide-right { animation: anim-slide-right 0.6s cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .anim-blur-in { animation: anim-blur-in 0.7s ease-out both; }
+  @keyframes anim-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes anim-scale-in {
+    from { opacity: 0; transform: scale(0.92); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  @keyframes anim-slide-left {
+    from { opacity: 0; transform: translateX(-24px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes anim-slide-right {
+    from { opacity: 0; transform: translateX(24px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes anim-blur-in {
+    from { opacity: 0; filter: blur(8px); transform: translateY(8px); }
+    to { opacity: 1; filter: blur(0); transform: translateY(0); }
+  }
+
+  /* 滚动进入视口触发（配合 useInView hook，初始隐藏） */
+  .reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1), transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .reveal.in-view {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* 通知滚动条 — 修复缺失动画 */
+  @keyframes notification-scroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+  .animate-notification-scroll {
+    animation: notification-scroll 30s linear infinite;
+  }
+  .animate-notification-scroll:hover {
+    animation-play-state: paused;
   }
 
   /* Skeleton shimmer */
@@ -471,6 +586,19 @@
   }
 }
 
+/* ═══ 懒加载图片 — blur-up 效果 ═══ */
+.lazy-image {
+  filter: blur(10px);
+  transform: scale(1.05);
+  transition: filter 0.4s ease, transform 0.4s ease, opacity 0.3s ease;
+  opacity: 0.6;
+}
+.lazy-image.lazy-loaded {
+  filter: blur(0);
+  transform: scale(1);
+  opacity: 1;
+}
+
 /* Animations */
 @keyframes scan-line {
   0% { transform: translateY(-100%); }
@@ -485,6 +613,11 @@
 @keyframes typewriter {
   from { width: 0; }
   to { width: 100%; }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .animate-scan-line {
@@ -724,6 +857,128 @@
 }
 .animate-header-sweep {
   animation: header-sweep 4s linear infinite;
+}
+
+/* ═══════════════════════════════════════════
+   高级动效增强（暗色科技风）
+   ═══════════════════════════════════════════ */
+
+/* conic-gradient 旋转角度注册（供 card-glow-border 使用） */
+@property --cg-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+@keyframes cg-rotate {
+  to { --cg-angle: 360deg; }
+}
+
+/* 流光文字动画 */
+@keyframes text-flow {
+  0% { background-position: 0% center; }
+  100% { background-position: 200% center; }
+}
+
+/* 柔和浮动 — 用于装饰元素/Logo */
+@keyframes float-soft {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+.animate-float-soft {
+  animation: float-soft 5s ease-in-out infinite;
+}
+
+/* 慢速呼吸辉光 — 用于状态指示 */
+@keyframes breathe-glow {
+  0%, 100% { box-shadow: 0 0 12px rgba(0, 210, 245, 0.15), 0 0 24px rgba(0, 210, 245, 0.05); }
+  50% { box-shadow: 0 0 22px rgba(0, 210, 245, 0.4), 0 0 44px rgba(0, 210, 245, 0.12); }
+}
+.animate-breathe-glow {
+  animation: breathe-glow 4s ease-in-out infinite;
+}
+
+/* 顶部数据扫描线划过容器 */
+@keyframes data-sweep {
+  0% { transform: translateX(-100%); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { transform: translateX(100%); opacity: 0; }
+}
+.animate-data-sweep {
+  animation: data-sweep 3.5s ease-in-out infinite;
+}
+
+/* 角标闪现 — 数字/徽章更新时 */
+@keyframes badge-pop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.35); }
+  100% { transform: scale(1); }
+}
+.animate-badge-pop {
+  animation: badge-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* 卡片 hover 3D 倾斜容器 */
+.tilt-3d {
+  transition: transform 0.2s ease;
+  transform-style: preserve-3d;
+}
+.tilt-3d:hover {
+  transform: perspective(800px) rotateX(2deg) rotateY(-2deg) translateY(-2px);
+}
+
+/* 输入框聚焦光流边框 */
+@keyframes input-glow-flow {
+  0% { box-shadow: 0 0 0 1px rgba(0, 210, 245, 0.3), 0 0 12px rgba(0, 210, 245, 0.08); }
+  50% { box-shadow: 0 0 0 1px rgba(0, 210, 245, 0.5), 0 0 20px rgba(0, 210, 245, 0.18); }
+  100% { box-shadow: 0 0 0 1px rgba(0, 210, 245, 0.3), 0 0 12px rgba(0, 210, 245, 0.08); }
+}
+
+/* 背景网格缓慢平移 — 增强空间感 */
+@keyframes grid-pan {
+  0% { background-position: 0 0; }
+  100% { background-position: 48px 48px; }
+}
+.hex-grid-bg-anim {
+  animation: grid-pan 20s linear infinite;
+}
+
+/* 闪烁星点 — 背景装饰 */
+@keyframes twinkle {
+  0%, 100% { opacity: 0.2; transform: scale(0.8); }
+  50% { opacity: 0.9; transform: scale(1.1); }
+}
+.animate-twinkle {
+  animation: twinkle 3s ease-in-out infinite;
+}
+
+/* 链接下划线展开 */
+.link-underline {
+  position: relative;
+}
+.link-underline::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -2px;
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, hsl(190 100% 60%), transparent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.3s ease;
+}
+.link-underline:hover::after {
+  transform: scaleX(1);
+}
+
+/* 加载点跳动 */
+@keyframes dot-bounce {
+  0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+  40% { transform: translateY(-6px); opacity: 1; }
+}
+.animate-dot-bounce {
+  animation: dot-bounce 1.2s ease-in-out infinite;
 }
 
 /* ═══════════════════════════════════════════

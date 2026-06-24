@@ -101,31 +101,35 @@ export default function HomePage() {
     <div className="min-h-screen bg-background hex-grid-bg">
       <div className="container mx-auto max-w-7xl px-4 py-8">
         {/* Hero Section — Immersive Banner */}
-        <div className="relative mb-10 overflow-hidden rounded-2xl">
+        <div className="relative mb-10 overflow-hidden rounded-2xl anim-blur-in">
           {/* Background decoration: large rhombus core */}
           <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.06] via-accent/[0.03] to-transparent" />
           <div className="absolute -top-20 -right-20 w-80 h-80 rounded-full bg-primary/[0.04] blur-3xl" />
           <div className="absolute -bottom-16 -left-16 w-64 h-64 rounded-full bg-accent/[0.03] blur-3xl" />
+          {/* 顶部数据扫描线 */}
+          <div className="absolute top-0 left-0 right-0 h-px overflow-hidden z-10 pointer-events-none">
+            <div className="h-full w-1/3 bg-gradient-to-r from-transparent via-primary/70 to-transparent animate-data-sweep" />
+          </div>
 
-          <div className="relative glass-card rounded-2xl p-6 sm:p-8 border-glow stone-texture">
+          <div className="relative card-elevated card-glow-border group rounded-2xl p-6 sm:p-8 stone-texture">
             <div className="flex flex-col lg:flex-row gap-6 lg:items-start">
               {/* Left: Welcome & Terminal Icon */}
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="h-12 w-12 rounded-xl bg-primary/10 border border-primary/30 flex items-center justify-center originium-pulse">
+                  <div className="h-12 w-12 rounded-xl bg-primary/10 border border-primary/30 flex items-center justify-center animate-breathe-glow transition-transform duration-500 group-hover:rotate-12">
                     <Terminal className="h-6 w-6 text-primary" />
                   </div>
                   <div>
-                    <h1 className="text-xl sm:text-2xl font-bold text-glow-cyan">
-                      欢迎回来，<span className="text-primary">{user?.username}</span>
+                    <h1 className="font-display text-2xl sm:text-3xl font-extrabold text-gradient-flow">
+                      欢迎回来，{user?.username}
                     </h1>
-                    <p className="text-xs sm:text-sm text-muted-foreground mono-text mt-0.5">
+                    <p className="text-xs sm:text-sm text-muted-foreground/80 mono-text mt-0.5">
                       &gt; sarcophagus.org.cn // 罗德岛解密数据库在线
                     </p>
                   </div>
                 </div>
                 {/* Quick summary */}
-                <p className="text-sm text-muted-foreground/70 mt-3 max-w-xl leading-relaxed">
+                <p className="text-sm text-muted-foreground/90 mt-3 max-w-xl leading-relaxed">
                   当前数据库中包含 <span className="text-primary font-medium">{records.length}</span> 条解密记录、
                   <span className="text-accent font-medium">{puzzles.length}</span> 个谜题、
                   <span className="text-amber-400 font-medium">{wikiCount}</span> 个 Wiki 词条，
@@ -133,22 +137,25 @@ export default function HomePage() {
                 </p>
               </div>
 
-              {/* Right: Status Panel — vertical data strip */}
-              <div className="lg:w-52 shrink-0 grid grid-cols-2 lg:grid-cols-1 gap-2">
-                {[
-                  { icon: Wifi, label: '终端在线', value: 'ONLINE', color: 'text-green-400' },
-                  { icon: Database, label: '数据库', value: 'v2.1', color: 'text-primary' },
-                  { icon: Shield, label: '加密协议', value: 'TLS-AES', color: 'text-amber-400' },
-                  { icon: HardDrive, label: '节点延迟', value: '< 12ms', color: 'text-muted-foreground' },
-                ].map((item, i) => (
-                  <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary/40 border border-border/20">
-                    <item.icon className={`h-3.5 w-3.5 ${item.color} shrink-0`} />
-                    <div className="min-w-0">
-                      <p className="text-[10px] text-muted-foreground truncate">{item.label}</p>
-                      <p className={`text-xs font-medium ${item.color} mono-text`}>{item.value}</p>
+              {/* Right: Status Panel — 弱化为纯装饰 */}
+              <div className="lg:w-48 shrink-0 opacity-50 hover:opacity-90 transition-opacity duration-500">
+                <p className="text-[9px] tracking-[0.3em] text-muted-foreground/40 mono-text mb-1.5 hidden lg:block">// SYSTEM STATUS</p>
+                <div className="grid grid-cols-2 lg:grid-cols-1 gap-1.5">
+                  {[
+                    { icon: Wifi, label: '终端在线', value: 'ONLINE', color: 'text-green-400' },
+                    { icon: Database, label: '数据库', value: 'v2.1', color: 'text-primary' },
+                    { icon: Shield, label: '加密协议', value: 'TLS-AES', color: 'text-amber-400' },
+                    { icon: HardDrive, label: '节点延迟', value: '< 12ms', color: 'text-muted-foreground' },
+                  ].map((item, i) => (
+                    <div key={i} className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-secondary/30 border border-border/15">
+                      <item.icon className={`h-3 w-3 ${item.color} shrink-0 animate-twinkle`} style={{ animationDelay: `${i * 0.4}s` }} />
+                      <div className="min-w-0">
+                        <p className="text-[9px] text-muted-foreground/60 truncate">{item.label}</p>
+                        <p className={`text-[10px] font-medium ${item.color} mono-text`}>{item.value}</p>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
           </div>
@@ -162,7 +169,7 @@ export default function HomePage() {
             { icon: BookOpen, label: 'Wiki词条', value: wikiCount, color: 'text-amber-400', bg: 'bg-amber-500/5 border-amber-500/15', barColor: 'bg-amber-500/40', iconBg: 'bg-amber-500/10' },
             { icon: Users, label: '活跃成员', value: memberCount || 0, color: 'text-green-400', bg: 'bg-green-500/5 border-green-500/15', barColor: 'bg-green-500/40', iconBg: 'bg-green-500/10' },
           ].map((stat, i) => (
-            <Card key={i} className={`${stat.bg} border backdrop-blur-sm hover:-translate-y-1 transition-all duration-300 group overflow-hidden`}>
+            <Card key={i} className={`${stat.bg} border backdrop-blur-sm hover:-translate-y-1 transition-all duration-300 group overflow-hidden card-glow-border anim-fade-up`} style={{ animationDelay: `${i * 0.08}s` }}>
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
                   <div className={`h-9 w-9 rounded-lg ${stat.iconBg} flex items-center justify-center`}>
@@ -188,9 +195,9 @@ export default function HomePage() {
         {/* Content Grid */}
         <div className="grid md:grid-cols-2 gap-6">
           {/* Recent Records */}
-          <Card className="glass-card border-border/50 overflow-hidden">
+          <Card className="glass-card glass-card-hover border-border/50 overflow-hidden anim-fade-up" style={{ animationDelay: '0.1s' }}>
             <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-border/15">
-              <CardTitle className="text-base flex items-center gap-2">
+              <CardTitle className="font-heading text-base flex items-center gap-2 tracking-wide">
                 <div className="h-7 w-7 rounded-md bg-primary/10 flex items-center justify-center">
                   <FileText className="h-4 w-4 text-primary" />
                 </div>
@@ -238,9 +245,9 @@ export default function HomePage() {
           </Card>
 
           {/* Active Puzzles */}
-          <Card className="glass-card border-border/50 overflow-hidden">
+          <Card className="glass-card glass-card-hover border-border/50 overflow-hidden anim-fade-up" style={{ animationDelay: '0.2s' }}>
             <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-border/15">
-              <CardTitle className="text-base flex items-center gap-2">
+              <CardTitle className="font-heading text-base flex items-center gap-2 tracking-wide">
                 <div className="h-7 w-7 rounded-md bg-accent/10 flex items-center justify-center">
                   <Puzzle className="h-4 w-4 text-accent" />
                 </div>
@@ -290,10 +297,10 @@ export default function HomePage() {
         </div>
 
         {/* Bottom Quick Links */}
-        <div className="mt-8 glass-card rounded-2xl p-6 border-border/50 stone-texture">
+        <div className="mt-8 glass-card rounded-2xl p-6 border-border/50 stone-texture anim-fade-up" style={{ animationDelay: '0.3s' }}>
           <div className="flex items-center gap-2 mb-5">
-            <Sparkles className="h-5 w-5 text-amber-400" />
-            <h3 className="text-base font-semibold">快速入口</h3>
+            <Sparkles className="h-5 w-5 text-amber-400 animate-float-soft" />
+            <h3 className="font-heading text-base font-semibold tracking-wide">快速入口</h3>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
@@ -307,7 +314,8 @@ export default function HomePage() {
                 <Link
                   key={i}
                   to={item.path}
-                  className="flex flex-col items-center text-center p-4 rounded-xl border border-border/25 hover:border-primary/25 hover:bg-primary/[0.03] transition-all duration-200 group"
+                  className="tilt-3d card-glow-border flex flex-col items-center text-center p-4 rounded-xl border border-border/25 hover:border-primary/25 hover:bg-primary/[0.03] transition-all duration-200 group anim-fade-up"
+                  style={{ animationDelay: `${0.35 + i * 0.08}s` }}
                 >
                   <div className={`h-9 w-9 rounded-lg bg-secondary/50 flex items-center justify-center mb-2 group-hover:bg-secondary transition-colors`}>
                     <Icon className={`h-4.5 w-4.5 text-muted-foreground group-hover:${item.color} transition-colors`} />

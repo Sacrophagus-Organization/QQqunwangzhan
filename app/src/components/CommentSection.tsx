@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -7,6 +7,8 @@ import { RichTextEditor } from '@/components/RichTextEditor';
 import { AvatarDisplay } from '@/components/AvatarDisplay';
 import { LikeButton } from '@/components/LikeButton';
 import { apiGet, apiPost, apiDelete } from '@/api/client';
+import { useImageLazyLoad, processContentForLazyImages } from '@/hooks/useImageLazyLoad';
+import { sanitizeHtml } from '@/lib/sanitize';
 import {
   MessageCircle,
   Clock,
@@ -133,7 +135,7 @@ function CommentItem({
         {/* Content */}
         <div
           className="text-xs leading-relaxed text-foreground/90 mb-2 rich-editor-content"
-          dangerouslySetInnerHTML={{ __html: c.content }}
+          dangerouslySetInnerHTML={{ __html: processContentForLazyImages(sanitizeHtml(c.content)) }}
         />
 
         {/* Actions */}
@@ -222,6 +224,10 @@ export default function CommentSection({ entityType, entityId }: CommentSectionP
   const [replyContent, setReplyContent] = useState('');
   const [replyAnonymous, setReplyAnonymous] = useState(false);
 
+  // Lazy loading images
+  const commentListRef = useRef<HTMLDivElement>(null);
+  useImageLazyLoad(commentListRef, [comments]);
+
   const load = useCallback(async (pageNum = 1, append = false) => {
     try {
       const res = await apiGet<PaginatedResponse<Comment>>(
@@ -305,7 +311,7 @@ export default function CommentSection({ entityType, entityId }: CommentSectionP
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground font-heading tracking-wide">
           <MessageCircle className="h-4 w-4" />
           <span>{total > 0 ? `${total} 条评论` : '暂无评论'}</span>
         </div>
@@ -376,9 +382,9 @@ export default function CommentSection({ entityType, entityId }: CommentSectionP
       {tree.length === 0 && !showNewComment ? (
         <p className="text-xs text-muted-foreground text-center py-6">还没有评论，来发表第一条吧</p>
       ) : (
-        <div className="space-y-3">
+        <div ref={commentListRef} className="space-y-3">
           {(collapsed ? tree.slice(0, PREVIEW_COUNT) : tree).map(node => (
-            <div key={node.comment.id} className="border border-border/30 rounded-lg p-3 bg-background/50">
+            <div key={node.comment.id} className="border border-border/30 rounded-lg p-3 bg-background/50 glass-card-hover anim-fade-up">
               <CommentItem
                 node={node}
                 entityType={entityType}

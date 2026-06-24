@@ -119,8 +119,12 @@ export default function DecryptRecords() {
   return (
     <div className="min-h-screen bg-background archive-bg">
       <div className="container mx-auto max-w-5xl px-4 py-8">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
-          <div><h1 className="text-2xl font-bold text-glow-cyan flex items-center gap-2"><FileText className="h-6 w-6 text-primary" />解密记录</h1><p className="text-sm text-muted-foreground mt-1 mono-text">&gt; 共 {records.length} 条记录</p></div>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8 anim-blur-in">
+          <div className="relative">
+            <div className="absolute top-0 left-0 right-0 h-px overflow-hidden z-10 pointer-events-none"><div className="h-full w-1/3 bg-gradient-to-r from-transparent via-primary/70 to-transparent animate-data-sweep" /></div>
+            <h1 className="text-2xl sm:text-3xl font-display text-gradient-flow flex items-center gap-2"><FileText className="h-6 w-6 text-primary animate-breathe-glow" />解密记录</h1>
+            <p className="text-sm text-muted-foreground/90 mt-1 mono-text">&gt; 共 {records.length} 条记录</p>
+          </div>
           <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
             <DialogTrigger asChild><Button className="bg-primary hover:bg-primary/90 text-primary-foreground"><Plus className="h-4 w-4 mr-2" />新建记录</Button></DialogTrigger>
             <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
@@ -140,7 +144,7 @@ export default function DecryptRecords() {
           </Dialog>
         </div>
 
-        <Card className="glass-card border-border/50 mb-6"><CardContent className="p-4 flex flex-wrap items-center gap-3">
+        <Card className="card-elevated border-border/50 mb-6 anim-fade-up"><CardContent className="p-4 flex flex-wrap items-center gap-3">
           <div className="relative flex-1 min-w-[200px]"><Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" /><Input placeholder="搜索记录..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-10 bg-secondary/30 border-border/50" /></div>
           <Select value={filterImportance} onValueChange={setFilterImportance}><SelectTrigger className="w-[140px] bg-secondary/30 border-border/50"><Filter className="h-4 w-4 mr-2" /><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">全部</SelectItem><SelectItem value="normal">普通</SelectItem><SelectItem value="important">重要</SelectItem><SelectItem value="critical">关键</SelectItem></SelectContent></Select>
           <Button variant="ghost" size="sm" onClick={() => setSortOrder(s => s === 'newest' ? 'oldest' : 'newest')} className="text-muted-foreground hover:text-foreground"><ArrowUpDown className="h-4 w-4 mr-1" />{sortOrder === 'newest' ? '最新优先' : '最早优先'}</Button>
@@ -149,20 +153,20 @@ export default function DecryptRecords() {
 
         <div className="space-y-3">
           {sorted.length === 0 ? <Card className="glass-card border-border/50"><CardContent className="p-12 text-center"><FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-30" /><p className="text-muted-foreground">暂无解密记录</p></CardContent></Card>
-            : sorted.map(record => (
-            <Card key={record.id} className={`glass-card border-border/50 hover:border-primary/20 transition-all duration-200 group overflow-hidden relative ${
+            : sorted.map((record, i) => (
+            <Card key={record.id} className={`glass-card glass-card-hover border-border/50 hover:border-primary/20 transition-all duration-200 group overflow-hidden relative anim-fade-up ${
               record.pinned ? 'border-amber-500/30 bg-amber-500/[0.02]' : ''
             } ${
               record.importance === 'critical' ? 'archive-band-critical' :
               record.importance === 'important' ? 'archive-band-important' :
               'archive-band-normal'
-            }`}>
+            }`} style={{ animationDelay: `${i * 0.06}s` }}>
               <CardContent className="p-5">
                 <div className="flex items-start gap-4">
-                  <div className="shrink-0 mt-1">{record.importance === 'critical' ? <AlertTriangle className="h-5 w-5 text-red-400" /> : record.pinned ? <Pin className="h-5 w-5 text-amber-400" /> : <FileText className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />}</div>
+                  <div className="shrink-0 mt-1">{record.importance === 'critical' ? <AlertTriangle className="h-5 w-5 text-red-400 animate-breathe-glow" /> : record.pinned ? <Pin className="h-5 w-5 text-amber-400 animate-breathe-glow" /> : <FileText className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />}</div>
                   <div className="flex-1 min-w-0 cursor-pointer" onClick={() => navigate(`/records/${record.id}`)}>
-                    <div className="flex items-center gap-2 mb-1"><h3 className="text-base font-semibold group-hover:text-primary transition-colors truncate">{record.title}</h3>{record.pinned ? <Badge className="text-xs bg-amber-500/10 text-amber-400 border-amber-500/20"><Pin className="h-3 w-3 mr-0.5" />置顶</Badge> : null}<Badge variant="outline" className={`text-xs shrink-0 ${importanceLabels[record.importance]?.color || ''}`}>{importanceLabels[record.importance]?.label || record.importance}</Badge></div>
-                    <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{record.summary}</p>
+                    <div className="flex items-center gap-2 mb-1"><h3 className="text-base font-heading tracking-wide font-semibold group-hover:text-primary transition-colors truncate">{record.title}</h3>{record.pinned ? <Badge className="text-xs bg-amber-500/10 text-amber-400 border-amber-500/20"><Pin className="h-3 w-3 mr-0.5" />置顶</Badge> : null}<Badge variant="outline" className={`text-xs shrink-0 ${importanceLabels[record.importance]?.color || ''}`}>{importanceLabels[record.importance]?.label || record.importance}</Badge></div>
+                    <p className="text-sm text-muted-foreground/90 line-clamp-2 mb-3">{record.summary}</p>
                     <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{record.date}</span>
                       <span className="flex items-center gap-1"><User className="h-3 w-3" />{record.author}</span>

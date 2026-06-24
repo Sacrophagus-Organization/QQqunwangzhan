@@ -184,10 +184,10 @@ export default function AdminPage() {
   if (!authLoading && (!isAuthenticated || user?.role !== 'admin')) {
     return (
       <div className="min-h-screen bg-background hex-grid-bg flex items-center justify-center">
-        <Card className="glass-card border-border/50 max-w-md">
+        <Card className="glass-card border-border/50 max-w-md anim-scale-in">
           <CardContent className="p-8 text-center">
-            <AlertTriangle className="h-12 w-12 text-red-400 mx-auto mb-4" />
-            <h2 className="text-xl font-bold mb-2">访问被拒绝</h2>
+            <AlertTriangle className="h-12 w-12 text-red-400 mx-auto mb-4 animate-breathe-glow" />
+            <h2 className="text-xl font-bold mb-2 font-heading tracking-wide">访问被拒绝</h2>
             <p className="text-muted-foreground">你无权访问此页面</p>
           </CardContent>
         </Card>
@@ -208,15 +208,15 @@ export default function AdminPage() {
     }
   };
 
-  if (loading) return <div className="min-h-screen bg-background hex-grid-bg flex items-center justify-center"><Loader2 className="h-8 w-8 text-primary animate-spin" /></div>;
+  if (loading) return <div className="min-h-screen bg-background hex-grid-bg flex items-center justify-center"><Loader2 className="h-8 w-8 text-primary animate-spin animate-breathe-glow" /></div>;
 
   return (
     <div className="min-h-screen bg-background hex-grid-bg">
       <div className="container mx-auto max-w-5xl px-4 py-8">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-6 anim-fade-up">
           <div>
-            <h1 className="text-2xl font-bold text-glow-cyan flex items-center gap-2">
-              <Shield className="h-6 w-6 text-red-400" /> 管理员控制台
+            <h1 className="text-2xl font-bold text-glow-cyan font-display flex items-center gap-2">
+              <Shield className="h-6 w-6 text-red-400 animate-breathe-glow" /> 管理员控制台
             </h1>
             <p className="text-sm text-muted-foreground mt-1 mono-text">
               &gt; 系统管理 // lynchpin-admin
@@ -225,7 +225,7 @@ export default function AdminPage() {
         </div>
 
         {/* Tab Bar */}
-        <div className="flex gap-1 mb-6 p-1 rounded-xl bg-secondary/20 border border-border/30">
+        <div className="flex gap-1 mb-6 p-1 rounded-xl bg-secondary/20 border border-border/30 anim-fade-up" style={{ animationDelay: '0.1s' } as any}>
           {[
             { key: 'users' as const, icon: Users, label: '用户管理', count: pendingCount, alert: pendingCount > 0 },
             { key: 'sarcophagus' as const, icon: Terminal, label: '石棺代码', count: codes.length, alert: false },
@@ -254,9 +254,9 @@ export default function AdminPage() {
         {activeTab === 'users' && (
         <>
         {pendingCount > 0 && (
-          <Card className="glass-card border-amber-500/30 bg-amber-500/5 mb-6">
+          <Card className="glass-card glass-card-hover border-amber-500/30 bg-amber-500/5 mb-6 anim-fade-up" style={{ animationDelay: '0.15s' } as any}>
             <CardContent className="p-4 flex items-center gap-3">
-              <AlertTriangle className="h-5 w-5 text-amber-400 shrink-0" />
+              <AlertTriangle className="h-5 w-5 text-amber-400 shrink-0 animate-breathe-glow" />
               <div>
                 <p className="text-sm font-medium text-amber-400">{pendingCount} 个新注册用户等待审核</p>
                 <p className="text-xs text-amber-400/70">请在下方审核列表中通过或拒绝</p>
@@ -266,8 +266,8 @@ export default function AdminPage() {
         )}
 
         <div className="space-y-3">
-          {users.map(u => (
-            <Card key={u.id} className={`glass-card border-border/50 hover:border-primary/20 transition-all ${u.status === 'pending' ? 'border-amber-500/30' : ''}`}>
+          {users.map((u, idx) => (
+            <Card key={u.id} className={`glass-card glass-card-hover border-border/50 hover:border-primary/20 transition-all anim-fade-up ${u.status === 'pending' ? 'border-amber-500/30' : ''}`} style={{ animationDelay: `${0.2 + idx * 0.05}s` } as any}>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
@@ -278,7 +278,7 @@ export default function AdminPage() {
                     />
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-medium">{u.username}</span>
+                        <span className="font-medium font-heading tracking-wide">{u.username}</span>
                         <Badge variant="outline" className={`text-xs ${roleLabels[u.role]?.color || ''}`}>{roleLabels[u.role]?.label || u.role}</Badge>
                         {statusBadge(u.status)}
                       </div>
@@ -290,7 +290,7 @@ export default function AdminPage() {
                       {u.register_reason && (
                         <div className="flex items-start gap-1.5 mt-2 text-xs bg-secondary/30 rounded-md p-2">
                           <MessageSquare className="h-3 w-3 text-muted-foreground shrink-0 mt-0.5" />
-                          <span className="text-muted-foreground">{u.register_reason}</span>
+                          <span className="text-muted-foreground/90">{u.register_reason}</span>
                         </div>
                       )}
                       {/* 权限申请信息 */}
@@ -378,9 +378,9 @@ export default function AdminPage() {
         </div>
 
         {users.length === 0 && (
-          <Card className="glass-card border-border/50"><CardContent className="p-12 text-center">
-            <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-30" />
-            <p className="text-muted-foreground">暂无用户数据</p>
+          <Card className="glass-card border-border/50 anim-fade-in"><CardContent className="p-12 text-center">
+            <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-30 animate-float-soft" />
+            <p className="text-muted-foreground/90">暂无用户数据</p>
           </CardContent></Card>
         )}
         </>
@@ -388,18 +388,18 @@ export default function AdminPage() {
 
         {/* Sarcophagus Tab */}
         {activeTab === 'sarcophagus' && (
-          <div className="space-y-4">
+          <div className="space-y-4 anim-fade-up" style={{ animationDelay: '0.2s' } as any}>
             {codesError && (
               <Card className="glass-card border-red-500/20 bg-red-500/5">
                 <CardContent className="p-3">
-                  <p className="text-xs text-red-400/70">{codesError}</p>
+                  <p className="text-xs text-red-400/90">{codesError}</p>
                 </CardContent>
               </Card>
             )}
 
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                <Key className="h-4 w-4" /> 访问代码 ({codes.length})
+              <h3 className="text-sm font-medium text-muted-foreground/90 flex items-center gap-2 font-heading tracking-wide">
+                <Key className="h-4 w-4 animate-breathe-glow" /> 访问代码 ({codes.length})
               </h3>
               <Button variant="outline" size="sm"
                 onClick={() => setShowAdd(!showAdd)}
@@ -410,9 +410,9 @@ export default function AdminPage() {
             </div>
 
             {showAdd && (
-              <Card className="glass-card border-primary/20 bg-primary/5">
+              <Card className="glass-card glass-card-hover border-primary/20 bg-primary/5 anim-scale-in">
                 <CardContent className="p-4 space-y-3">
-                  <h4 className="text-xs text-primary/60 mono-text tracking-wider">// 新增访问代码</h4>
+                  <h4 className="text-xs text-primary/60 mono-text tracking-wider font-heading">// 新增访问代码</h4>
                   <div>
                     <label className="text-[10px] text-muted-foreground/60 block mb-1">访问代码</label>
                     <input type="text" value={newCode} onChange={e => setNewCode(e.target.value)}
@@ -445,17 +445,17 @@ export default function AdminPage() {
                 <Loader2 className="h-5 w-5 text-muted-foreground animate-spin" />
               </div>
             ) : codes.length === 0 ? (
-              <Card className="glass-card border-border/30">
+              <Card className="glass-card border-border/30 anim-fade-in">
                 <CardContent className="p-12 text-center">
-                  <Terminal className="h-10 w-10 text-muted-foreground/20 mx-auto mb-3" />
-                  <p className="text-sm text-muted-foreground/40">暂无访问代码</p>
-                  <p className="text-xs text-muted-foreground/20 mt-1">点击「新增代码」创建第一个</p>
+                  <Terminal className="h-10 w-10 text-muted-foreground/20 mx-auto mb-3 animate-float-soft" />
+                  <p className="text-sm text-muted-foreground/90">暂无访问代码</p>
+                  <p className="text-xs text-muted-foreground/40 mt-1">点击「新增代码」创建第一个</p>
                 </CardContent>
               </Card>
             ) : (
               <div className="space-y-2">
-                {codes.map(item => (
-                  <Card key={item.id} className="glass-card border-border/30 hover:border-primary/15 transition-all">
+                {codes.map((item, idx) => (
+                  <Card key={item.id} className="glass-card glass-card-hover card-glow-border border-border/30 hover:border-primary/15 transition-all anim-fade-up" style={{ animationDelay: `${0.3 + idx * 0.05}s` } as any}>
                     <CardContent className="p-3">
                       {editingId === item.id ? (
                         <div className="space-y-3">
@@ -488,26 +488,26 @@ export default function AdminPage() {
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-4">
                             <div className="flex items-center gap-2">
-                              <Key className="h-3.5 w-3.5 text-primary/40" />
-                              <span className="text-sm font-medium mono-text tracking-wider">{item.code}</span>
+                              <Key className="h-3.5 w-3.5 text-primary/40 animate-breathe-glow" />
+                              <span className="text-sm font-medium mono-text tracking-wider font-heading">{item.code}</span>
                             </div>
-                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground/40">
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground/60">
                               <FileText className="h-3 w-3" />
                               <span className="truncate max-w-[180px]">{item.file_name}</span>
                             </div>
-                            <span className="text-[10px] text-muted-foreground/25">
+                            <span className="text-[10px] text-muted-foreground/40">
                               {item.created_at?.slice(0, 10)}
                             </span>
                           </div>
                           <div className="flex items-center gap-1.5">
                             <Button variant="ghost" size="sm"
                               onClick={() => handleEdit(item)}
-                              className="text-[10px] text-muted-foreground/30 hover:text-primary/50 h-7">
+                              className="text-[10px] text-muted-foreground/60 hover:text-primary/70 h-7">
                               编辑
                             </Button>
                             <Button variant="ghost" size="sm"
                               onClick={() => handleDeleteCode(item.id)}
-                              className="text-[10px] text-muted-foreground/20 hover:text-red-400/50 h-7 px-2">
+                              className="text-[10px] text-muted-foreground/40 hover:text-red-400/60 h-7 px-2">
                               <Trash2 className="h-3 w-3" />
                             </Button>
                           </div>

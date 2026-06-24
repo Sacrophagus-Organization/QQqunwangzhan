@@ -54,7 +54,7 @@ export function LikeButton({ entityType, entityId, likeCount = 0, initialLiked =
         liked ? 'text-red-400 hover:text-red-300' : 'text-muted-foreground hover:text-red-400'
       }`}
     >
-      <Heart className={`${iconSize} ${liked ? 'fill-current' : ''}`} />
+      <Heart className={`${iconSize} transition-transform duration-200 ${liked ? 'fill-current scale-110' : 'scale-100'}`} />
       {count > 0 && <span>{count}</span>}
     </button>
   );

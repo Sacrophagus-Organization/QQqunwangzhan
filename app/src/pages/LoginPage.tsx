@@ -80,26 +80,37 @@ export default function LoginPage() {
       <div className="absolute bottom-10 left-10 w-32 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
       <div className="absolute bottom-10 right-10 w-32 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
 
+      {/* 闪烁装饰点 */}
+      <div className="absolute top-12 left-24 w-1 h-1 rounded-full bg-primary/70 animate-twinkle" style={{ animationDelay: '0.4s' }} />
+      <div className="absolute top-20 right-32 w-1 h-1 rounded-full bg-accent/70 animate-twinkle" style={{ animationDelay: '1.2s' }} />
+      <div className="absolute bottom-24 left-40 w-1 h-1 rounded-full bg-primary/70 animate-twinkle" style={{ animationDelay: '0.8s' }} />
+      <div className="absolute bottom-16 right-20 w-1 h-1 rounded-full bg-accent/70 animate-twinkle" style={{ animationDelay: '1.6s' }} />
+      <div className="absolute top-1/3 left-8 w-1 h-1 rounded-full bg-primary/70 animate-twinkle" style={{ animationDelay: '2s' }} />
+
       <div className="relative z-10 w-full max-w-md px-4">
         {/* Logo Area */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary/10 border border-primary/30 originium-pulse mb-4">
-            <DiamondLogo size={40} className="text-primary" />
+        <div className="text-center mb-8 anim-blur-in">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary/10 border border-primary/30 originium-pulse mb-4 relative">
+            <DiamondLogo size={40} className="text-primary animate-breathe-glow" />
           </div>
-          <h1 className="text-3xl font-bold text-glow-cyan mb-2">石棺</h1>
-          <p className="text-muted-foreground text-sm">sarcophagus.org.cn · 非公开博客</p>
+          <h1 className="text-2xl sm:text-3xl font-display text-glow-cyan mb-2 text-gradient-flow">石棺</h1>
+          <p className="text-muted-foreground/90 text-sm">sarcophagus.org.cn · 非公开博客</p>
         </div>
 
-        <Card className="border-border/50 bg-card/60 backdrop-blur-xl border-glow">
+        <Card className="card-elevated border-glow anim-scale-in relative overflow-hidden">
+          {/* Hero 扫描线 */}
+          <div className="absolute top-0 left-0 right-0 h-px overflow-hidden z-10 pointer-events-none">
+            <div className="h-full w-1/3 bg-gradient-to-r from-transparent via-primary/70 to-transparent animate-data-sweep" />
+          </div>
           <CardHeader>
-            <CardTitle className="text-xl text-center">身份验证</CardTitle>
-            <CardDescription className="text-center">
+            <CardTitle className="text-xl text-center font-heading tracking-wide">身份验证</CardTitle>
+            <CardDescription className="text-center text-muted-foreground/90">
               本网站仅对群成员开放，请输入您的凭据
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-2 bg-secondary/50">
+              <TabsList className="grid w-full grid-cols-2 bg-secondary/50 anim-fade-up" style={{ animationDelay: '0.05s' }}>
                 <TabsTrigger value="login" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
                   <Key className="h-4 w-4 mr-2" />
                   登录
@@ -111,7 +122,7 @@ export default function LoginPage() {
               </TabsList>
 
               <TabsContent value="login">
-                <form onSubmit={handleLogin} className="space-y-4 mt-4">
+                <form onSubmit={handleLogin} className="space-y-4 mt-4 anim-fade-up" style={{ animationDelay: '0.15s' }}>
                   <div className="space-y-2">
                     <Label htmlFor="login-username">用户名</Label>
                     <div className="relative">
@@ -163,7 +174,7 @@ export default function LoginPage() {
               </TabsContent>
 
               <TabsContent value="register">
-                <form onSubmit={handleRegister} className="space-y-4 mt-4">
+                <form onSubmit={handleRegister} className="space-y-4 mt-4 anim-fade-up" style={{ animationDelay: '0.15s' }}>
                   <div className="space-y-2">
                     <Label htmlFor="reg-username">用户名</Label>
                     <div className="relative">
@@ -243,7 +254,7 @@ export default function LoginPage() {
               </TabsContent>
             </Tabs>
 
-            <p className="text-xs text-muted-foreground text-center mt-4 mono-text">
+            <p className="text-xs text-muted-foreground/90 text-center mt-4 mono-text">
               &gt; SYSTEM: Restricted Area. Group Members Only.
             </p>
           </CardContent>

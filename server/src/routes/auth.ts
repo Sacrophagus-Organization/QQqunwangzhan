@@ -112,8 +112,8 @@ router.post('/avatar', authMiddleware, avatarUpload.single('avatar'), (req: Auth
   res.json({ success: true, avatarUrl: '/' + relativePath });
 });
 
-// GET /avatar/:userId — 获取指定用户的头像URL
-router.get('/avatar-info/:userId', (req: AuthRequest, res) => {
+// GET /avatar-info/:userId — 获取指定用户的头像URL（需认证，防止未授权遍历）
+router.get('/avatar-info/:userId', authMiddleware, (req: AuthRequest, res) => {
   const user = db.prepare('SELECT avatar_url FROM users WHERE id = ?').get(req.params.userId) as any;
   if (!user) { res.status(404).json({ error: '用户不存在' }); return; }
   res.json({ avatarUrl: user.avatar_url ? '/' + user.avatar_url : '' });

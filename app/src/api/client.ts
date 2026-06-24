@@ -100,6 +100,21 @@ export async function apiDownload(url: string, filename: string) {
   URL.revokeObjectURL(blobUrl);
 }
 
+export async function apiUploadImage(file: File): Promise<{ url: string; filename: string; size: number }> {
+  const formData = new FormData();
+  formData.append('image', file);
+  const res = await fetch(`${API_BASE}/images/upload`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${getToken()}` },
+    body: formData,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: '上传失败' }));
+    throw new Error(err.error || '上传失败');
+  }
+  return res.json();
+}
+
 export async function apiUploadAvatar(blob: Blob, ext?: string): Promise<string> {
   const formData = new FormData();
   // 根据 blob MIME 类型或传入的扩展名确定文件名

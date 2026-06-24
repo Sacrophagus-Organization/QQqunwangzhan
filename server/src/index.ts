@@ -14,14 +14,17 @@ import messageRoutes from './routes/messages.js';
 import commentRoutes from './routes/comments.js';
 import likeRoutes from './routes/likes.js';
 import sarcophagusRoutes from './routes/sarcophagus.js';
+import imageRoutes from './routes/images.js';
 import { globalLimiter } from './lib/rateLimiter.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// Ensure avatar upload directory
+// Ensure upload directories
 import * as fs from 'fs';
 const avatarDir = path.join(__dirname, '..', 'uploads', 'avatars');
+const imageDir = path.join(__dirname, '..', 'uploads', 'images');
 if (!fs.existsSync(avatarDir)) fs.mkdirSync(avatarDir, { recursive: true });
+if (!fs.existsSync(imageDir)) fs.mkdirSync(imageDir, { recursive: true });
 
 const app = express();
 const PORT = parseInt(process.env.PORT || '3001');
@@ -60,8 +63,11 @@ app.use(cors({
 // 4. Body 限制 10MB (原50MB过大，存在内存耗尽风险)
 app.use(express.json({ limit: '10mb' }));
 
-// 5. API 全局限速：100次/15分钟/IP
-app.use('/api/', globalLimiter);
+// 5. API 全局限速：100次/15分钟/IP（跳过图片静态资源，避免图片加载被限速）
+app.use('/api/', (req, res, next) => {
+  if (req.method === 'GET' && req.originalUrl.startsWith('/api/images/')) return next();
+  return globalLimiter(req, res, next);
+});
 
 // API routes
 app.use('/api/auth', authRoutes);
@@ -74,9 +80,19 @@ app.use('/api/messages', messageRoutes);
 app.use('/api/comments', commentRoutes);
 app.use('/api/likes', likeRoutes);
 app.use('/api/sarcophagus', sarcophagusRoutes);
+app.use('/api/images', imageRoutes);
 
 // Serve uploaded avatars as static files
 app.use('/uploads/avatars', express.static(path.join(__dirname, '..', 'uploads', 'avatars')));
+
+// Serve uploaded images with aggressive caching (immutable: filenames are UUIDs)
+app.use('/api/images', express.static(imageDir, {
+  maxAge: '30d',
+  immutable: true,
+  setHeaders: (res) => {
+    res.set('Cache-Control', 'public, max-age=2592000, immutable');
+  },
+}));
 
 // Serve static frontend build
 const staticDir = path.join(__dirname, '..', '..', 'app', 'dist');
