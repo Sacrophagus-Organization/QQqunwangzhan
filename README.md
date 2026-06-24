@@ -134,6 +134,19 @@ bash verify.sh
 
 ## 更新日志
 
+### 2026-06-25 — 前端视觉全面升级
+
+- **展示字体体系**: 引入 Orbitron (大标题展示) + Rajdhani (次级标题)，正文保持 Inter，新增 `.font-display` / `.font-heading` 工具类
+- **卡片三层层级**: `.card-elevated` (重层级，实色背景+强边框) / `.glass-card` (中层级) / `.card-subtle` (轻层级)，解决全站 glass-card 扁平问题
+- **动画库大幅扩充**: 入场动画 (fade-up/scale-in/blur-in/slide 共6种) / 旋转光流边框 `.card-glow-border` / 流光渐变文字 `.text-gradient-flow` / 呼吸辉光 / 数据扫描线 / 柔和浮动 / 闪烁星点 / 3D倾斜 `.tilt-3d` / 徽章弹跳 / 加载点跳动
+- **全局组件升级**: Navbar Logo hover 旋转 + 导航呼吸辉光 / NotificationTicker LIVE指示灯 + 滚动修复 / CommentSection/LikeButton hover微交互 + 点赞缩放弹跳
+- **HomePage**: Hero 重层级卡片 + 光流边框 + 扫描线 + 流光大标题 / 假数据状态面板弱化为纯装饰 / 统计交错入场 + 光流边框 / 快速入口3D倾斜
+- **LoginPage**: 保留Logo脉冲仪式感 / 流光标题 / 卡片扫描线 + 多彩闪烁装饰点 / 表单交错入场
+- **全量页面**: DecryptRecords/CustomPuzzles/DecryptWiki/RecordDetail/MessageBoard/AdminPage -- 流光标题 / 扫描线 / 列表stagger入场 / 呼吸辉光 / 正文对比度提升 (/70 -> /90) / 卡片hover微交互
+- **Sarcophagus**: 保持原样不动 (CRT终端美学已极致，强制暗色)
+- 新增 `useInView` Hook (IntersectionObserver 滚动触发动画)
+- `prefers-reduced-motion` 无障碍降级覆盖所有新增动画
+
 ### 2026-06-24 — 稳定性修复 / 分页系统 / Nginx 超时保护
 
 - **OOM 复盘与修复**：复盘 June 24 凌晨服务不可用事件，根因为 VS Code Server 长期内存泄漏 (600MB+) 配合大响应体耗尽系统内存，已优化
