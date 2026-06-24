@@ -155,6 +155,25 @@ bash verify.sh
 - **Nginx 超时保护**：`proxy_read_timeout 10s`，单请求超过 10 秒自动 504，防止慢请求拖死全站；响应缓冲上限防止内存写盘
 - **系统级防护**：新增 2GB swap 分区，内存告急时提供缓冲带避免 OOM Kill；VS Code Server 默认关闭不占资源
 
+### 2026-06-24 — 安全性修复与代码健壮性
+
+P0 紧急:
+- **#1 XSS 漏洞**: 前端新增 `sanitize.ts` (DOMPurify)，5 处 `dangerouslySetInnerHTML` 渲染前消毒（MessageBoard/CommentSection/RecordDetail/DecryptWiki/CustomPuzzles）；后端新增 `sanitize.ts` (sanitize-html)，写入前消毒（纵深防御）
+- **#2 限速器误伤图片**: `index.ts` 全局限速器跳过 `GET /api/images/`，浏览图片不再被 429
+
+P1 高:
+- **#4 删用户不级联**: `admin.ts` 删除用户改为事务级联清理其留言/评论/记录/谜题/Wiki/点赞/头像与图片文件
+- **#5 图片文件无清理**: 新增 `imageCleanup.ts`：编辑留言时删除不再引用的图片；删除各实体时清理内容图片；修复 puzzles/wiki 删除时附件未删除的磁盘泄漏
+- **#6 Nginx 安全头丢失**: `nginx.conf` 的 `/api/images/` location 补齐全部安全头（HSTS/CSP/X-Content-Type-Options 等）
+
+P2 中:
+- **#7 无分页**: records/puzzles/wiki 列表支持可选 `?page=&limit=`（无参时向后兼容返回数组）
+- **#8 N+1 查询**: 新增 `attachments.ts` 的 `getAttachmentsMap` 批量查询，三个路由列表消除 N+1，移除重复的本地 `getAttachments`
+- **#9 递归删除评论低效**: `comments.ts` 改用递归 CTE 一次性查出后代并批量删除
+- **#10 限速器内存泄漏**: `sarcophagus.ts` 增加定时清理过期限速条目（`.unref()`）
+- **#11 avatar-info 无认证**: 该端点添加 `authMiddleware`
+- **#12 JSON.parse 无异常**: `safeParseTags` 包裹 try/catch，非法 tags 不再导致 500
+
 ### 2026-06-23 — 图片编辑器增强 / GIF 全面支持 / 内容限制放开 / 时区修复
 
 - **图片编辑器增强**：默认 400px 宽度 + 悬浮尺寸预设工具栏（小/中/大/100%）+ 增强拖拽手柄（22px+箭头图标+实时像素标签）+ 编辑回显自动恢复交互
