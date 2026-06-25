@@ -57,12 +57,12 @@ export function Navbar() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
-      <div className="container mx-auto flex h-14 max-w-7xl items-center px-4">
+      <div className="container mx-auto flex h-12 max-w-7xl items-center px-4">
         {/* Logo */}
         <Link to="/" className="group flex items-center gap-2 mr-8">
           <div className="flex items-center gap-2">
-            <DiamondLogo size={24} className="text-primary transition-transform duration-700 group-hover:rotate-[180deg]" />
-            <span className="font-display font-bold text-sm tracking-wider text-glow-cyan hidden sm:inline">
+            <DiamondLogo size={22} className="text-primary transition-transform duration-700 group-hover:rotate-[180deg]" />
+            <span className="font-display font-bold text-base tracking-widest text-glow-cyan hidden sm:inline">
               石棺
             </span>
           </div>
@@ -76,10 +76,10 @@ export function Navbar() {
               <Link
                 key={item.path}
                 to={item.path}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium font-heading transition-all duration-200 ${
+                className={`relative flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium font-heading transition-all duration-200 ${
                   isActive(item.path)
-                    ? 'bg-primary/10 text-primary border border-primary/20 animate-breathe-glow'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50 hover:-translate-y-0.5'
+                    ? 'text-primary nav-active-bar'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50 hover:translate-x-0.5'
                 }`}
               >
                 <Icon className="h-4 w-4" />
@@ -157,10 +157,10 @@ export function Navbar() {
                         key={item.path}
                         to={item.path}
                         onClick={() => setMobileOpen(false)}
-                        className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium font-heading transition-all duration-200 mb-1 ${
+                        className={`relative flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium font-heading transition-all duration-200 mb-1 ${
                           isActive(item.path)
-                            ? 'bg-primary/10 text-primary border border-primary/20 animate-breathe-glow'
-                            : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50 hover:-translate-y-0.5'
+                            ? 'text-primary nav-active-bar'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50 hover:translate-x-0.5'
                         }`}
                       >
                         <Icon className="h-4 w-4" />

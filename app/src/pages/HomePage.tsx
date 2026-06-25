@@ -19,10 +19,6 @@ import {
   Terminal,
   Pin,
   AlertTriangle,
-  Shield,
-  Database,
-  HardDrive,
-  Wifi,
 } from 'lucide-react';
 import type { DecryptRecord, Puzzle as PuzzleType } from '@/types';
 
@@ -98,71 +94,76 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-background hex-grid-bg">
-      <div className="container mx-auto max-w-7xl px-4 py-8">
-        {/* Hero Section — Immersive Banner */}
-        <div className="relative mb-10 overflow-hidden rounded-2xl anim-blur-in">
-          {/* Background decoration: large rhombus core */}
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.06] via-accent/[0.03] to-transparent" />
-          <div className="absolute -top-20 -right-20 w-80 h-80 rounded-full bg-primary/[0.04] blur-3xl" />
-          <div className="absolute -bottom-16 -left-16 w-64 h-64 rounded-full bg-accent/[0.03] blur-3xl" />
-          {/* 顶部数据扫描线 */}
-          <div className="absolute top-0 left-0 right-0 h-px overflow-hidden z-10 pointer-events-none">
-            <div className="h-full w-1/3 bg-gradient-to-r from-transparent via-primary/70 to-transparent animate-data-sweep" />
-          </div>
+    <div className="min-h-screen bg-background hex-grid-bg dna-helix-bg glitch-burst">
+      {/* 装饰性菱形碎片背景 */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <div className="absolute top-[10%] left-[5%] w-16 h-16 rhombus opacity-10 animate-float-soft" style={{ animationDelay: '0s' }} />
+        <div className="absolute top-[25%] right-[8%] w-12 h-12 rhombus opacity-[0.08] animate-float-soft" style={{ animationDelay: '1s' }} />
+        <div className="absolute bottom-[30%] left-[12%] w-20 h-20 rhombus opacity-[0.08] animate-float-soft" style={{ animationDelay: '2s' }} />
+        <div className="absolute top-[60%] right-[15%] w-14 h-14 rhombus opacity-10 animate-float-soft" style={{ animationDelay: '1.5s' }} />
+        <div className="absolute bottom-[15%] right-[25%] w-10 h-10 rhombus opacity-[0.07] animate-float-soft" style={{ animationDelay: '0.5s' }} />
+        <div className="absolute top-[45%] left-[50%] w-24 h-24 rhombus opacity-[0.05] animate-float-soft" style={{ animationDelay: '3s' }} />
+        <div className="absolute bottom-[45%] right-[45%] w-14 h-14 rhombus opacity-[0.06] animate-float-soft" style={{ animationDelay: '2.5s' }} />
+      </div>
 
-          <div className="relative card-elevated card-glow-border group rounded-2xl p-6 sm:p-8 stone-texture">
-            <div className="flex flex-col lg:flex-row gap-6 lg:items-start">
-              {/* Left: Welcome & Terminal Icon */}
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="h-12 w-12 rounded-xl bg-primary/10 border border-primary/30 flex items-center justify-center animate-breathe-glow transition-transform duration-500 group-hover:rotate-12">
-                    <Terminal className="h-6 w-6 text-primary" />
-                  </div>
-                  <div>
-                    <h1 className="font-display text-2xl sm:text-3xl font-extrabold text-gradient-flow">
-                      欢迎回来，{user?.username}
-                    </h1>
-                    <p className="text-xs sm:text-sm text-muted-foreground/80 mono-text mt-0.5">
-                      &gt; sarcophagus.org.cn // 罗德岛解密数据库在线
-                    </p>
-                  </div>
+      <div className="container mx-auto max-w-7xl px-4 py-8 relative z-10">
+        {/* ═══ Hero Section — 左右不对称分割布局 ═══ */}
+        <div className="relative mb-10 overflow-hidden rounded-2xl anim-blur-in">
+          <div className="flex flex-col md:flex-row min-h-[280px] lg:min-h-[320px]">
+            {/* 左侧 65%: 超大展示文字 — 确保不被右侧遮挡 */}
+            <div className="md:w-[65%] flex flex-col justify-center p-8 lg:p-12 relative z-20">
+              <div className="space-y-4 pr-4">
+                <div>
+                  <h1 className="font-display font-black leading-none tracking-wider"
+                    style={{ fontSize: 'clamp(2.5rem, 7vw, 5rem)' }}>
+                    <span className="text-gradient-flow">SARC</span><span className="text-foreground/80">OPHAGUS</span>
+                  </h1>
+                  <div className="mt-2 h-1 w-24 bg-gradient-to-r from-primary to-transparent rounded-full" />
                 </div>
-                {/* Quick summary */}
-                <p className="text-sm text-muted-foreground/90 mt-3 max-w-xl leading-relaxed">
-                  当前数据库中包含 <span className="text-primary font-medium">{records.length}</span> 条解密记录、
-                  <span className="text-accent font-medium">{puzzles.length}</span> 个谜题、
-                  <span className="text-amber-400 font-medium">{wikiCount}</span> 个 Wiki 词条，
-                  <span className="text-green-400 font-medium">{memberCount}</span> 位活跃成员在线协作。
+                <p className="font-heading text-lg lg:text-xl text-foreground/70 tracking-wide">
+                  石棺解密数据库在线
+                </p>
+                <p className="mono-text text-xs text-muted-foreground/60 mt-2">
+                  &gt; sarcophagus.org.cn // R.I. REMOTE ACCESS // 欢迎回来, <span className="text-primary font-medium">{user?.username}</span>
+                </p>
+                <p className="text-sm text-muted-foreground/70 mt-3 max-w-lg leading-relaxed">
+                  当前数据库中包含 <span className="text-primary font-semibold">{records.length}</span> 条解密记录、
+                  <span className="text-accent font-semibold">{puzzles.length}</span> 个谜题、
+                  <span className="text-amber-400 font-semibold">{wikiCount}</span> 个 Wiki 词条，
+                  <span className="text-green-400 font-semibold">{memberCount || 0}</span> 位活跃成员在线协作。
                 </p>
               </div>
+            </div>
 
-              {/* Right: Status Panel — 弱化为纯装饰 */}
-              <div className="lg:w-48 shrink-0 opacity-50 hover:opacity-90 transition-opacity duration-500">
-                <p className="text-[9px] tracking-[0.3em] text-muted-foreground/40 mono-text mb-1.5 hidden lg:block">// SYSTEM STATUS</p>
-                <div className="grid grid-cols-2 lg:grid-cols-1 gap-1.5">
-                  {[
-                    { icon: Wifi, label: '终端在线', value: 'ONLINE', color: 'text-green-400' },
-                    { icon: Database, label: '数据库', value: 'v2.1', color: 'text-primary' },
-                    { icon: Shield, label: '加密协议', value: 'TLS-AES', color: 'text-amber-400' },
-                    { icon: HardDrive, label: '节点延迟', value: '< 12ms', color: 'text-muted-foreground' },
-                  ].map((item, i) => (
-                    <div key={i} className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-secondary/30 border border-border/15">
-                      <item.icon className={`h-3 w-3 ${item.color} shrink-0 animate-twinkle`} style={{ animationDelay: `${i * 0.4}s` }} />
-                      <div className="min-w-0">
-                        <p className="text-[9px] text-muted-foreground/60 truncate">{item.label}</p>
-                        <p className={`text-[10px] font-medium ${item.color} mono-text`}>{item.value}</p>
-                      </div>
+            {/* 右侧 35%: 源石冷青实色色块 + 光孔阵列 + 用户信息 */}
+            <div className="md:w-[35%] hero-cyan-block sarcophagus-lights flex items-center p-8 lg:p-10 relative z-10">
+              <div className="relative z-10 space-y-5 w-full">
+                <div>
+                  <p className="text-[10px] tracking-[0.35em] text-primary/50 mono-text uppercase">Operator Status</p>
+                  <div className="mt-3 flex items-center gap-3">
+                    <div className="rhombus-icon-box shrink-0">
+                      <Terminal className="h-5 w-5 text-primary" />
                     </div>
-                  ))}
+                    <div>
+                      <p className="font-heading font-semibold text-lg text-foreground/90">{user?.username}</p>
+                      <p className="text-xs text-muted-foreground mono-text">ID: {user?.id || '--'} // ACTIVE</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="pt-2 border-t border-white/5">
+                  <Link to="/sarcophagus" className="block group">
+                    <p className="text-[9px] text-muted-foreground/40 mono-text text-center tracking-[0.25em] transition-all duration-300 group-hover:text-primary/60 group-hover:tracking-[0.35em]">
+                      TERMINAL_SARCO-ID-07 &middot; v1.7.3 &middot; STANDBY
+                    </p>
+                  </Link>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Stats Grid — with counting animation + progress bars */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        {/* Stats Grid — 放大数字 + 菱形图标 */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-5 mb-8">
           {[
             { icon: FileText, label: '解密记录', value: records.length, color: 'text-primary', bg: 'bg-primary/5 border-primary/15', barColor: 'bg-primary/40', iconBg: 'bg-primary/10' },
             { icon: Puzzle, label: '自制谜题', value: puzzles.length, color: 'text-accent', bg: 'bg-accent/5 border-accent/15', barColor: 'bg-accent/40', iconBg: 'bg-accent/10' },
@@ -170,20 +171,20 @@ export default function HomePage() {
             { icon: Users, label: '活跃成员', value: memberCount || 0, color: 'text-green-400', bg: 'bg-green-500/5 border-green-500/15', barColor: 'bg-green-500/40', iconBg: 'bg-green-500/10' },
           ].map((stat, i) => (
             <Card key={i} className={`${stat.bg} border backdrop-blur-sm hover:-translate-y-1 transition-all duration-300 group overflow-hidden card-glow-border anim-fade-up`} style={{ animationDelay: `${i * 0.08}s` }}>
-              <CardContent className="p-4">
+              <CardContent className="p-5">
                 <div className="flex items-center gap-3">
-                  <div className={`h-9 w-9 rounded-lg ${stat.iconBg} flex items-center justify-center`}>
-                    <stat.icon className={`h-4.5 w-4.5 ${stat.color}`} />
+                  <div className={`rhombus-icon-box ${stat.iconBg} shrink-0`} style={{ width: 36, height: 36 }}>
+                    <stat.icon className={`h-4 w-4 ${stat.color}`} />
                   </div>
                   <div>
-                    <p className={`text-2xl font-bold ${stat.color} mono-text animate-count-up`}>
+                    <p className={`text-3xl font-bold ${stat.color} mono-text`}>
                       <CountingNumber value={stat.value} />
                     </p>
-                    <p className="text-xs text-muted-foreground">{stat.label}</p>
+                    <p className="text-xs text-muted-foreground font-heading">{stat.label}</p>
                   </div>
                 </div>
                 {/* Progress bar */}
-                <div className="mt-3 h-0.5 w-full bg-border/30 rounded-full overflow-hidden">
+                <div className="mt-4 h-1 w-full bg-border/30 rounded-full overflow-hidden">
                   <div className={`h-full ${stat.barColor} rounded-full transition-all duration-1000`}
                     style={{ width: `${Math.min((stat.value as number / Math.max(records.length, puzzles.length, wikiCount, Number(memberCount), 1)) * 100, 100)}%` }} />
                 </div>
@@ -198,8 +199,8 @@ export default function HomePage() {
           <Card className="glass-card glass-card-hover border-border/50 overflow-hidden anim-fade-up" style={{ animationDelay: '0.1s' }}>
             <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-border/15">
               <CardTitle className="font-heading text-base flex items-center gap-2 tracking-wide">
-                <div className="h-7 w-7 rounded-md bg-primary/10 flex items-center justify-center">
-                  <FileText className="h-4 w-4 text-primary" />
+                <div className="rhombus-icon-box bg-primary/10" style={{ width: 28, height: 28 }}>
+                  <FileText className="h-3.5 w-3.5 text-primary" />
                 </div>
                 近期解密记录
               </CardTitle>
@@ -248,8 +249,8 @@ export default function HomePage() {
           <Card className="glass-card glass-card-hover border-border/50 overflow-hidden anim-fade-up" style={{ animationDelay: '0.2s' }}>
             <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-border/15">
               <CardTitle className="font-heading text-base flex items-center gap-2 tracking-wide">
-                <div className="h-7 w-7 rounded-md bg-accent/10 flex items-center justify-center">
-                  <Puzzle className="h-4 w-4 text-accent" />
+                <div className="rhombus-icon-box bg-accent/10" style={{ width: 28, height: 28 }}>
+                  <Puzzle className="h-3.5 w-3.5 text-accent" />
                 </div>
                 活跃谜题
               </CardTitle>
@@ -296,50 +297,41 @@ export default function HomePage() {
           </Card>
         </div>
 
-        {/* Bottom Quick Links */}
+        {/* Bottom Quick Links — 横向条状风格 */}
         <div className="mt-8 glass-card rounded-2xl p-6 border-border/50 stone-texture anim-fade-up" style={{ animationDelay: '0.3s' }}>
           <div className="flex items-center gap-2 mb-5">
             <Sparkles className="h-5 w-5 text-amber-400 animate-float-soft" />
             <h3 className="font-heading text-base font-semibold tracking-wide">快速入口</h3>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="flex flex-col gap-2">
             {[
-              { icon: FileText, label: '浏览记录', path: '/records', desc: '查看群内解密成果', color: 'text-primary' },
-              { icon: Puzzle, label: '挑战谜题', path: '/puzzles', desc: '参与自制谜题解答', color: 'text-accent' },
-              { icon: BookOpen, label: '查阅Wiki', path: '/wiki', desc: '浏览解密知识库', color: 'text-amber-400' },
-              { icon: MessagesSquare, label: '留言板', path: '/messages', desc: '发表和查看留言', color: 'text-purple-400' },
+              { icon: FileText, label: '浏览记录', path: '/records', desc: '查看群内解密成果', color: 'text-primary', borderColor: 'hover:border-primary/25 hover:bg-primary/[0.02]' },
+              { icon: Puzzle, label: '挑战谜题', path: '/puzzles', desc: '参与自制谜题解答', color: 'text-accent', borderColor: 'hover:border-accent/25 hover:bg-accent/[0.02]' },
+              { icon: BookOpen, label: '查阅Wiki', path: '/wiki', desc: '浏览解密知识库', color: 'text-amber-400', borderColor: 'hover:border-amber-500/25 hover:bg-amber-500/[0.02]' },
+              { icon: MessagesSquare, label: '留言板', path: '/messages', desc: '发表和查看留言', color: 'text-purple-400', borderColor: 'hover:border-purple-500/25 hover:bg-purple-500/[0.02]' },
             ].map((item, i) => {
               const Icon = item.icon;
               return (
                 <Link
                   key={i}
                   to={item.path}
-                  className="tilt-3d card-glow-border flex flex-col items-center text-center p-4 rounded-xl border border-border/25 hover:border-primary/25 hover:bg-primary/[0.03] transition-all duration-200 group anim-fade-up"
+                  className={`flex items-center gap-4 px-4 py-3 rounded-xl border border-border/25 transition-all duration-200 group anim-fade-up ${item.borderColor}`}
                   style={{ animationDelay: `${0.35 + i * 0.08}s` }}
                 >
-                  <div className={`h-9 w-9 rounded-lg bg-secondary/50 flex items-center justify-center mb-2 group-hover:bg-secondary transition-colors`}>
-                    <Icon className={`h-4.5 w-4.5 text-muted-foreground group-hover:${item.color} transition-colors`} />
+                  <div className={`rhombus-icon-box shrink-0`} style={{ width: 32, height: 32 }}>
+                    <Icon className={`h-3.5 w-3.5 text-muted-foreground group-hover:${item.color} transition-colors`} />
                   </div>
-                  <span className="text-sm font-medium group-hover:text-foreground transition-colors">{item.label}</span>
-                  <span className="text-xs text-muted-foreground mt-1">{item.desc}</span>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-sm font-medium font-heading group-hover:text-foreground transition-colors">{item.label}</span>
+                    <span className="text-xs text-muted-foreground ml-3 hidden sm:inline">{item.desc}</span>
+                  </div>
+                  <ChevronRight className={`h-4 w-4 text-muted-foreground/30 group-hover:${item.color} transition-all duration-200 group-hover:translate-x-1`} />
                 </Link>
               );
             })}
           </div>
         </div>
 
-        {/* 隐蔽终端入口 — 系统诊断残留文本 */}
-        <div className="mt-12 text-center border-t border-primary/5 pt-6">
-          <Link
-            to="/sarcophagus"
-            className="mono-text text-[11px] tracking-[0.35em] text-muted-foreground/30
-                       hover:text-primary/60 transition-all duration-1000
-                       cursor-default hover:cursor-pointer select-none"
-            title="远程终端协议"
-          >
-            TERMINAL_SARCO-ID-07&nbsp;&nbsp;·&nbsp;&nbsp;v1.7.3&nbsp;&nbsp;·&nbsp;&nbsp;R.I. REMOTE ACCESS&nbsp;&nbsp;·&nbsp;&nbsp;STANDBY
-          </Link>
-        </div>
       </div>
     </div>
   );

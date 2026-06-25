@@ -164,7 +164,9 @@ export default function MessageBoard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background warm-glow-bg">
+      <div className="min-h-screen bg-background warm-glow-bg relative overflow-hidden">
+        {/* 径向故障效果层 */}
+        <div className="absolute inset-0 glitch-burst pointer-events-none" />
         <div className="container mx-auto max-w-4xl px-4 py-8 space-y-4">
           <div className="card-elevated rounded-2xl p-6 mb-6">
             <div className="skeleton h-8 w-48 mb-2" />
@@ -184,6 +186,8 @@ export default function MessageBoard() {
 
   return (
     <div className="min-h-screen bg-background warm-glow-bg relative overflow-hidden">
+      {/* 径向故障效果层 */}
+      <div className="absolute inset-0 glitch-burst pointer-events-none" />
       {/* 装饰闪烁点 */}
       <div className="absolute top-20 left-10 w-1 h-1 rounded-full bg-primary/60 animate-twinkle pointer-events-none" style={{ animationDelay: '0.3s' }} />
       <div className="absolute top-40 right-16 w-1 h-1 rounded-full bg-accent/60 animate-twinkle pointer-events-none" style={{ animationDelay: '1.1s' }} />
@@ -201,7 +205,7 @@ export default function MessageBoard() {
           <div className="relative card-elevated rounded-2xl p-6 border-glow">
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div className="flex items-center gap-3">
-                <div className="h-11 w-11 rounded-xl bg-primary/10 border border-primary/30 flex items-center justify-center animate-breathe-glow">
+                <div className="rhombus-icon-box bg-primary/10 border-primary/30 animate-breathe-glow" style={{ width: 44, height: 44 }}>
                   <MessagesSquare className="h-5 w-5 text-primary" />
                 </div>
                 <div>
