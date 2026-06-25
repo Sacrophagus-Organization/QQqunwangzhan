@@ -134,6 +134,16 @@ bash verify.sh
 
 ## 更新日志
 
+### 2026-06-25 #3 — HomePage Hero 专区重构与视觉特效增强
+
+- **Hero 布局重构**: 左右不对称分割 (65%/35%)，左侧超大流光渐变 SARCOPHAGUS 标题，右侧源石冷青色块 + 用户状态
+- **石棺光孔阵列**: 新增 `.sarcophagus-lights` 双层光孔背景效果 (11个青色光孔)，应用于 Hero 右侧色块
+- **菱形碎片系统**: 新增 `.rhombus` 装饰类，7个异步浮动菱形碎片覆盖全页背景，`.rhombus-icon-box` hover 180度旋转
+- **DNA 螺旋水印**: 新增 `.dna-helix-bg` 伪元素旋转斜纹水印，30s 循环旋转
+- **Glitch 故障效果**: 新增 `.glitch-burst` 径向脉冲背景，4s 呼吸周期
+- **移除重复数据**: Hero 右侧色块不再显示解密记录/活跃谜题统计 (下方 Stats Grid 已有)
+- **TERMINAL_SARCO 入口**: 回归 Hero 右侧色块底部，hover 高亮 + 字距展开，点击进入 `/sarcophagus` 石棺终端
+
 ### 2026-06-25 — 前端视觉全面升级
 
 - **展示字体体系**: 引入 Orbitron (大标题展示) + Rajdhani (次级标题)，正文保持 Inter，新增 `.font-display` / `.font-heading` 工具类
