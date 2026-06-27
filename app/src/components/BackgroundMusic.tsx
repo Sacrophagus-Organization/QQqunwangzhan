@@ -173,6 +173,51 @@ export function BackgroundMusic() {
     }
   }, [isHomePage]);
 
+  // 🔇 监听崩溃特效事件 — 强制暂停/恢复 BGM
+  useEffect(() => {
+    const handleCrashStart = () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        if (onEndedRef.current) {
+          audioRef.current.removeEventListener('ended', onEndedRef.current);
+          onEndedRef.current = null;
+        }
+      }
+      clearGapTimer();
+    };
+
+    const handleCrashEnd = () => {
+      // 恢复播放：重新启动 BGM 循环
+      if (audioRef.current && currentSrcRef.current) {
+        const audio = audioRef.current;
+        audio.currentTime = 0;
+
+        // 重新绑定 ended 监听器
+        const onEnded = () => {
+          clearGapTimer();
+          gapTimerRef.current = setTimeout(() => {
+            if (audio.src && currentSrcRef.current) {
+              audio.currentTime = 0;
+              playWithGap(audio);
+            }
+          }, LOOP_GAP_MS);
+        };
+        onEndedRef.current = onEnded;
+        audio.addEventListener('ended', onEnded);
+
+        playWithGap(audio);
+      }
+    };
+
+    window.addEventListener('crash-overlay-start', handleCrashStart);
+    window.addEventListener('crash-overlay-end', handleCrashEnd);
+
+    return () => {
+      window.removeEventListener('crash-overlay-start', handleCrashStart);
+      window.removeEventListener('crash-overlay-end', handleCrashEnd);
+    };
+  }, [clearGapTimer, playWithGap]);
+
   // 组件卸载时清理
   useEffect(() => {
     return () => {

@@ -18,6 +18,7 @@ import MessageBoard from '@/pages/MessageBoard';
 import AdminPage from '@/pages/AdminPage';
 import SarcophagusTerminal from '@/pages/SarcophagusTerminal';
 import SarcophagusAdmin from '@/pages/SarcophagusAdmin';
+import TestPage from '@/pages/TestPage';
 import './App.css';
 
 // 全局 spoiler 点击固定显示（覆盖所有 dangerouslySetInnerHTML 渲染区域）
@@ -127,6 +128,14 @@ function App() {
             element={
               <AdminRoute>
                 <SarcophagusAdmin />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/test"
+            element={
+              <AdminRoute>
+                <AppLayout><TestPage /></AppLayout>
               </AdminRoute>
             }
           />

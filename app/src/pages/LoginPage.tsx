@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -22,7 +22,11 @@ export default function LoginPage() {
   const [successMsg, setSuccessMsg] = useState('');
   const [loading, setLoading] = useState(false);
 
-  if (isAuthenticated) {
+  // ═══ Force login page via ?force=1 (crash overlay redirect) ═══
+  const [searchParams] = useSearchParams();
+  const forceShow = searchParams.get('force') === '1';
+
+  if (isAuthenticated && !forceShow) {
     return <Navigate to="/" replace />;
   }
 

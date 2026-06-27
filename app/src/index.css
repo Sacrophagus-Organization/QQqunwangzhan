@@ -1180,6 +1180,512 @@
 }
 
 /* ═══════════════════════════════════════════
+   System Crash Overlay — 崩溃转场特效
+   ═══════════════════════════════════════════ */
+
+/* 全屏覆盖层 + 60% 黑蒙板 */
+.crash-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.62);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  pointer-events: all;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+}
+
+/* VHS 横纹噪点 — 表层覆盖 */
+.crash-overlay::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.06) 2px,
+    rgba(0, 0, 0, 0.06) 4px
+  );
+  opacity: 0.5;
+}
+
+/* ═══ 阶段1: RGB 通道分离撕裂 — 大规模、极端偏移 ═══ */
+@keyframes crash-rgb-split {
+  0%, 100% { 
+    text-shadow: none; 
+    filter: none;
+  }
+  5%  { text-shadow: 18px 0 rgba(255,30,30,1), -18px 0 rgba(30,170,255,1), 0 4px rgba(0,255,60,0.7); }
+  10% { text-shadow: -15px 3px rgba(255,30,30,1), 15px -3px rgba(30,170,255,1), 8px 0 rgba(255,0,255,0.6); }
+  15% { text-shadow: 22px -2px rgba(255,30,30,0.9), -22px 2px rgba(30,170,255,0.9); }
+  20% { text-shadow: -10px -5px rgba(255,50,50,1), 10px 5px rgba(50,180,255,1), -5px 10px rgba(0,255,0,0.8); }
+  25% { text-shadow: 25px 0 rgba(255,30,30,1), -25px 0 rgba(30,170,255,1); }
+  30% { text-shadow: -20px 4px rgba(255,40,40,1), 20px -4px rgba(40,190,255,1); }
+  35% { text-shadow: 12px -8px rgba(255,30,30,1), -12px 8px rgba(30,170,255,1), 0 -6px rgba(255,0,255,0.7); }
+  40% { text-shadow: none; }
+  45% { text-shadow: 30px 0 rgba(255,20,20,1), -30px 0 rgba(20,160,255,1); }
+  50% { text-shadow: -25px -3px rgba(255,30,30,1), 25px 3px rgba(30,170,255,1); }
+  55% { text-shadow: 16px 6px rgba(255,40,40,1), -16px -6px rgba(40,180,255,1), 6px -4px rgba(0,255,0,0.8); }
+  60% { text-shadow: -28px 0 rgba(255,30,30,1), 28px 0 rgba(30,170,255,1); }
+  65% { text-shadow: 20px 2px rgba(255,30,30,0.9), -20px -2px rgba(30,170,255,0.9); }
+  70% { text-shadow: none; }
+  75% { text-shadow: 15px -5px rgba(255,40,40,1), -15px 5px rgba(40,190,255,1); }
+  80% { text-shadow: -18px 7px rgba(255,30,30,1), 18px -7px rgba(30,170,255,1); }
+  85% { text-shadow: 24px 0 rgba(255,20,20,1), -24px 0 rgba(20,160,255,1), 0 3px rgba(255,0,0,0.8); }
+  90% { text-shadow: -12px -2px rgba(255,50,50,1), 12px 2px rgba(50,200,255,1); }
+  95% { text-shadow: 8px 0 rgba(255,30,30,1), -8px 0 rgba(30,170,255,1); }
+}
+
+.crash-rgb-split {
+  animation: crash-rgb-split 0.18s steps(1) infinite;
+}
+
+/* 随机横向撕裂条 — 大范围，覆盖 40%+ 屏幕 */
+@keyframes crash-clip-glitch {
+  0%   { clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); }
+  6%   { clip-path: polygon(0 8%, 100% 5%, 100% 35%, 0 38%); }
+  12%  { clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); }
+  18%  { clip-path: polygon(0 45%, 100% 42%, 100% 65%, 0 68%); }
+  24%  { clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); }
+  30%  { clip-path: polygon(0 15%, 100% 18%, 100% 55%, 0 52%); }
+  36%  { clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); }
+  42%  { clip-path: polygon(0 70%, 100% 68%, 100% 95%, 0 92%); }
+  48%  { clip-path: polygon(0 25%, 100% 22%, 100% 48%, 0 50%); }
+  54%  { clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); }
+  60%  { clip-path: polygon(0 5%, 100% 10%, 100% 42%, 0 38%); }
+  66%  { clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); }
+  72%  { clip-path: polygon(0 55%, 100% 60%, 100% 85%, 0 80%); }
+  78%  { clip-path: polygon(0 30%, 100% 28%, 100% 62%, 0 65%); }
+  84%  { clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); }
+  90%  { clip-path: polygon(0 18%, 100% 15%, 100% 78%, 0 75%); }
+  96%  { clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); }
+}
+
+.crash-clip-glitch {
+  animation: crash-clip-glitch 0.15s steps(1) infinite;
+}
+
+/* 屏幕随机黑闪 — 更大面积，更高不透明度 */
+@keyframes crash-black-flash {
+  0%, 60%, 64%, 72%, 78%, 85%, 88%, 99%, 100% { opacity: 0; }
+  61%  { opacity: 0.95; }
+  63%  { opacity: 0.7; }
+  73%  { opacity: 0.9; }
+  75%  { opacity: 0.55; }
+  80%  { opacity: 0.85; }
+  82%  { opacity: 0.4; }
+  90%  { opacity: 0.9; }
+  93%  { opacity: 0.6; }
+  97%  { opacity: 0.95; }
+  98%  { opacity: 0.3; }
+}
+
+.crash-black-flash {
+  animation: crash-black-flash 0.35s steps(1) infinite;
+}
+
+/* ═══ 按钮卡顿乱码 ═══ */
+@keyframes crash-button-jitter {
+  0%, 100% { transform: translateX(0); }
+  10%  { transform: translateX(3px); }
+  20%  { transform: translateX(-3px); }
+  30%  { transform: translateX(2px); }
+  40%  { transform: translateX(-1px); }
+  50%  { transform: translateX(4px); }
+  60%  { transform: translateX(-4px); }
+  70%  { transform: translateX(1px); }
+  80%  { transform: translateX(-2px); }
+  90%  { transform: translateX(2px); }
+}
+
+.crash-button-jitter {
+  animation: crash-button-jitter 0.08s linear infinite;
+}
+
+/* ═══ 屏幕烧毁残留 — glitch 废墟痕迹，大字从废墟中浮现 ═══ */
+.crash-glitch-aftermath {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background-image:
+    /* 不规则横向撕裂线 — 模拟屏幕物理损坏 */
+    linear-gradient(to bottom,
+      transparent 0%,   transparent 3%,
+      rgba(255,20,20,0.25) 3%,  rgba(255,20,20,0.25) 4%,
+      transparent 4%,   transparent 10%,
+      rgba(30,150,255,0.22) 10%, rgba(30,150,255,0.22) 11.5%,
+      transparent 11.5%, transparent 18%,
+      rgba(0,255,50,0.18) 18%, rgba(0,255,50,0.18) 19%,
+      transparent 19%,   transparent 27%,
+      rgba(255,30,30,0.28) 27%, rgba(255,30,30,0.28) 29%,
+      transparent 29%,   transparent 35%,
+      rgba(200,40,255,0.2) 35%, rgba(200,40,255,0.2) 36.5%,
+      transparent 36.5%, transparent 43%,
+      rgba(40,180,255,0.26) 43%, rgba(40,180,255,0.26) 45%,
+      transparent 45%,   transparent 52%,
+      rgba(255,20,20,0.3) 52%, rgba(255,20,20,0.3) 53.5%,
+      transparent 53.5%, transparent 60%,
+      rgba(0,255,60,0.22) 60%, rgba(0,255,60,0.22) 61%,
+      transparent 61%,   transparent 68%,
+      rgba(255,50,50,0.25) 68%, rgba(255,50,50,0.25) 70%,
+      transparent 70%,   transparent 77%,
+      rgba(50,160,255,0.28) 77%, rgba(50,160,255,0.28) 78.5%,
+      transparent 78.5%, transparent 85%,
+      rgba(255,20,20,0.22) 85%, rgba(255,20,20,0.22) 86%,
+      transparent 86%, transparent 92%,
+      rgba(200,50,255,0.18) 92%, rgba(200,50,255,0.18) 93%,
+      transparent 93%,   transparent 100%
+    ),
+    /* 垂直色带 — RGB 通道残留 */
+    linear-gradient(to right,
+      transparent 0%, transparent 15%,
+      rgba(255,20,20,0.12) 15%, rgba(255,20,20,0.12) 18%,
+      transparent 18%, transparent 40%,
+      rgba(30,160,255,0.10) 40%, rgba(30,160,255,0.10) 43%,
+      transparent 43%, transparent 65%,
+      rgba(0,255,60,0.08) 65%, rgba(0,255,60,0.08) 67%,
+      transparent 67%, transparent 85%,
+      rgba(255,20,20,0.10) 85%, rgba(255,20,20,0.10) 87%,
+      transparent 87%, transparent 100%
+    );
+  animation: glitch-aftermath-shift 0.4s steps(6) infinite;
+}
+
+@keyframes glitch-aftermath-shift {
+  0%   { opacity: 0.35; }
+  15%  { opacity: 0.55; }
+  30%  { opacity: 0.28; }
+  50%  { opacity: 0.50; }
+  70%  { opacity: 0.32; }
+  85%  { opacity: 0.45; }
+  100% { opacity: 0.35; }
+}
+
+/* ═══ WinXP 经典错误对话框 ═══ */
+.crash-dialog-winxp {
+  position: absolute;
+  width: 380px;
+  max-width: 90vw;
+  background: #ECE9D8;
+  border: 2px solid #0054E3;
+  border-radius: 8px 8px 0 0;
+  box-shadow: 
+    2px 2px 10px rgba(0,0,0,0.6),
+    inset 0 0 0 1px rgba(255,255,255,0.4);
+  font-family: 'Tahoma', 'Segoe UI', sans-serif;
+  font-size: 12px;
+  color: #000;
+  overflow: hidden;
+  z-index: 10;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* 标题栏 — 蓝色渐变 XP 风 */
+.crash-dialog-winxp > .dialog-titlebar {
+  background: linear-gradient(180deg, 
+    #0A246A 0%, #0054E3 4%, #3485F7 8%, #0054E3 30%, #0A246A 95%, #A6CAF0 100%
+  );
+  padding: 4px 6px 3px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  text-shadow: 1px 1px 0 rgba(0,0,0,0.5);
+  cursor: default;
+}
+
+.crash-dialog-winxp > .dialog-titlebar .dialog-close {
+  width: 21px;
+  height: 21px;
+  background: #C54B31;
+  border: 1px solid #8B3A20;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.3);
+}
+
+/* 弹窗内容区 */
+.crash-dialog-winxp > .dialog-body {
+  padding: 16px 16px 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: #ECE9D8;
+}
+
+.crash-dialog-winxp > .dialog-body .dialog-icon {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #CC0000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.crash-dialog-winxp > .dialog-body .dialog-text {
+  flex: 1;
+  color: #000;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.crash-dialog-winxp > .dialog-footer {
+  padding: 8px 16px 12px;
+  text-align: center;
+  background: #ECE9D8;
+}
+
+.crash-dialog-winxp > .dialog-footer .dialog-ok-btn {
+  display: inline-block;
+  padding: 3px 24px;
+  background: #ECE9D8;
+  border: 2px solid;
+  border-color: #FFFFFF #808080 #808080 #FFFFFF;
+  font-size: 12px;
+  cursor: default;
+  min-width: 75px;
+  color: #000;
+}
+
+/* 弹窗弹性入场动画 */
+@keyframes crash-dialog-pop {
+  0%   { transform: scale(0.3); opacity: 0; }
+  55%  { transform: scale(1.08); opacity: 1; }
+  75%  { transform: scale(0.96); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.crash-dialog-enter {
+  animation: crash-dialog-pop 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+}
+
+/* ═══ 代码崩溃瀑布 — 左半屏 ═══ */
+.crash-code-terminal {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 50%;
+  background: rgba(0, 0, 0, 0.92);
+  border-right: 2px solid rgba(200, 0, 0, 0.4);
+  overflow: hidden;
+  z-index: 5;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.6;
+  padding: 8px 14px;
+  pointer-events: none;
+}
+
+.crash-code-terminal .code-line {
+  color: rgba(255, 60, 60, 0.85);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.crash-code-terminal .code-line:nth-child(odd) {
+  color: rgba(0, 210, 245, 0.75);
+}
+
+.crash-code-terminal .code-line.red-flash {
+  color: #ff2020;
+  font-weight: 700;
+  text-shadow: 0 0 8px rgba(255,0,0,0.5);
+}
+
+/* 代码上滚容器 */
+.crash-code-scroll-inner {
+  animation: crash-code-scroll var(--scroll-duration, 8s) linear infinite;
+}
+
+@keyframes crash-code-scroll {
+  0%   { transform: translateY(0); }
+  100% { transform: translateY(-50%); }
+}
+
+/* ═══ 终幕大字 ═══ */
+.crash-finale-text {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.crash-finale-text span {
+  font-family: var(--font-display);
+  font-size: clamp(28px, 7vw, 64px);
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-align: center;
+  padding: 20px 40px;
+}
+
+.crash-finale-flash {
+  animation: crash-finale-flash 0.4s ease-in-out 3;
+}
+
+@keyframes crash-finale-flash {
+  0%, 100% { color: #ffffff; text-shadow: 0 0 40px rgba(255,255,255,0.6); }
+  50% { color: #dc2626; text-shadow: 0 0 40px rgba(220,38,38,0.8), 0 0 80px rgba(220,38,38,0.4); }
+}
+
+@keyframes crash-finale-appear {
+  0%   { opacity: 0; transform: scale(0.7); filter: blur(8px); }
+  40%  { opacity: 0.6; filter: blur(2px); }
+  100% { opacity: 1; transform: scale(1); filter: blur(0); }
+}
+
+.crash-finale-appear {
+  animation: crash-finale-appear 0.8s ease-out both;
+}
+
+/* 终幕全黑 */
+.crash-finale-blackout {
+  position: fixed;
+  inset: 0;
+  z-index: 10002;
+  background: #000;
+  opacity: 0;
+  transition: opacity 0.3s ease-in;
+  pointer-events: none;
+}
+
+.crash-finale-blackout.active {
+  opacity: 1;
+}
+
+/* ═══ 静音按钮 ═══ */
+.crash-mute-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 30;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.6);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.6);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  transition: all 0.2s;
+  pointer-events: all;
+}
+
+.crash-mute-btn:hover {
+  background: rgba(0,0,0,0.8);
+  color: #fff;
+  border-color: rgba(255,255,255,0.3);
+}
+
+/* ═══ 屏幕疯狂抽搐 — 持续警报期间的癫狂效果 ═══ */
+@keyframes crash-screen-rage {
+  0%   { transform: translate(0, 0); }
+  4%   { transform: translate(4px, -3px); filter: hue-rotate(8deg); }
+  8%   { transform: translate(-3px, 2px); }
+  12%  { transform: translate(6px, 1px); filter: hue-rotate(-12deg); }
+  16%  { transform: translate(-5px, -4px); }
+  20%  { transform: translate(2px, 5px); filter: hue-rotate(15deg); }
+  24%  { transform: translate(-6px, -1px); }
+  28%  { transform: translate(3px, -5px); filter: hue-rotate(-8deg); }
+  32%  { transform: translate(-2px, 4px); }
+  36%  { transform: translate(5px, 3px); filter: hue-rotate(20deg); }
+  40%  { transform: translate(-4px, -2px); }
+  44%  { transform: translate(7px, 0); filter: hue-rotate(-15deg); }
+  48%  { transform: translate(-1px, -5px); }
+  52%  { transform: translate(4px, -2px); filter: hue-rotate(10deg); }
+  56%  { transform: translate(-5px, 3px); }
+  60%  { transform: translate(2px, -4px); filter: hue-rotate(-20deg); }
+  64%  { transform: translate(-7px, 1px); }
+  68%  { transform: translate(3px, 5px); filter: hue-rotate(25deg); }
+  72%  { transform: translate(-2px, -3px); }
+  76%  { transform: translate(6px, -1px); filter: hue-rotate(-10deg); }
+  80%  { transform: translate(-4px, 2px); }
+  84%  { transform: translate(1px, -5px); filter: hue-rotate(18deg); }
+  88%  { transform: translate(-6px, -2px); }
+  92%  { transform: translate(5px, 4px); filter: hue-rotate(-22deg); }
+  96%  { transform: translate(-3px, -1px); }
+  100% { transform: translate(0, 0); filter: hue-rotate(0deg); }
+}
+
+.crash-screen-rage {
+  animation: crash-screen-rage 0.6s linear infinite;
+  will-change: transform, filter;
+}
+
+/* ═══ CRT 显示器关闭动画 ═══ */
+@keyframes crt-power-off-collapse {
+  0%   { transform: scaleY(1) scaleX(1); opacity: 1; }
+  20%  { transform: scaleY(0.85) scaleX(1.02); opacity: 1; }
+  40%  { transform: scaleY(0.4) scaleX(1.05); opacity: 1; }
+  55%  { transform: scaleY(0.08) scaleX(1.08); opacity: 1; filter: brightness(2); }
+  70%  { transform: scaleY(0.015) scaleX(0.8); opacity: 1; filter: brightness(3); }
+  80%  { transform: scaleY(0.003) scaleX(0.3); opacity: 0.8; filter: brightness(2); }
+  90%  { transform: scaleY(0.001) scaleX(0.05); opacity: 0.3; filter: brightness(1); }
+  100% { transform: scaleY(0) scaleX(0); opacity: 0; filter: brightness(0); }
+}
+
+.crt-power-off {
+  animation: crt-power-off-collapse 1.2s ease-in forwards !important;
+  transform-origin: center center;
+}
+
+/* CRT collapse white line overlay — independent of crash-overlay */
+.crash-crt-collapse {
+  position: fixed;
+  inset: 0;
+  z-index: 10003;
+  background: #fff;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.1s ease;
+}
+
+.crash-crt-collapse.active {
+  opacity: 0;
+  animation: crt-line-glow 1.2s ease-in forwards;
+}
+
+@keyframes crt-line-glow {
+  0%   { opacity: 0; }
+  30%  { opacity: 0; }
+  45%  { opacity: 0.9; }
+  60%  { opacity: 1; }
+  75%  { opacity: 0.5; }
+  90%  { opacity: 0; }
+  100% { opacity: 0; }
+}
+
+/* ═══════════════════════════════════════════
    Accessibility: Reduced Motion
    ═══════════════════════════════════════════ */
 @media (prefers-reduced-motion: reduce) {
