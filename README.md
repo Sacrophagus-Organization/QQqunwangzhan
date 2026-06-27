@@ -16,7 +16,8 @@
 - **点赞系统** — 记录/谜题/Wiki/留言/评论全实体通用 LikeButton
 - **管理员面板** — 审核用户、管理内容（`/lynchpin-admin`）
 - **石棺彩蛋** — CRT 终端解密页面，访问代码验证，自运行程序效果
-- **BGM 系统** — 赛博朋克风背景音乐，路由切换，循环+间隔播放
+- **系统崩溃特效** — WinXP 风格全屏崩溃转场动画，Glitch + 代码瀑布 + CRT 关机（`/test`，admin 专属）
+- **BGM 系统** — 赛博朋克风背景音乐，路由切换，循环+间隔播放，崩溃特效联动静音
 - **用户头像** — 上传+拖拽定位+缩放裁剪，GIF 自动跳过裁剪保留动画
 
 ---
@@ -111,11 +112,12 @@ bash verify.sh
 │       │   ├── LikeButton.tsx         # 通用点赞按钮
 │       │   ├── RoleApply.tsx          # 角色申请组件
 │       │   ├── TerminalAutopilot.tsx  # 终端自运行程序
+│       │   ├── SystemCrashOverlay.tsx  # 系统崩溃转场动画
 │       │   ├── CommentSection.tsx     # 评论区（含折叠）
 │       │   ├── AdminRoute.tsx         # 管理员路由守卫
 │       │   └── Footer.tsx             # 全局页脚
 │       ├── pages/         # 页面
-│       │   ├── HomePage.tsx / LoginPage.tsx
+│       │   ├── HomePage.tsx / LoginPage.tsx / TestPage.tsx
 │       │   ├── MessageBoard.tsx     # 留言板
 │       │   ├── SarcophagusTerminal.tsx # 石棺彩蛋终端
 │       │   └── AdminPage.tsx / Records / Puzzles / Wiki
@@ -133,6 +135,15 @@ bash verify.sh
 ---
 
 ## 更新日志
+
+### 2026-06-27 — 系统崩溃转场特效 / admin 专属测试页
+
+- **SystemCrashOverlay 全屏崩溃动画**：WinXP 风格系统崩溃转场（~16.7s），四阶段推进：Glitch 撕裂 → 16 个疯狂弹窗对角线加速暴增 → 代码瀑布逐行喷涌 → 终幕大字「LOOP IS ETERNAL」从废墟浮现
+- **Web Audio 音效引擎**：background 低频嗡鸣持续爬升音量 / 刺耳双路方波警报 / 最终弹窗后持续癫狂蜂鸣 + 页面抽搐撕扯直至 CRT 关机
+- **Glitch 视觉系统**：30px 极端 RGB 通道分离 + 40% 面积剪裁撕裂 + 密集黑闪 + 烧屏残留线模拟屏幕物理损毁，贯穿 glitch→dialogs→code→finale 全阶段
+- **CRT 显示器关机动画**：屏幕纵向塌缩为水平亮线 → 汇聚为光点 → 熄灭，纯黑遮盖层脱离动画作用域确保全屏覆盖
+- **BGM 联动**：BackgroundMusic 监听 `crash-overlay-start/end` 自定义事件自动暂停/恢复背景音乐
+- **/test admin 专页**：AdminRoute 保护，仅 admin 角色可访问，非 admin 弹回首页；跳转前清除 auth token 确保持续停留在登录页
 
 ### 2026-06-25 #3 — HomePage Hero 专区重构与视觉特效增强
 
