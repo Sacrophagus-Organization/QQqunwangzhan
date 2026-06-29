@@ -17,7 +17,7 @@
 - **管理员面板** — 审核用户、管理内容（`/lynchpin-admin`）
 - **石棺彩蛋** — CRT 终端解密页面，访问代码验证，自运行程序效果
 - **系统崩溃特效** — WinXP 风格全屏崩溃转场动画，Glitch + 代码瀑布 + CRT 关机（`/test`，admin 专属）
-- **页面访问控制** — 数据库驱动，管理员可在面板中配置每个页面的访问级别（公开/群友/管理）和开关状态，支持对外网公众开放部分页面
+- **页面访问控制** — 数据库驱动三级系统（public/member/admin），前后端统一控制，访客 Navbar 自适应
 - **BGM 系统** — 赛博朋克风背景音乐，路由切换，循环+间隔播放，崩溃特效联动静音
 - **用户头像** — 上传+拖拽定位+缩放裁剪，GIF 自动跳过裁剪保留动画
 
@@ -118,6 +118,9 @@ bash verify.sh
 │       │   ├── TerminalAutopilot.tsx  # 终端自运行程序
 │       │   ├── SystemCrashOverlay.tsx  # 系统崩溃转场动画
 │       │   ├── CommentSection.tsx     # 评论区（含折叠）
+│       │   ├── PageAccessRoute.tsx    # 页面访问控制路由守卫
+│       │   ├── ForbiddenPage.tsx      # 403 禁止访问页
+│       │   ├── MaintenancePage.tsx    # 页面维护页
 │       │   ├── AdminRoute.tsx         # 管理员路由守卫
 │       │   ├── PageAccessRoute.tsx    # 页面访问控制路由守卫
 │       │   ├── MaintenancePage.tsx    # 页面维护提示页
@@ -142,16 +145,33 @@ bash verify.sh
 
 ## 更新日志
 
-### 2026-06-29 — 页面访问控制系统
+### 2026-06-29 — 页面访问控制系统 + 安全性修复 + 性能优化
 
-- **数据库驱动访问控制**：新增 `page_access` 表，支持每个页面配置三种访问级别（`public` 公开 / `member` 群友 / `admin` 管理）和开关状态
-- **`optionalAuth` 中间件**：根据页面配置动态决定 GET 读接口是否需要登录，写操作始终需认证；30 秒内存缓存 + 管理面板更新即时清除
-- **`pageAccessGuard` 中间件**：页面关闭时返回 503 维护提示
-- **三层限流体系**：`publicApiLimiter`（120次/分钟/IP）保护公开 GET 接口 / `siteLimiter`（30次/分钟/IP + 60s 浏览器缓存）保护配置接口 / 全局限流（100次/15分钟）保护登录用户
-- **`PageAccessRoute` 前端路由守卫**：根据 page_access 配置动态切换渲染模式（公开直接渲染 / 群友需登录 / 管理需 admin / 关闭显示维护页）
-- **`MaintenancePage` 维护页**：延续石棺暗色赛博工业风，菱形图标 + 渐变文字 + 终端状态码
-- **Navbar 访客兼容**：未登录时渲染精简导航栏（logo + 公开页面链接 + 登录按钮），不再返回 `null`
-- **NotificationTicker 访客兼容**：访客时跳过 `/api/admin/users` 调用，避免 401 报错
+**页面访问控制系统：**
+- 新增 `page_access` 表 + `PageAccessRoute` 前端路由守卫 + `optionalAuth` 服务端中间件，支持 public / member / admin 三级访问控制
+- `ForbiddenPage`（403）和 `MaintenancePage`（维护页自动跳转）组件
+- Navbar 访客模式：仅显示 public 页面链接 + 登录按钮
+- AdminPage 控制面板可动态切换页面等级
+
+**安全性修复（代码审查结果）：**
+- 15 个路由端点添加 `authMiddleware` 保护（puzzles/records/wiki/messages 的 POST/PUT/DELETE/PIN）
+- messages.ts DELETE 操作使用事务包裹，防止删除过程半途失败导致数据不一致
+- sarcophagus.ts 下载端点新增 IP 限速器（10次/分钟/窗口）
+- pageAccess.ts JWT 密钥加固（静态 import + 环境变量检查）
+
+**性能修复：**
+- 全局限速器仅对写操作（POST/PUT/DELETE）生效，GET 读操作不再受限——修复了 429 导致的黑屏和登录状态丢失
+- GET API 使用 `optionalAuth` 动态判断权限，公开页面无需登录即可加载数据
+- HomePage API 调用添加 `?limit=5` 减少首页数据加载量
+
+**Bug 修复：**
+- 多个页面列表 API 改为适配分页响应格式（`res.data` 提取），修复 `filter/slice is not a function` 崩溃
+- React `{0 && <Component/>}` 渲染文字 "0" 的经典陷阱修复（`!!isAnonymous` 强制转布尔）
+- 留言板新增评论计数显示
+
+**其他：**
+- 删除冗余 `/sarcophagus/admin` 页面（功能已合并至 `/lynchpin-admin`）
+- AdminPage 页面访问控制移除无用的 is_enabled 开关
 - **API 客户端修复**：`getToken()` 返回 `null` 时不再发送 `Authorization: Bearer null`
 - **Admin 管理面板新增「页面访问」Tab**：可视化配置各页面访问级别和开关，修改即时生效
 - **公开配置接口** `GET /api/site/page-access`：无需认证，过滤 admin 路由，前端启动时自动拉取
