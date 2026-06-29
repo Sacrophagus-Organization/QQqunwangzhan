@@ -49,14 +49,14 @@ export default function HomePage() {
     const load = async () => {
       try {
         const [recs, puzs, wiki, members] = await Promise.all([
-          apiGet<DecryptRecord[]>('/records'),
-          apiGet<PuzzleType[]>('/puzzles'),
-          apiGet<any[]>('/wiki'),
+          apiGet<any>('/records?limit=5'),
+          apiGet<any>('/puzzles?limit=5'),
+          apiGet<any>('/wiki?limit=5'),
           apiGet<any[]>('/admin/users').catch(() => []),
         ]);
-        setRecords(recs);
-        setPuzzles(puzs);
-        setWikiCount(wiki.length);
+        setRecords((recs as any).data || []);
+        setPuzzles((puzs as any).data || []);
+        setWikiCount((wiki as any).data?.length || 0);
         setMemberCount(members.filter((u: any) => u.status === 'active').length);
       } catch {}
       setLoading(false);

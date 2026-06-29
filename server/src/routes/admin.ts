@@ -130,4 +130,38 @@ router.post('/users/:id/role', (req: AuthRequest, res) => {
   res.json({ success: true, message: `已将 ${user.username} 的角色更新为 ${role}` });
 });
 
+// ─── 页面访问控制管理 ────────────────────────────────────────────────
+import { getAllPageAccess, clearPageAccessCache } from '../middleware/pageAccess.js';
+
+// GET /page-access — 获取所有页面访问配置（含 admin 路由）
+router.get('/page-access', (_req: AuthRequest, res) => {
+  const rows = getAllPageAccess();
+  res.json(rows);
+});
+
+// PUT /page-access/:id — 更新某页面配置
+router.put('/page-access/:id', (req: AuthRequest, res) => {
+  const { access_level, is_enabled, description } = req.body;
+  const existing = db.prepare('SELECT * FROM page_access WHERE id = ?').get(req.params.id) as any;
+  if (!existing) { res.status(404).json({ error: '配置不存在' }); return; }
+
+  if (access_level && !['public', 'member', 'admin'].includes(access_level)) {
+    res.status(400).json({ error: '无效的访问级别' }); return;
+  }
+
+  const newLevel = access_level || existing.access_level;
+  const newEnabled = is_enabled !== undefined ? (is_enabled ? 1 : 0) : existing.is_enabled;
+  const newDesc = description !== undefined ? description : existing.description;
+  const now = new Date().toISOString();
+
+  db.prepare('UPDATE page_access SET access_level=?, is_enabled=?, description=?, updated_by=?, updated_at=? WHERE id=?')
+    .run(newLevel, newEnabled, newDesc, req.userName, now, req.params.id);
+
+  // 清除缓存使修改立即生效
+  clearPageAccessCache();
+
+  const updated = db.prepare('SELECT * FROM page_access WHERE id = ?').get(req.params.id);
+  res.json(updated);
+});
+
 export default router;

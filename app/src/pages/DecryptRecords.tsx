@@ -42,8 +42,8 @@ export default function DecryptRecords() {
 
   const fetchRecords = useCallback(async () => {
     try {
-      const data = await apiGet<DecryptRecord[]>('/records');
-      setRecords(data);
+      const res = await apiGet<any>('/records');
+      setRecords(res.data || []);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
   }, []);

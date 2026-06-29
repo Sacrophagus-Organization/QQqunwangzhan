@@ -3,22 +3,27 @@ import { v4 as uuid } from 'uuid';
 import { unlinkSync } from 'node:fs';
 import { db } from '../db.js';
 import { authMiddleware, AuthRequest } from '../middleware/auth.js';
+import { optionalAuth } from '../middleware/pageAccess.js';
 import { sanitizeRichHtml } from '../lib/sanitize.js';
 import { getAttachments, getAttachmentsMap, safeParseTags } from '../lib/attachments.js';
 import { deleteImagesFromHtml } from '../lib/imageCleanup.js';
 
 const router = Router();
 
-// All record routes require auth
-router.use(authMiddleware);
+// Get all records (强制分页，防止 OOM)
+router.get('/', optionalAuth('/records'), (req: AuthRequest, res) => {
+  const page = Math.max(1, parseInt(req.query.page as string) || 1);
+  const limit = Math.min(Math.max(1, parseInt(req.query.limit as string) || 20), 50);
+  const offset = (page - 1) * limit;
 
-// Get all records (支持可选分页 ?page=&limit=，无参数时返回全部数组以向后兼容)
-router.get('/', (req: AuthRequest, res) => {
+  const { total } = db.prepare('SELECT COUNT(*) as total FROM records').get() as any;
   const rows = db.prepare(
-    "SELECT r.*, (SELECT COUNT(*) FROM likes WHERE entity_type='record' AND entity_id=r.id) as like_count FROM records r ORDER BY r.pinned DESC, r.sort_order ASC, r.date DESC"
-  ).all() as any[];
+    `SELECT r.*, (SELECT COUNT(*) FROM likes WHERE entity_type='record' AND entity_id=r.id) as like_count
+     FROM records r ORDER BY r.pinned DESC, r.sort_order ASC, r.date DESC
+     LIMIT ? OFFSET ?`
+  ).all(limit, offset) as any[];
+
   const ids = rows.map(r => r.id);
-  // 批量查询附件，消除 N+1 问题
   const attMap = getAttachmentsMap('record', ids);
   const records = rows.map(r => ({
     ...r,
@@ -27,20 +32,11 @@ router.get('/', (req: AuthRequest, res) => {
     attachments: attMap[r.id] || [],
   }));
 
-  const limit = parseInt(req.query.limit as string);
-  const page = parseInt(req.query.page as string);
-  if (!isNaN(limit) && limit > 0) {
-    const p = !isNaN(page) && page > 0 ? page : 1;
-    const offset = (p - 1) * limit;
-    const total = records.length;
-    res.json({ data: records.slice(offset, offset + limit), page: p, limit, total, totalPages: Math.ceil(total / limit) });
-    return;
-  }
-  res.json(records);
+  res.json({ data: records, page, limit, total, totalPages: Math.ceil(total / limit) });
 });
 
 // Get single record
-router.get('/:id', (req: AuthRequest, res) => {
+router.get('/:id', optionalAuth('/records'), (req: AuthRequest, res) => {
   const row = db.prepare(
     "SELECT r.*, (SELECT COUNT(*) FROM likes WHERE entity_type='record' AND entity_id=r.id) as like_count FROM records r WHERE id = ?"
   ).get(req.params.id) as any;
@@ -49,7 +45,7 @@ router.get('/:id', (req: AuthRequest, res) => {
 });
 
 // Create record
-router.post('/', (req: AuthRequest, res) => {
+router.post('/', authMiddleware, (req: AuthRequest, res) => {
   const { title, content, summary, date, tags, importance } = req.body;
   if (!title) { res.status(400).json({ error: '标题必填' }); return; }
   const id = 'rec-' + uuid().slice(0, 8);
@@ -64,7 +60,7 @@ router.post('/', (req: AuthRequest, res) => {
 });
 
 // Update record
-router.put('/:id', (req: AuthRequest, res) => {
+router.put('/:id', authMiddleware, (req: AuthRequest, res) => {
   const record = db.prepare('SELECT * FROM records WHERE id = ?').get(req.params.id) as any;
   if (!record) { res.status(404).json({ error: '记录不存在' }); return; }
   if (record.author_id !== req.userId && req.userRole !== 'admin' && req.userRole !== 'editor') {
@@ -86,7 +82,7 @@ router.put('/:id', (req: AuthRequest, res) => {
 });
 
 // Delete record
-router.delete('/:id', (req: AuthRequest, res) => {
+router.delete('/:id', authMiddleware, (req: AuthRequest, res) => {
   const record = db.prepare('SELECT * FROM records WHERE id = ?').get(req.params.id) as any;
   if (!record) { res.status(404).json({ error: '记录不存在' }); return; }
   if (record.author_id !== req.userId && req.userRole !== 'admin' && req.userRole !== 'editor') {
@@ -106,7 +102,7 @@ router.delete('/:id', (req: AuthRequest, res) => {
 });
 
 // Pin/unpin record
-router.post('/:id/pin', (req: AuthRequest, res) => {
+router.post('/:id/pin', authMiddleware, (req: AuthRequest, res) => {
   const record = db.prepare('SELECT * FROM records WHERE id = ?').get(req.params.id) as any;
   if (!record) { res.status(404).json({ error: '记录不存在' }); return; }
   if (req.userRole !== 'admin' && req.userRole !== 'editor') {

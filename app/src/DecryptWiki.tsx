@@ -12,7 +12,6 @@ import { apiGet, apiPost, apiPut, apiDelete, apiUpload, apiDownload } from '@/ap
 import { LikeButton } from '@/components/LikeButton';
 import { BookOpen, Plus, Search, User, Tag, Clock, Bookmark, Sparkles, ChevronDown, Filter, Code2, Binary, Hash, Globe, FileCode, Paperclip, Download, Edit3, Save, Trash2 } from 'lucide-react';
 import type { WikiEntry, FileAttachment } from '@/types';
-import { sanitizeHtml } from '@/lib/sanitize';
 
 const wikiCategories = [
   { id: 'cipher-basics', name: '密码学基础', icon: Code2 }, { id: 'classic-ciphers', name: '经典密码', icon: FileCode },
@@ -35,7 +34,7 @@ export default function DecryptWiki() {
   const [et, setEt] = useState(''); const [ec, setEc] = useState(''); const [ecat, setEcat] = useState('');
   const [etags, setEtags] = useState(''); const [efiles, setEfiles] = useState<File[]>([]);
 
-  const load = useCallback(async () => { try { const res = await apiGet<any>('/wiki'); setEntries(res.data || []); } catch {} finally { setLoading(false); } }, []);
+  const load = useCallback(async () => { try { setEntries(await apiGet<WikiEntry[]>('/wiki')); } catch {} finally { setLoading(false); } }, []);
   useEffect(() => { load(); }, [load]);
 
   const filtered = entries.filter(e => {
@@ -90,12 +89,8 @@ export default function DecryptWiki() {
   return (
     <div className="min-h-screen bg-background book-spine-bg">
       <div className="container mx-auto max-w-7xl px-4 py-8">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8 anim-blur-in">
-          <div className="relative">
-            <div className="absolute top-0 left-0 right-0 h-px overflow-hidden z-10 pointer-events-none"><div className="h-full w-1/3 bg-gradient-to-r from-transparent via-amber-500/70 to-transparent animate-data-sweep" /></div>
-            <h1 className="text-2xl sm:text-3xl font-display text-gradient-flow flex items-center gap-2"><BookOpen className="h-6 w-6 text-amber-400 animate-breathe-glow" />解密Wiki</h1>
-            <p className="text-sm text-muted-foreground/90 mt-1 mono-text">&gt; 词条总数: {entries.length}</p>
-          </div>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+          <div><h1 className="text-2xl font-bold text-glow-cyan flex items-center gap-2"><BookOpen className="h-6 w-6 text-amber-400" />解密Wiki</h1><p className="text-sm text-muted-foreground mt-1 mono-text">&gt; 词条总数: {entries.length}</p></div>
           <Dialog open={showCreate} onOpenChange={setShowCreate}><DialogTrigger asChild><Button className="bg-amber-500 hover:bg-amber-600 text-amber-950"><Plus className="h-4 w-4 mr-2" />新建词条</Button></DialogTrigger>
             <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto"><DialogHeader><DialogTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-amber-400" />新建Wiki词条</DialogTitle></DialogHeader>
               <div className="space-y-4 mt-4">
@@ -110,27 +105,27 @@ export default function DecryptWiki() {
           </Dialog>
         </div>
 
-        <Card className="card-elevated border-border/50 mb-6 anim-fade-up"><CardContent className="p-4"><div className="relative"><Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" /><Input placeholder="搜索Wiki词条..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-10 bg-secondary/30 border-border/50" /></div></CardContent></Card>
+        <Card className="glass-card border-border/50 mb-6"><CardContent className="p-4"><div className="relative"><Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" /><Input placeholder="搜索Wiki词条..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-10 bg-secondary/30 border-border/50" /></div></CardContent></Card>
 
         <div className="flex gap-6">
-          <div className="hidden lg:block w-56 shrink-0 anim-fade-up"><Card className="card-elevated border-border/50 sticky top-20"><CardHeader className="pb-3"><CardTitle className="text-sm font-heading tracking-wide flex items-center gap-2"><Bookmark className="h-4 w-4 text-primary animate-breathe-glow" />词条分类</CardTitle></CardHeader><CardContent className="p-2"><div className="space-y-0.5"><button onClick={() => setActiveCategory('all')} className={`w-full text-left px-3 py-2 rounded-md text-sm transition-all ${activeCategory === 'all' ? 'bg-primary/10 text-primary border border-primary/20' : 'text-muted-foreground/90 hover:text-foreground hover:bg-secondary/50'}`}>全部 ({entries.length})</button>{wikiCategories.map(cat => { const cnt = entries.filter(e => e.category === cat.name).length; const Icon = cat.icon; return <button key={cat.id} onClick={() => setActiveCategory(cat.name)} className={`w-full text-left px-3 py-2 rounded-md text-sm transition-all flex items-center gap-2 ${activeCategory === cat.name ? 'bg-primary/10 text-primary border border-primary/20' : 'text-muted-foreground/90 hover:text-foreground hover:bg-secondary/50'}`}><Icon className="h-3.5 w-3.5" /><span>{cat.name}</span><span className="ml-auto text-xs">{cnt}</span></button>; })}</div></CardContent></Card></div>
+          <div className="hidden lg:block w-56 shrink-0"><Card className="glass-card border-border/50 sticky top-20"><CardHeader className="pb-3"><CardTitle className="text-sm flex items-center gap-2"><Bookmark className="h-4 w-4 text-primary" />词条分类</CardTitle></CardHeader><CardContent className="p-2"><div className="space-y-0.5"><button onClick={() => setActiveCategory('all')} className={`w-full text-left px-3 py-2 rounded-md text-sm transition-all ${activeCategory === 'all' ? 'bg-primary/10 text-primary border border-primary/20' : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'}`}>全部 ({entries.length})</button>{wikiCategories.map(cat => { const cnt = entries.filter(e => e.category === cat.name).length; const Icon = cat.icon; return <button key={cat.id} onClick={() => setActiveCategory(cat.name)} className={`w-full text-left px-3 py-2 rounded-md text-sm transition-all flex items-center gap-2 ${activeCategory === cat.name ? 'bg-primary/10 text-primary border border-primary/20' : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'}`}><Icon className="h-3.5 w-3.5" /><span>{cat.name}</span><span className="ml-auto text-xs">{cnt}</span></button>; })}</div></CardContent></Card></div>
           <div className="lg:hidden w-full mb-4"><Select value={activeCategory} onValueChange={setActiveCategory}><SelectTrigger className="w-full bg-secondary/30 border-border/50"><Filter className="h-4 w-4 mr-2" /><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">全部</SelectItem>{wikiCategories.map(c => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}</SelectContent></Select></div>
 
           <div className="flex-1 space-y-4">
             {filtered.length === 0 ? <Card className="glass-card border-border/50"><CardContent className="p-12 text-center"><BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-30" /><p className="text-muted-foreground">暂无相关词条</p></CardContent></Card>
-              : filtered.map((entry, i) => (
-              <Card key={entry.id} className={`glass-card glass-card-hover border-border/50 hover:border-amber-500/20 transition-all duration-200 overflow-hidden anim-fade-up ${
+              : filtered.map(entry => (
+              <Card key={entry.id} className={`glass-card border-border/50 hover:border-amber-500/20 transition-all duration-200 overflow-hidden ${
                 expanded === entry.id ? 'border-amber-500/30 ring-1 ring-amber-500/5' : ''
-              }`} style={{ animationDelay: `${i * 0.06}s` }}>
+              }`}>
                 <CardHeader className="pb-3 cursor-pointer select-none" onClick={() => setExpanded(expanded === entry.id ? null : entry.id)}>
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
-                      <CardTitle className="text-base font-heading tracking-wide group-hover:text-amber-400 transition-colors">{entry.title}</CardTitle>
+                      <CardTitle className="text-base group-hover:text-amber-400 transition-colors">{entry.title}</CardTitle>
                       <div className="flex flex-wrap items-center gap-3 mt-2">
                         <Badge variant="secondary" className="text-xs"><Bookmark className="h-3 w-3 mr-1" />{entry.category}</Badge>
-                        <span className="flex items-center gap-1 text-xs text-muted-foreground/90"><User className="h-3 w-3" />{entry.author}</span>
-                        <span className="flex items-center gap-1 text-xs text-muted-foreground/90"><Clock className="h-3 w-3" />{entry.lastUpdated ? new Date(entry.lastUpdated).toLocaleDateString('zh-CN') : ''}</span>
-                        {entry.attachments?.length > 0 && <span className="flex items-center gap-1 text-xs text-muted-foreground/90"><Paperclip className="h-3 w-3" />{entry.attachments.length}</span>}
+                        <span className="flex items-center gap-1 text-xs text-muted-foreground"><User className="h-3 w-3" />{entry.author}</span>
+                        <span className="flex items-center gap-1 text-xs text-muted-foreground"><Clock className="h-3 w-3" />{entry.lastUpdated ? new Date(entry.lastUpdated).toLocaleDateString('zh-CN') : ''}</span>
+                        {entry.attachments?.length > 0 && <span className="flex items-center gap-1 text-xs text-muted-foreground"><Paperclip className="h-3 w-3" />{entry.attachments.length}</span>}
                         <div onClick={e => e.stopPropagation()}><LikeButton entityType="wiki" entityId={entry.id} likeCount={entry.likeCount} size="sm" /></div>
                       </div>
                     </div>
@@ -138,7 +133,7 @@ export default function DecryptWiki() {
                   </div>
                 </CardHeader>
                 {expanded === entry.id && <CardContent className="pt-0 border-t border-border/30">
-                  <div className="mt-4"><div className="text-sm bg-secondary/20 rounded-lg p-4 border border-border/20 rich-editor-content" dangerouslySetInnerHTML={{ __html: sanitizeHtml(entry.content) }} /></div>
+                  <div className="mt-4"><div className="text-sm bg-secondary/20 rounded-lg p-4 border border-border/20 rich-editor-content" dangerouslySetInnerHTML={{ __html: entry.content }} /></div>
                   {entry.tags?.length > 0 && <div className="flex flex-wrap gap-1.5 mt-4">{entry.tags.map((t: string) => <Badge key={t} variant="outline" className="text-xs"><Tag className="h-3 w-3 mr-1" />{t}</Badge>)}</div>}
                   {entry.attachments?.length > 0 && <div className="mt-3 border-t border-border/20 pt-3"><p className="text-xs text-muted-foreground mb-2"><Paperclip className="h-3 w-3 inline mr-1" />附件</p><div className="flex flex-wrap gap-2">{entry.attachments.map((a: FileAttachment) => <Button key={a.id} variant="outline" size="sm" onClick={() => downloadAtt(a)} className="text-xs"><Download className="h-3 w-3 mr-1" />{a.name}</Button>)}</div></div>}
                   <div className="mt-4 flex justify-end gap-2">{canEdit(entry) && <><Button variant="outline" size="sm" onClick={e => { e.stopPropagation(); openEdit(entry); }} className="border-border/40 hover:border-amber-500/30 hover:text-amber-400"><Edit3 className="h-4 w-4 mr-1" />编辑词条</Button><Button variant="outline" size="sm" onClick={e => { e.stopPropagation(); handleDelete(entry.id); }} className="border-border/40 hover:border-destructive/30 hover:text-destructive"><Trash2 className="h-4 w-4 mr-1" />删除</Button></>}</div>

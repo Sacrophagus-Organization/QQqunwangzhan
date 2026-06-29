@@ -84,6 +84,16 @@ router.post('/login', loginLimiter, async (req: AuthRequest, res) => {
   }
   const user = { id: row.id, username: row.username, role: row.role, qqNumber: row.qq_number || '', avatarUrl: row.avatar_url || '', createdAt: row.created_at };
   const token = generateToken(user);
+  // 设置 httpOnly cookie (JS 不可读取，防止 XSS 窃取)
+  const isProd = process.env.NODE_ENV === 'production';
+  res.cookie('token', token, {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: 'lax',
+    maxAge: 24 * 60 * 60 * 1000, // 24h
+    path: '/',
+  });
+  // 同时返回 token 给前端做兼容（旧客户端）
   res.json({ token, user });
 });
 

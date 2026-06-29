@@ -3,41 +3,40 @@ import { v4 as uuid } from 'uuid';
 import { unlinkSync } from 'node:fs';
 import { db } from '../db.js';
 import { authMiddleware, AuthRequest } from '../middleware/auth.js';
+import { optionalAuth } from '../middleware/pageAccess.js';
 import { sanitizeRichHtml } from '../lib/sanitize.js';
 import { getAttachments, getAttachmentsMap, safeParseTags } from '../lib/attachments.js';
 import { deleteImagesFromHtml } from '../lib/imageCleanup.js';
 
 const router = Router();
-router.use(authMiddleware);
 
-// Get all wiki entries (支持可选分页 ?page=&limit=，无参数时返回全部数组以向后兼容)
-router.get('/', (req: AuthRequest, res) => {
+// Get all wiki entries (强制分页，防止 OOM)
+router.get('/', optionalAuth('/wiki'), (req: AuthRequest, res) => {
+  const page = Math.max(1, parseInt(req.query.page as string) || 1);
+  const limit = Math.min(Math.max(1, parseInt(req.query.limit as string) || 20), 50);
+  const offset = (page - 1) * limit;
+
+  const { total } = db.prepare('SELECT COUNT(*) as total FROM wiki_entries').get() as any;
   const rows = db.prepare(
-    "SELECT w.*, (SELECT COUNT(*) FROM likes WHERE entity_type='wiki' AND entity_id=w.id) as like_count FROM wiki_entries w ORDER BY w.pinned DESC, w.sort_order ASC, w.created_at DESC"
-  ).all() as any[];
+    `SELECT w.*, (SELECT COUNT(*) FROM likes WHERE entity_type='wiki' AND entity_id=w.id) as like_count
+     FROM wiki_entries w ORDER BY w.pinned DESC, w.sort_order ASC, w.created_at DESC
+     LIMIT ? OFFSET ?`
+  ).all(limit, offset) as any[];
+
   const ids = rows.map(r => r.id);
   const attMap = getAttachmentsMap('wiki', ids);
   const entries = rows.map(r => ({ ...r, likeCount: r.like_count, tags: safeParseTags(r.tags), attachments: attMap[r.id] || [] }));
 
-  const limit = parseInt(req.query.limit as string);
-  const page = parseInt(req.query.page as string);
-  if (!isNaN(limit) && limit > 0) {
-    const p = !isNaN(page) && page > 0 ? page : 1;
-    const offset = (p - 1) * limit;
-    const total = entries.length;
-    res.json({ data: entries.slice(offset, offset + limit), page: p, limit, total, totalPages: Math.ceil(total / limit) });
-    return;
-  }
-  res.json(entries);
+  res.json({ data: entries, page, limit, total, totalPages: Math.ceil(total / limit) });
 });
 
-router.get('/:id', (req: AuthRequest, res) => {
+router.get('/:id', optionalAuth('/wiki'), (req: AuthRequest, res) => {
   const r = db.prepare('SELECT * FROM wiki_entries WHERE id = ?').get(req.params.id) as any;
   if (!r) { res.status(404).json({ error: '词条不存在' }); return; }
   res.json({ ...r, tags: safeParseTags(r.tags), attachments: getAttachments('wiki', r.id) });
 });
 
-router.post('/', (req: AuthRequest, res) => {
+router.post('/', authMiddleware, (req: AuthRequest, res) => {
   const { title, content, category, tags } = req.body;
   if (!title || !category) { res.status(400).json({ error: '标题和分类必填' }); return; }
   const id = 'wiki-' + uuid().slice(0, 8);
@@ -50,7 +49,7 @@ router.post('/', (req: AuthRequest, res) => {
   res.status(201).json({ ...created, tags: safeParseTags(created.tags), attachments: [] });
 });
 
-router.put('/:id', (req: AuthRequest, res) => {
+router.put('/:id', authMiddleware, (req: AuthRequest, res) => {
   const entry = db.prepare('SELECT * FROM wiki_entries WHERE id = ?').get(req.params.id) as any;
   if (!entry) { res.status(404).json({ error: '词条不存在' }); return; }
   if (entry.author_id !== req.userId && req.userRole !== 'admin' && req.userRole !== 'editor') {
@@ -67,7 +66,7 @@ router.put('/:id', (req: AuthRequest, res) => {
   res.json({ ...updated, tags: safeParseTags(updated.tags), attachments: getAttachments('wiki', updated.id) });
 });
 
-router.delete('/:id', (req: AuthRequest, res) => {
+router.delete('/:id', authMiddleware, (req: AuthRequest, res) => {
   const entry = db.prepare('SELECT * FROM wiki_entries WHERE id = ?').get(req.params.id) as any;
   if (!entry) { res.status(404).json({ error: '词条不存在' }); return; }
   if (entry.author_id !== req.userId && req.userRole !== 'admin' && req.userRole !== 'editor') {
@@ -86,7 +85,7 @@ router.delete('/:id', (req: AuthRequest, res) => {
   res.json({ success: true });
 });
 
-router.post('/:id/pin', (req: AuthRequest, res) => {
+router.post('/:id/pin', authMiddleware, (req: AuthRequest, res) => {
   const entry = db.prepare('SELECT * FROM wiki_entries WHERE id = ?').get(req.params.id) as any;
   if (!entry) { res.status(404).json({ error: '词条不存在' }); return; }
   if (req.userRole !== 'admin' && req.userRole !== 'editor') {

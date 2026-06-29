@@ -17,6 +17,7 @@
 - **管理员面板** — 审核用户、管理内容（`/lynchpin-admin`）
 - **石棺彩蛋** — CRT 终端解密页面，访问代码验证，自运行程序效果
 - **系统崩溃特效** — WinXP 风格全屏崩溃转场动画，Glitch + 代码瀑布 + CRT 关机（`/test`，admin 专属）
+- **页面访问控制** — 数据库驱动，管理员可在面板中配置每个页面的访问级别（公开/群友/管理）和开关状态，支持对外网公众开放部分页面
 - **BGM 系统** — 赛博朋克风背景音乐，路由切换，循环+间隔播放，崩溃特效联动静音
 - **用户头像** — 上传+拖拽定位+缩放裁剪，GIF 自动跳过裁剪保留动画
 
@@ -84,19 +85,22 @@ bash verify.sh
 │   │   ├── db.ts          # 数据库 + Admin 种子
 │   │   ├── seed.ts        # 初始数据
 │   │   ├── middleware/
-│   │   │   └── auth.ts    # JWT 认证
+│   │   │   ├── auth.ts      # JWT 认证
+│   │   │   └── pageAccess.ts # 页面访问控制中间件
 │   │   ├── lib/
-│   │   │   └── rateLimiter.ts # 频率限制
+│   │   │   └── rateLimiter.ts # 频率限制（含公开API限速器）
 │   │   └── routes/
-│   │       ├── auth.ts    # 注册/登录/头像上传
-│   │       ├── records.ts # 解密记录 CRUD
-│   │       ├── puzzles.ts # 谜题 CRUD
-│   │       ├── wiki.ts    # Wiki CRUD
-│   │       ├── files.ts   # 文件上传/下载
-│   │       ├── messages.ts # 留言板 CRUD
-│   │       ├── comments.ts # 评论 CRUD
+│   │       ├── auth.ts      # 注册/登录/头像上传
+│   │       ├── records.ts   # 解密记录 CRUD
+│   │       ├── puzzles.ts   # 谜题 CRUD
+│   │       ├── wiki.ts      # Wiki CRUD
+│   │       ├── files.ts     # 文件上传/下载
+│   │       ├── messages.ts  # 留言板 CRUD
+│   │       ├── comments.ts  # 评论 CRUD
+│   │       ├── likes.ts     # 点赞 API
 │   │       ├── sarcophagus.ts # 石棺彩蛋 API
-│   │       └── admin.ts   # 用户审核
+│   │       ├── site.ts      # 公开配置接口
+│   │       └── admin.ts     # 用户审核 + 页面访问控制
 │   └── uploads/avatars/   # 用户头像存储
 ├── app/                   # React 前端
 │   ├── public/
@@ -115,6 +119,8 @@ bash verify.sh
 │       │   ├── SystemCrashOverlay.tsx  # 系统崩溃转场动画
 │       │   ├── CommentSection.tsx     # 评论区（含折叠）
 │       │   ├── AdminRoute.tsx         # 管理员路由守卫
+│       │   ├── PageAccessRoute.tsx    # 页面访问控制路由守卫
+│       │   ├── MaintenancePage.tsx    # 页面维护提示页
 │       │   └── Footer.tsx             # 全局页脚
 │       ├── pages/         # 页面
 │       │   ├── HomePage.tsx / LoginPage.tsx / TestPage.tsx
@@ -135,6 +141,20 @@ bash verify.sh
 ---
 
 ## 更新日志
+
+### 2026-06-29 — 页面访问控制系统
+
+- **数据库驱动访问控制**：新增 `page_access` 表，支持每个页面配置三种访问级别（`public` 公开 / `member` 群友 / `admin` 管理）和开关状态
+- **`optionalAuth` 中间件**：根据页面配置动态决定 GET 读接口是否需要登录，写操作始终需认证；30 秒内存缓存 + 管理面板更新即时清除
+- **`pageAccessGuard` 中间件**：页面关闭时返回 503 维护提示
+- **三层限流体系**：`publicApiLimiter`（120次/分钟/IP）保护公开 GET 接口 / `siteLimiter`（30次/分钟/IP + 60s 浏览器缓存）保护配置接口 / 全局限流（100次/15分钟）保护登录用户
+- **`PageAccessRoute` 前端路由守卫**：根据 page_access 配置动态切换渲染模式（公开直接渲染 / 群友需登录 / 管理需 admin / 关闭显示维护页）
+- **`MaintenancePage` 维护页**：延续石棺暗色赛博工业风，菱形图标 + 渐变文字 + 终端状态码
+- **Navbar 访客兼容**：未登录时渲染精简导航栏（logo + 公开页面链接 + 登录按钮），不再返回 `null`
+- **NotificationTicker 访客兼容**：访客时跳过 `/api/admin/users` 调用，避免 401 报错
+- **API 客户端修复**：`getToken()` 返回 `null` 时不再发送 `Authorization: Bearer null`
+- **Admin 管理面板新增「页面访问」Tab**：可视化配置各页面访问级别和开关，修改即时生效
+- **公开配置接口** `GET /api/site/page-access`：无需认证，过滤 admin 路由，前端启动时自动拉取
 
 ### 2026-06-27 — 系统崩溃转场特效 / admin 专属测试页
 
@@ -263,7 +283,9 @@ P2 中:
 
 ## 安全
 
-- 所有 API 需 JWT 认证（除登录/注册/石棺下载令牌）
+- 所有 API 需 JWT 认证（除登录/注册/石棺下载令牌/公开页面 GET 读接口/公开配置接口）
+- 页面访问控制：数据库驱动，GET 读接口按页面配置可选放开，写操作始终需认证
+- 公开 API 限流：120次/分钟/IP（公开页面 GET）、30次/分钟/IP（配置接口）
 - 内容编辑仅限作者本人 + admin
 - `lynchpin` SSH 密钥、`.env`、`*.db` 已加入 `.gitignore`
 - 后端端口 3001 不对外开放，仅 Nginx 反向代理

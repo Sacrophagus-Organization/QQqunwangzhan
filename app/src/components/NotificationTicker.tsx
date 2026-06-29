@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { apiGet } from '@/api/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { Terminal, Users, FileText, Puzzle } from 'lucide-react';
 
 interface TickerData {
@@ -9,27 +10,35 @@ interface TickerData {
 }
 
 export function NotificationTicker() {
+  const { user } = useAuth();
   const [data, setData] = useState<TickerData | null>(null);
 
   useEffect(() => {
     const load = async () => {
       try {
-        const [recs, puzs, members] = await Promise.all([
-          apiGet<any[]>('/records'),
-          apiGet<any[]>('/puzzles'),
-          apiGet<any[]>('/admin/users').catch(() => []),
-        ]);
+        const fetches: Promise<any>[] = [
+          apiGet<any>('/records').catch(() => ({ data: [] })),
+          apiGet<any>('/puzzles').catch(() => ({ data: [] })),
+        ];
+        // 仅登录用户（admin）才请求成员数据，避免访客 401 报错
+        if (user?.role === 'admin') {
+          fetches.push(apiGet<any[]>('/admin/users').catch(() => []));
+        } else {
+          fetches.push(Promise.resolve([]));
+        }
+
+        const [recs, puzs, members] = await Promise.all(fetches);
         setData({
-          recordCount: recs.length,
-          puzzleCount: puzs.length,
-          memberCount: members.filter((u: any) => u.status === 'active').length,
+          recordCount: Array.isArray(recs?.data) ? recs.data.length : (Array.isArray(recs) ? recs.length : 0),
+          puzzleCount: Array.isArray(puzs?.data) ? puzs.data.length : (Array.isArray(puzs) ? puzs.length : 0),
+          memberCount: Array.isArray(members) ? members.filter((u: any) => u.status === 'active').length : 0,
         });
       } catch {}
     };
     load();
     const interval = setInterval(load, 60000);
     return () => clearInterval(interval);
-  }, []);
+  }, [user]);
 
   const items = [
     { icon: Terminal, text: 'sarcophagus.org.cn' },

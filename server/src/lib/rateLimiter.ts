@@ -61,3 +61,41 @@ export const solveLimiter = rateLimit({
   legacyHeaders: false,
   message: { error: '解答提交过于频繁，请1分钟后再试' },
 });
+
+/**
+ * 留言/评论创建限速器：10次/分钟/IP
+ */
+export const contentCreateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  keyGenerator: getClientIP,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: '发言过于频繁，请稍后再试' },
+});
+
+/**
+ * 公开 API 限速器：120次/分钟/IP
+ * 用于公开页面的 GET 读接口，比登录用户的 100次/15分钟 更宽松但仍有约束
+ */
+export const publicApiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 120,
+  keyGenerator: getClientIP,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: '请求过于频繁，请稍后再试' },
+});
+
+/**
+ * Site 配置接口限速器：30次/分钟/IP
+ * 仅作用于 /api/site/page-access，数据量小但需防止高频调用
+ */
+export const siteLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
+  keyGenerator: getClientIP,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: '请求过于频繁，请稍后再试' },
+});

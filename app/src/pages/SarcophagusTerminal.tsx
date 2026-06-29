@@ -414,10 +414,10 @@ export default function SarcophagusTerminal() {
                   </p>
                 </div>
               </div>
-              {/* Admin access link — barely visible */}
+              {/* Admin access link — 跳转至统一管理面板 */}
               {user?.role === 'admin' && (
                 <Link
-                  to="/sarcophagus/admin"
+                  to="/lynchpin-admin"
                   className="mono-text text-[9px] text-muted-foreground/15 hover:text-primary/30 transition-all duration-700"
                 >
                   ROOT_ACCESS

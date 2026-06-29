@@ -69,6 +69,7 @@ export interface Message {
   authorId: string;
   authorAvatar?: string;
   likeCount?: number;
+  commentCount?: number;
   pinned: number;
   createdAt: string;
   updatedAt: string;
@@ -128,4 +129,14 @@ export interface PaginatedResponse<T> {
   limit: number;
   total: number;
   totalPages: number;
+}
+
+export interface PageAccessConfig {
+  id: string;
+  route_path: string;
+  route_name: string;
+  access_level: 'public' | 'member' | 'admin';
+  is_enabled: number;
+  description: string;
+  updated_at: string;
 }

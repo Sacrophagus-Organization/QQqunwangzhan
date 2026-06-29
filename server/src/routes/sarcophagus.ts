@@ -22,14 +22,28 @@ const upload = multer({ storage, limits: { fileSize: 50 * 1024 * 1024 } });
 
 const router = Router();
 
-// ─── IP Rate Limiter (in-memory) ────────────────────────────────────
-const ipFailMap = new Map<string, { count: number; lockedUntil: number }>();
+// ─── IP Rate Limiter (in-memory, bounded) ────────────────────────────
+const ipFailMap = new Map<string, { count: number; lockedUntil: number; lastAccess: number }>();
 const MAX_FAILS = 3;
 const LOCK_SECONDS = 30;
+const MAX_MAP_SIZE = 10000;       // 最大容量限制，防止内存无限增长
+const MAP_TTL_MS = 30 * 60_000;  // 30分钟无访问自动清除
+
+function evictIfNeeded() {
+  if (ipFailMap.size <= MAX_MAP_SIZE) return;
+  // LRU 淘汰：删除最旧的 20%
+  const entries = Array.from(ipFailMap.entries())
+    .sort((a, b) => a[1].lastAccess - b[1].lastAccess);
+  const removeCount = Math.ceil(entries.length * 0.2);
+  for (let i = 0; i < removeCount; i++) {
+    ipFailMap.delete(entries[i][0]);
+  }
+}
 
 function checkRateLimit(ip: string): boolean {
   const entry = ipFailMap.get(ip);
   if (!entry) return true;
+  entry.lastAccess = Date.now();
   if (entry.lockedUntil > Date.now()) return false;
   // lock expired, reset
   if (entry.count >= MAX_FAILS) {
@@ -41,9 +55,11 @@ function checkRateLimit(ip: string): boolean {
 function recordFail(ip: string) {
   const entry = ipFailMap.get(ip);
   if (!entry) {
-    ipFailMap.set(ip, { count: 1, lockedUntil: 0 });
+    evictIfNeeded();
+    ipFailMap.set(ip, { count: 1, lockedUntil: 0, lastAccess: Date.now() });
   } else {
     entry.count++;
+    entry.lastAccess = Date.now();
     if (entry.count >= MAX_FAILS) {
       entry.lockedUntil = Date.now() + LOCK_SECONDS * 1000;
     }
@@ -54,11 +70,13 @@ function resetFails(ip: string) {
   ipFailMap.delete(ip);
 }
 
-// 定期清理过期的限速条目，防止 ipFailMap 内存无限增长
+// 定期清理过期条目：锁定过期或超过TTL未访问的都删除
 setInterval(() => {
   const now = Date.now();
   for (const [ip, entry] of ipFailMap) {
-    if (entry.lockedUntil > 0 && entry.lockedUntil < now) ipFailMap.delete(ip);
+    if ((entry.lockedUntil > 0 && entry.lockedUntil < now) || (now - entry.lastAccess > MAP_TTL_MS)) {
+      ipFailMap.delete(ip);
+    }
   }
 }, 60_000).unref();
 
@@ -112,9 +130,35 @@ router.post('/verify', authMiddleware, (req: AuthRequest, res) => {
   });
 });
 
+// ─── Download IP Rate Limiter ─────────────────────────────────────────
+const downloadIpMap = new Map<string, { count: number; windowStart: number }>();
+const DOWNLOAD_MAX = 10;
+const DOWNLOAD_WINDOW_MS = 60_000;
+
+function checkDownloadLimit(ip: string): boolean {
+  const now = Date.now();
+  const entry = downloadIpMap.get(ip);
+  if (!entry || now - entry.windowStart > DOWNLOAD_WINDOW_MS) {
+    downloadIpMap.set(ip, { count: 1, windowStart: now });
+    return true;
+  }
+  if (entry.count >= DOWNLOAD_MAX) return false;
+  entry.count++;
+  return true;
+}
+
 // ─── GET /download/:token ────────────────────────────────────────────
 // No JWT required — the token itself is the authorization.
 router.get('/download/:token', (req, res) => {
+  const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim()
+    || req.socket.remoteAddress
+    || 'unknown';
+
+  if (!checkDownloadLimit(ip)) {
+    res.status(429).json({ error: '下载请求过于频繁，请稍后再试' });
+    return;
+  }
+
   const token = req.params.token;
   const row = db.prepare(
     'SELECT * FROM sarcophagus_codes WHERE download_token = ?'

@@ -4,15 +4,15 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { apiGet, apiPost, apiDelete } from '@/api/client';
+import { apiGet, apiPost, apiDelete, apiPut } from '@/api/client';
 import {
   Shield, Users, UserCheck, UserX, Trash2,
   Clock, CheckCircle2, XCircle, Loader2, AlertTriangle,
   MessageSquare, Terminal, Key, FileText,
-  Upload, Plus,
+  Upload, Plus, Globe, Lock,
 } from 'lucide-react';
 import { AvatarDisplay } from '@/components/AvatarDisplay';
-import type { SarcophagusCode } from '@/types';
+import type { SarcophagusCode, PageAccessConfig } from '@/types';
 
 interface UserItem {
   id: string;
@@ -38,7 +38,7 @@ export default function AdminPage() {
   const [users, setUsers] = useState<UserItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [actingId, setActingId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'users' | 'sarcophagus'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'sarcophagus' | 'pages'>('users');
   // ── 石棺代码管理状态 ──
   const [codes, setCodes] = useState<SarcophagusCode[]>([]);
   const [codesLoading, setCodesLoading] = useState(false);
@@ -52,6 +52,11 @@ export default function AdminPage() {
   const [editFile, setEditFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const editFileInputRef = useRef<HTMLInputElement>(null);
+  // ── 页面访问控制状态 ──
+  const [pageConfigs, setPageConfigs] = useState<PageAccessConfig[]>([]);
+  const [pageConfigsLoading, setPageConfigsLoading] = useState(false);
+  const [pageConfigsError, setPageConfigsError] = useState('');
+  const [savingPageId, setSavingPageId] = useState<string | null>(null);
 
   const fetchUsers = useCallback(async () => {
     try { setUsers(await apiGet<UserItem[]>('/admin/users')); } catch {}
@@ -123,6 +128,31 @@ export default function AdminPage() {
   }, []);
 
   useEffect(() => { if (activeTab === 'sarcophagus') loadCodes(); }, [activeTab, loadCodes]);
+
+  // ── 页面访问控制方法 ──
+  const loadPageConfigs = useCallback(async () => {
+    setPageConfigsLoading(true);
+    setPageConfigsError('');
+    try {
+      setPageConfigs(await apiGet<PageAccessConfig[]>('/admin/page-access'));
+    } catch (e: any) {
+      setPageConfigsError(e.message || '加载失败');
+    }
+    setPageConfigsLoading(false);
+  }, []);
+
+  useEffect(() => { if (activeTab === 'pages') loadPageConfigs(); }, [activeTab, loadPageConfigs]);
+
+  const handlePageAccessChange = async (id: string, _field: 'access_level', value: any) => {
+    setSavingPageId(id);
+    try {
+      await apiPut(`/admin/page-access/${id}`, { access_level: value });
+      setPageConfigs(prev => prev.map(c => c.id === id ? { ...c, access_level: value } : c));
+    } catch (e: any) {
+      alert(e.message || '保存失败');
+    }
+    setSavingPageId(null);
+  };
 
   const handleAddCode = async () => {
     if (!newCode.trim() || !newFile) return;
@@ -229,6 +259,7 @@ export default function AdminPage() {
           {[
             { key: 'users' as const, icon: Users, label: '用户管理', count: pendingCount, alert: pendingCount > 0 },
             { key: 'sarcophagus' as const, icon: Terminal, label: '石棺代码', count: codes.length, alert: false },
+            { key: 'pages' as const, icon: Globe, label: '页面访问', count: pageConfigs.length, alert: false },
           ].map(tab => (
             <button
               key={tab.key}
@@ -387,6 +418,106 @@ export default function AdminPage() {
         )}
 
         {/* Sarcophagus Tab */}
+        {/* Pages Tab */}
+        {activeTab === 'pages' && (
+          <div className="space-y-4 anim-fade-up" style={{ animationDelay: '0.2s' } as any}>
+            {pageConfigsError && (
+              <Card className="glass-card border-red-500/20 bg-red-500/5">
+                <CardContent className="p-3">
+                  <p className="text-xs text-red-400/90">{pageConfigsError}</p>
+                </CardContent>
+              </Card>
+            )}
+
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-medium text-muted-foreground/90 flex items-center gap-2 font-heading tracking-wide">
+                <Globe className="h-4 w-4 animate-breathe-glow" /> 页面访问控制
+              </h3>
+              <span className="text-[10px] text-muted-foreground/50 mono-text">修改即时生效</span>
+            </div>
+
+            {pageConfigsLoading ? (
+              <div className="flex items-center justify-center py-16">
+                <Loader2 className="h-5 w-5 text-muted-foreground animate-spin" />
+              </div>
+            ) : pageConfigs.length === 0 ? (
+              <Card className="glass-card border-border/30 anim-fade-in">
+                <CardContent className="p-12 text-center">
+                  <Globe className="h-10 w-10 text-muted-foreground/20 mx-auto mb-3 animate-float-soft" />
+                  <p className="text-sm text-muted-foreground/90">暂无页面配置</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-2">
+                {pageConfigs.map((cfg, idx) => (
+                  <Card key={cfg.id} className="glass-card glass-card-hover border-border/30 hover:border-primary/15 transition-all anim-fade-up" style={{ animationDelay: `${0.3 + idx * 0.05}s` } as any}>
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between gap-4">
+                        {/* 页面信息 */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-heading font-semibold text-sm tracking-wide">{cfg.route_name}</span>
+                            {cfg.access_level === 'admin' ? (
+                              <Badge className="text-[10px] bg-red-500/10 text-red-400 border-red-500/30">
+                                <Shield className="h-3 w-3 mr-1" />管理
+                              </Badge>
+                            ) : null}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <code className="mono-text text-xs text-muted-foreground/60">{cfg.route_path}</code>
+                            {cfg.description && (
+                              <span className="text-xs text-muted-foreground/40 truncate hidden sm:inline">— {cfg.description}</span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* 控件区域 */}
+                        <div className="flex items-center gap-3 shrink-0">
+                          {/* 访问级别下拉 */}
+                          <Select
+                            value={cfg.access_level}
+                            onValueChange={(v) => handlePageAccessChange(cfg.id, 'access_level', v)}
+                            disabled={savingPageId === cfg.id}
+                          >
+                            <SelectTrigger className="w-[110px] h-8 text-xs bg-secondary/30 border-border/50">
+                              {savingPageId === cfg.id ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <SelectValue />
+                              )}
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="public">
+                                <span className="flex items-center gap-1.5">
+                                  <Globe className="h-3 w-3 text-green-400" />
+                                  公开
+                                </span>
+                              </SelectItem>
+                              <SelectItem value="member">
+                                <span className="flex items-center gap-1.5">
+                                  <Lock className="h-3 w-3 text-amber-400" />
+                                  群友
+                                </span>
+                              </SelectItem>
+                              <SelectItem value="admin">
+                                <span className="flex items-center gap-1.5">
+                                  <Shield className="h-3 w-3 text-red-400" />
+                                  管理
+                                </span>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {activeTab === 'sarcophagus' && (
           <div className="space-y-4 anim-fade-up" style={{ animationDelay: '0.2s' } as any}>
             {codesError && (

@@ -2,12 +2,13 @@ import { Router } from 'express';
 import { v4 as uuid } from 'uuid';
 import { db } from '../db.js';
 import { authMiddleware, AuthRequest } from '../middleware/auth.js';
+import { optionalAuth } from '../middleware/pageAccess.js';
 import { extractBase64Images } from '../lib/imageExtractor.js';
 import { sanitizeRichHtml } from '../lib/sanitize.js';
 import { deleteImagesFromHtml } from '../lib/imageCleanup.js';
+import { contentCreateLimiter } from '../lib/rateLimiter.js';
 
 const router = Router();
-router.use(authMiddleware);
 
 const mapComment = (r: any) => ({
   id: r.id,
@@ -24,7 +25,8 @@ const mapComment = (r: any) => ({
 });
 
 // GET / — 分页获取某实体的评论，按 created_at ASC 排序
-router.get('/', (req: AuthRequest, res) => {
+// 评论是共享资源，根据实体类型推断所属页面；公开页面上的评论也公开可读
+router.get('/', optionalAuth('/comments'), (req: AuthRequest, res) => {
   const { entityType, entityId } = req.query;
   if (!entityType || !entityId) {
     res.status(400).json({ error: '缺少 entityType 或 entityId 参数' });
@@ -57,8 +59,8 @@ router.get('/', (req: AuthRequest, res) => {
   });
 });
 
-// POST / — 创建评论（支持嵌套 parentId）
-router.post('/', (req: AuthRequest, res) => {
+// POST / — 创建评论（支持嵌套 parentId，带独立频率限制，需要登录）
+router.post('/', authMiddleware, contentCreateLimiter, (req: AuthRequest, res) => {
   const { entityType, entityId, parentId, content, isAnonymous } = req.body;
   if (!entityType || !entityId) {
     res.status(400).json({ error: '缺少实体类型或ID' });
@@ -93,7 +95,7 @@ router.post('/', (req: AuthRequest, res) => {
 });
 
 // DELETE /:id — admin 或 editor 可删除
-router.delete('/:id', (req: AuthRequest, res) => {
+router.delete('/:id', authMiddleware, (req: AuthRequest, res) => {
   if (req.userRole !== 'admin' && req.userRole !== 'editor') {
     res.status(403).json({ error: '仅管理员或编辑可删除评论' });
     return;

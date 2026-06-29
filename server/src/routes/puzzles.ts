@@ -3,42 +3,41 @@ import { v4 as uuid } from 'uuid';
 import { unlinkSync } from 'node:fs';
 import { db } from '../db.js';
 import { authMiddleware, AuthRequest } from '../middleware/auth.js';
+import { optionalAuth } from '../middleware/pageAccess.js';
 import { solveLimiter } from '../lib/rateLimiter.js';
 import { sanitizeRichHtml } from '../lib/sanitize.js';
 import { getAttachments, getAttachmentsMap, safeParseTags } from '../lib/attachments.js';
 import { deleteImagesFromHtml } from '../lib/imageCleanup.js';
 
 const router = Router();
-router.use(authMiddleware);
 
-// Get all puzzles (支持可选分页 ?page=&limit=，无参数时返回全部数组以向后兼容)
-router.get('/', (req: AuthRequest, res) => {
+// Get all puzzles (强制分页，防止 OOM)
+router.get('/', optionalAuth('/puzzles'), (req: AuthRequest, res) => {
+  const page = Math.max(1, parseInt(req.query.page as string) || 1);
+  const limit = Math.min(Math.max(1, parseInt(req.query.limit as string) || 20), 50);
+  const offset = (page - 1) * limit;
+
+  const { total } = db.prepare('SELECT COUNT(*) as total FROM puzzles').get() as any;
   const rows = db.prepare(
-    "SELECT p.*, (SELECT COUNT(*) FROM likes WHERE entity_type='puzzle' AND entity_id=p.id) as like_count FROM puzzles p ORDER BY p.created_at DESC"
-  ).all() as any[];
+    `SELECT p.*, (SELECT COUNT(*) FROM likes WHERE entity_type='puzzle' AND entity_id=p.id) as like_count
+     FROM puzzles p ORDER BY p.created_at DESC
+     LIMIT ? OFFSET ?`
+  ).all(limit, offset) as any[];
+
   const ids = rows.map(r => r.id);
   const attMap = getAttachmentsMap('puzzle', ids);
   const puzzles = rows.map(r => ({ ...r, likeCount: r.like_count, tags: safeParseTags(r.tags), attachments: attMap[r.id] || [] }));
 
-  const limit = parseInt(req.query.limit as string);
-  const page = parseInt(req.query.page as string);
-  if (!isNaN(limit) && limit > 0) {
-    const p = !isNaN(page) && page > 0 ? page : 1;
-    const offset = (p - 1) * limit;
-    const total = puzzles.length;
-    res.json({ data: puzzles.slice(offset, offset + limit), page: p, limit, total, totalPages: Math.ceil(total / limit) });
-    return;
-  }
-  res.json(puzzles);
+  res.json({ data: puzzles, page, limit, total, totalPages: Math.ceil(total / limit) });
 });
 
-router.get('/:id', (req: AuthRequest, res) => {
+router.get('/:id', optionalAuth('/puzzles'), (req: AuthRequest, res) => {
   const r = db.prepare('SELECT * FROM puzzles WHERE id = ?').get(req.params.id) as any;
   if (!r) { res.status(404).json({ error: '谜题不存在' }); return; }
   res.json({ ...r, tags: safeParseTags(r.tags), attachments: getAttachments('puzzle', r.id) });
 });
 
-router.post('/', (req: AuthRequest, res) => {
+router.post('/', authMiddleware, (req: AuthRequest, res) => {
   const { title, description, content, category, difficulty, hint, solution, tags } = req.body;
   if (!title) { res.status(400).json({ error: '标题必填' }); return; }
   const id = 'puz-' + uuid().slice(0, 8);
@@ -52,7 +51,7 @@ router.post('/', (req: AuthRequest, res) => {
   res.status(201).json({ ...created, tags: safeParseTags(created.tags), attachments: [] });
 });
 
-router.put('/:id', (req: AuthRequest, res) => {
+router.put('/:id', authMiddleware, (req: AuthRequest, res) => {
   const puz = db.prepare('SELECT * FROM puzzles WHERE id = ?').get(req.params.id) as any;
   if (!puz) { res.status(404).json({ error: '谜题不存在' }); return; }
   if (puz.author_id !== req.userId && req.userRole !== 'admin' && req.userRole !== 'editor') {
@@ -70,7 +69,7 @@ router.put('/:id', (req: AuthRequest, res) => {
   res.json({ ...updated, tags: safeParseTags(updated.tags), attachments: getAttachments('puzzle', updated.id) });
 });
 
-router.post('/:id/solve', solveLimiter, (req: AuthRequest, res) => {
+router.post('/:id/solve', authMiddleware, solveLimiter, (req: AuthRequest, res) => {
   const puz = db.prepare('SELECT * FROM puzzles WHERE id = ?').get(req.params.id) as any;
   if (!puz) { res.status(404).json({ error: '谜题不存在' }); return; }
   if (puz.status === 'solved') { res.status(400).json({ error: '该谜题已被破解' }); return; }
@@ -86,7 +85,7 @@ router.post('/:id/solve', solveLimiter, (req: AuthRequest, res) => {
   res.json({ correct: isCorrect, puzzle: { ...updated, tags: safeParseTags(updated.tags), attachments: getAttachments('puzzle', updated.id) } });
 });
 
-router.delete('/:id', (req: AuthRequest, res) => {
+router.delete('/:id', authMiddleware, (req: AuthRequest, res) => {
   const puz = db.prepare('SELECT * FROM puzzles WHERE id = ?').get(req.params.id) as any;
   if (!puz) { res.status(404).json({ error: '谜题不存在' }); return; }
   if (puz.author_id !== req.userId && req.userRole !== 'admin' && req.userRole !== 'editor') {

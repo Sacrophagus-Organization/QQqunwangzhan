@@ -12,9 +12,19 @@ export function clearToken() {
   localStorage.removeItem('arkoverseer_token');
 }
 
+/** 构建 headers：只在有 token 时发送 Authorization，避免发送 "Bearer null" */
+function buildHeaders(extra?: Record<string, string>): Record<string, string> {
+  const headers: Record<string, string> = { ...extra };
+  const token = getToken();
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
+}
+
 export async function apiGet<T>(path: string): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
-    headers: { Authorization: `Bearer ${getToken()}` },
+    headers: buildHeaders(),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }));
@@ -26,10 +36,7 @@ export async function apiGet<T>(path: string): Promise<T> {
 export async function apiPost<T>(path: string, body?: any): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${getToken()}`,
-    },
+    headers: buildHeaders({ 'Content-Type': 'application/json' }),
     body: body ? JSON.stringify(body) : undefined,
   });
   if (!res.ok) {
@@ -42,10 +49,7 @@ export async function apiPost<T>(path: string, body?: any): Promise<T> {
 export async function apiPut<T>(path: string, body?: any): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${getToken()}`,
-    },
+    headers: buildHeaders({ 'Content-Type': 'application/json' }),
     body: body ? JSON.stringify(body) : undefined,
   });
   if (!res.ok) {
@@ -58,7 +62,7 @@ export async function apiPut<T>(path: string, body?: any): Promise<T> {
 export async function apiDelete<T>(path: string): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     method: 'DELETE',
-    headers: { Authorization: `Bearer ${getToken()}` },
+    headers: buildHeaders(),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }));
@@ -74,7 +78,7 @@ export async function apiUpload(entityType: string, entityId: string, files: Fil
   files.forEach(f => formData.append('files', f));
   const res = await fetch(`${API_BASE}/files`, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${getToken()}` },
+    headers: buildHeaders(),
     body: formData,
   });
   if (!res.ok) throw new Error('上传失败');
@@ -83,7 +87,7 @@ export async function apiUpload(entityType: string, entityId: string, files: Fil
 
 export async function apiDownload(url: string, filename: string) {
   const res = await fetch(url, {
-    headers: { Authorization: `Bearer ${getToken()}` },
+    headers: buildHeaders(),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: '下载失败' }));
@@ -105,7 +109,7 @@ export async function apiUploadImage(file: File): Promise<{ url: string; filenam
   formData.append('image', file);
   const res = await fetch(`${API_BASE}/images/upload`, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${getToken()}` },
+    headers: buildHeaders(),
     body: formData,
   });
   if (!res.ok) {
@@ -117,7 +121,6 @@ export async function apiUploadImage(file: File): Promise<{ url: string; filenam
 
 export async function apiUploadAvatar(blob: Blob, ext?: string): Promise<string> {
   const formData = new FormData();
-  // 根据 blob MIME 类型或传入的扩展名确定文件名
   let filename: string;
   if (ext) {
     filename = 'avatar' + (ext.startsWith('.') ? ext : '.' + ext);
@@ -133,7 +136,7 @@ export async function apiUploadAvatar(blob: Blob, ext?: string): Promise<string>
   formData.append('avatar', blob, filename);
   const res = await fetch(`${API_BASE}/auth/avatar`, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${getToken()}` },
+    headers: buildHeaders(),
     body: formData,
   });
   if (!res.ok) {

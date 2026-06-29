@@ -127,6 +127,17 @@ db.exec(`
     UNIQUE(user_id, entity_type, entity_id)
   );
 
+  CREATE TABLE IF NOT EXISTS page_access (
+    id TEXT PRIMARY KEY,
+    route_path TEXT NOT NULL UNIQUE,
+    route_name TEXT NOT NULL,
+    access_level TEXT NOT NULL DEFAULT 'member',
+    is_enabled INTEGER NOT NULL DEFAULT 1,
+    description TEXT NOT NULL DEFAULT '',
+    updated_by TEXT DEFAULT '',
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
   CREATE INDEX IF NOT EXISTS idx_likes_entity ON likes(entity_type, entity_id);
   CREATE INDEX IF NOT EXISTS idx_comments_entity ON comments(entity_type, entity_id);
   CREATE INDEX IF NOT EXISTS idx_attachments_entity ON attachments(entity_type, entity_id);
@@ -146,6 +157,34 @@ try { db.exec('ALTER TABLE messages ADD COLUMN updated_at TEXT NOT NULL DEFAULT 
 try { db.exec('ALTER TABLE users ADD COLUMN avatar_url TEXT NOT NULL DEFAULT \"\"'); console.log('[DB] Added avatar_url column to users'); } catch {}
 try { db.exec('ALTER TABLE users ADD COLUMN requested_role TEXT NOT NULL DEFAULT \"\"'); console.log('[DB] Added requested_role column to users'); } catch {}
 try { db.exec('ALTER TABLE users ADD COLUMN requested_role_reason TEXT NOT NULL DEFAULT \"\"'); console.log('[DB] Added requested_role_reason column to users'); } catch {}
+
+// Seed page_access - 初始化所有页面访问配置
+const seedPageAccess = db.transaction(() => {
+  const existing = db.prepare('SELECT COUNT(*) as cnt FROM page_access').get() as { cnt: number };
+  if (existing.cnt > 0) return;
+
+  const pages = [
+    { id: 'pa-home', route_path: '/', route_name: '首页', access_level: 'member', is_enabled: 1, description: '网站首页' },
+    { id: 'pa-records', route_path: '/records', route_name: '破译战绩', access_level: 'member', is_enabled: 1, description: '群友战绩记录' },
+    { id: 'pa-puzzles', route_path: '/puzzles', route_name: '谜题广场', access_level: 'member', is_enabled: 1, description: '谜题展示与解答' },
+    { id: 'pa-wiki', route_path: '/wiki', route_name: '知识库', access_level: 'member', is_enabled: 1, description: '群知识文档' },
+    { id: 'pa-messages', route_path: '/messages', route_name: '留言板', access_level: 'member', is_enabled: 1, description: '群友留言板' },
+    { id: 'pa-sarcophagus', route_path: '/sarcophagus', route_name: '石棺终端', access_level: 'member', is_enabled: 1, description: '石棺功能入口' },
+    { id: 'pa-admin', route_path: '/lynchpin-admin', route_name: '管理面板', access_level: 'admin', is_enabled: 1, description: '网站管理控制台' },
+    { id: 'pa-sarcophagus-admin', route_path: '/sarcophagus/admin', route_name: '石棺管理', access_level: 'admin', is_enabled: 1, description: '石棺管理后台' },
+    { id: 'pa-test', route_path: '/test', route_name: '测试页', access_level: 'admin', is_enabled: 1, description: '功能测试页面' },
+    { id: 'pa-record-detail', route_path: '/records/:id', route_name: '战绩详情', access_level: 'member', is_enabled: 1, description: '单条战绩详情' },
+    { id: 'pa-comments', route_path: '/comments', route_name: '评论(共享)', access_level: 'member', is_enabled: 1, description: '评论系统（共享资源，由父页面控制）' },
+    { id: 'pa-likes', route_path: '/likes', route_name: '点赞(共享)', access_level: 'member', is_enabled: 1, description: '点赞系统（共享资源，由父页面控制）' },
+  ];
+
+  const insert = db.prepare('INSERT INTO page_access (id, route_path, route_name, access_level, is_enabled, description) VALUES (?, ?, ?, ?, ?, ?)');
+  for (const p of pages) {
+    insert.run(p.id, p.route_path, p.route_name, p.access_level, p.is_enabled, p.description);
+  }
+  console.log('[DB] 已初始化 10 条页面访问配置');
+});
+seedPageAccess();
 
 // Seed admin - 密码从环境变量 ADMIN_PASSWORD 读取，未设置则跳过
 const existingAdmin = db.prepare('SELECT id FROM users WHERE username = ?').get('Admin');

@@ -24,13 +24,22 @@ export function generateToken(user: { id: string; role: string; username: string
 }
 
 export function authMiddleware(req: AuthRequest, res: Response, next: NextFunction) {
-  const header = req.headers.authorization;
-  if (!header || !header.startsWith('Bearer ')) {
+  // 优先从 httpOnly cookie 读取 token，兼容旧版 Authorization header
+  let token: string | undefined;
+  if (req.cookies?.token) {
+    token = req.cookies.token;
+  } else {
+    const header = req.headers.authorization;
+    if (header && header.startsWith('Bearer ')) {
+      token = header.slice(7);
+    }
+  }
+
+  if (!token) {
     res.status(401).json({ error: '未登录' });
     return;
   }
   try {
-    const token = header.slice(7);
     const payload = jwt.verify(token, JWT_SECRET) as { id: string; role: string; username: string };
     req.userId = payload.id;
     req.userRole = payload.role;

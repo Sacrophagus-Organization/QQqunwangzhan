@@ -192,17 +192,23 @@ function insertImagePlaceholder(doc: Document, editorEl?: HTMLElement | null) {
     if (!file) return;
     const isGifFile = file.type === 'image/gif';
 
-    // Update placeholder to show upload progress
-    placeholder.innerHTML = `
-      <div style="display:flex;flex-direction:column;align-items:center;gap:10px;">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite;">
-          <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
-        </svg>
-        <span>上传中... ${file.name}</span>
-        <div style="width:200px;height:4px;background:rgba(255,255,255,0.1);border-radius:2px;overflow:hidden;">
-          <div class="rich-upload-progress-bar" style="width:0%;height:100%;background:#00d4ff;border-radius:2px;transition:width 0.3s;"></div>
-        </div>
-      </div>`;
+    // Update placeholder to show upload progress (use textContent to prevent XSS via filename)
+    const fileNameText = doc.createElement('span');
+    fileNameText.textContent = '上传中... ' + file.name;
+
+    const progressDiv = doc.createElement('div');
+    progressDiv.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:10px;';
+    progressDiv.innerHTML = `
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite;">
+        <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+      </svg>`;
+    progressDiv.appendChild(fileNameText);
+    const barWrap = doc.createElement('div');
+    barWrap.style.cssText = 'width:200px;height:4px;background:rgba(255,255,255,0.1);border-radius:2px;overflow:hidden;';
+    barWrap.innerHTML = '<div class="rich-upload-progress-bar" style="width:0%;height:100%;background:#00d4ff;border-radius:2px;transition:width 0.3s;"></div>';
+    progressDiv.appendChild(barWrap);
+    placeholder.innerHTML = '';
+    placeholder.appendChild(progressDiv);
     placeholder.style.cursor = 'default';
 
     // Upload via API
@@ -246,7 +252,8 @@ function insertImagePlaceholder(doc: Document, editorEl?: HTMLElement | null) {
         };
 
         img.onerror = () => {
-          placeholder.innerHTML = '<span style="color:#f87171;">图片加载失败</span>';
+          placeholder.textContent = '图片加载失败';
+          placeholder.style.color = '#f87171';
         };
 
         placeholder.remove();
@@ -295,16 +302,20 @@ function insertImagePlaceholder(doc: Document, editorEl?: HTMLElement | null) {
           const errData = JSON.parse(xhr.responseText);
           errMsg = errData.error || errMsg;
         } catch { /* ignore */ }
-        placeholder.innerHTML = `<span style="color:#f87171;display:flex;align-items:center;gap:4px;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
-          ${errMsg}</span>`;
+        const errSpan = doc.createElement('span');
+        errSpan.style.cssText = 'color:#f87171;display:flex;align-items:center;gap:4px;';
+        errSpan.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>';
+        errSpan.appendChild(doc.createTextNode(errMsg));
+        placeholder.innerHTML = '';
+        placeholder.appendChild(errSpan);
         placeholder.style.cursor = 'pointer';
         placeholder.addEventListener('click', () => fileInput.click(), { once: true });
       }
     });
 
     xhr.addEventListener('error', () => {
-      placeholder.innerHTML = '<span style="color:#f87171;">网络错误，请重试</span>';
+      placeholder.textContent = '网络错误，请重试';
+      placeholder.style.color = '#f87171';
       placeholder.style.cursor = 'pointer';
       placeholder.addEventListener('click', () => fileInput.click(), { once: true });
     });

@@ -40,7 +40,7 @@ export default function CustomPuzzles() {
   const [eh, setEh] = useState(''); const [es, setEs] = useState(''); const [etags, setEtags] = useState('');
   const [efiles, setEfiles] = useState<File[]>([]);
 
-  const load = useCallback(async () => { try { setPuzzles(await apiGet<PuzzleType[]>('/puzzles')); } catch {} finally { setLoading(false); } }, []);
+  const load = useCallback(async () => { try { const res = await apiGet<any>('/puzzles'); setPuzzles(res.data || []); } catch {} finally { setLoading(false); } }, []);
   useEffect(() => { load(); }, [load]);
 
   const filtered = puzzles.filter(p => {

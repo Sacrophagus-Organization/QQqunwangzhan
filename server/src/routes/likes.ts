@@ -2,12 +2,12 @@ import { Router } from 'express';
 import { v4 as uuid } from 'uuid';
 import { db } from '../db.js';
 import { authMiddleware, AuthRequest } from '../middleware/auth.js';
+import { optionalAuth } from '../middleware/pageAccess.js';
 
 const router = Router();
-router.use(authMiddleware);
 
-// POST / — 切换点赞（有则取消，无则点赞）
-router.post('/', (req: AuthRequest, res) => {
+// POST / — 切换点赞（有则取消，无则点赞，需要登录）
+router.post('/', authMiddleware, (req: AuthRequest, res) => {
   const { entityType, entityId } = req.body;
   if (!entityType || !entityId) {
     res.status(400).json({ error: '缺少参数' });
@@ -37,7 +37,8 @@ router.post('/', (req: AuthRequest, res) => {
 });
 
 // GET /check — 批量检查当前用户对多个实体的点赞状态
-router.get('/check', (req: AuthRequest, res) => {
+// 公开页面也可查询点赞状态（未登录用户全部返回 false）
+router.get('/check', optionalAuth('/likes'), (req: AuthRequest, res) => {
   const { entityType, entityIds } = req.query as { entityType: string; entityIds: string };
   if (!entityType || !entityIds) {
     res.status(400).json({ error: '缺少参数' });

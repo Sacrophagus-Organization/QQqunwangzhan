@@ -1,12 +1,10 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { AuthProvider } from '@/contexts/AuthContext';
-import PageAccessRoute from '@/components/PageAccessRoute';
+import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { Navbar } from '@/components/Navbar';
-import { Footer } from '@/components/Footer';
 import { BackgroundMusic } from '@/components/BackgroundMusic';
 import { NotificationTicker } from '@/components/NotificationTicker';
-import { AutoRefresh } from '@/components/AutoRefresh';
 import LoginPage from '@/pages/LoginPage';
 import HomePage from '@/pages/HomePage';
 import DecryptRecords from '@/pages/DecryptRecords';
@@ -16,7 +14,6 @@ import DecryptWiki from '@/pages/DecryptWiki';
 import MessageBoard from '@/pages/MessageBoard';
 import AdminPage from '@/pages/AdminPage';
 import SarcophagusTerminal from '@/pages/SarcophagusTerminal';
-import TestPage from '@/pages/TestPage';
 import './App.css';
 
 // 全局 spoiler 点击固定显示（覆盖所有 dangerouslySetInnerHTML 渲染区域）
@@ -37,13 +34,12 @@ function SpoilerClickHandler() {
 
 function AppLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background">
       <NotificationTicker />
       <Navbar />
-      <main className="pt-0 page-enter flex-1">
+      <main className="pt-0 page-enter">
         {children}
       </main>
-      <Footer />
     </div>
   );
 }
@@ -52,7 +48,6 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <AutoRefresh />
         <SpoilerClickHandler />
         <BackgroundMusic />
         <Routes>
@@ -60,73 +55,65 @@ function App() {
           <Route
             path="/"
             element={
-              <PageAccessRoute routePath="/">
+              <ProtectedRoute>
                 <AppLayout><HomePage /></AppLayout>
-              </PageAccessRoute>
+              </ProtectedRoute>
             }
           />
           <Route
             path="/records"
             element={
-              <PageAccessRoute routePath="/records">
+              <ProtectedRoute>
                 <AppLayout><DecryptRecords /></AppLayout>
-              </PageAccessRoute>
+              </ProtectedRoute>
             }
           />
           <Route
             path="/records/:id"
             element={
-              <PageAccessRoute routePath="/records/:id">
+              <ProtectedRoute>
                 <AppLayout><RecordDetail /></AppLayout>
-              </PageAccessRoute>
+              </ProtectedRoute>
             }
           />
           <Route
             path="/puzzles"
             element={
-              <PageAccessRoute routePath="/puzzles">
+              <ProtectedRoute>
                 <AppLayout><CustomPuzzles /></AppLayout>
-              </PageAccessRoute>
+              </ProtectedRoute>
             }
           />
           <Route
             path="/wiki"
             element={
-              <PageAccessRoute routePath="/wiki">
+              <ProtectedRoute>
                 <AppLayout><DecryptWiki /></AppLayout>
-              </PageAccessRoute>
+              </ProtectedRoute>
             }
           />
           <Route
             path="/messages"
             element={
-              <PageAccessRoute routePath="/messages">
+              <ProtectedRoute>
                 <AppLayout><MessageBoard /></AppLayout>
-              </PageAccessRoute>
+              </ProtectedRoute>
             }
           />
           <Route
             path="/lynchpin-admin"
             element={
-              <PageAccessRoute routePath="/lynchpin-admin">
+              <ProtectedRoute>
                 <AppLayout><AdminPage /></AppLayout>
-              </PageAccessRoute>
+              </ProtectedRoute>
             }
           />
           <Route
             path="/sarcophagus"
             element={
-              <PageAccessRoute routePath="/sarcophagus">
+              <ProtectedRoute>
                 <SarcophagusTerminal />
-              </PageAccessRoute>
-            }
-          />
-          <Route
-            path="/test"
-            element={
-              <PageAccessRoute routePath="/test">
-                <AppLayout><TestPage /></AppLayout>
-              </PageAccessRoute>
+              </ProtectedRoute>
             }
           />
           <Route path="*" element={<Navigate to="/" replace />} />
