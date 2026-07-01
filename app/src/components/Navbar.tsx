@@ -25,6 +25,8 @@ import {
   Shield,
   MessagesSquare,
   LogIn,
+  Mail,
+  Settings,
 } from 'lucide-react';
 
 const navItems = [
@@ -33,6 +35,7 @@ const navItems = [
   { path: '/puzzles', label: '自制谜题', icon: Puzzle },
   { path: '/wiki', label: '解密Wiki', icon: BookOpen },
   { path: '/messages', label: '留言板', icon: MessagesSquare },
+  { path: '/mail', label: '企业邮箱', icon: Mail },
 ];
 
 export function Navbar() {
@@ -136,6 +139,12 @@ export function Navbar() {
                     </div>
                   </div>
                   <RoleApply />
+                  <Link to="/settings/mail">
+                    <DropdownMenuItem className="cursor-pointer">
+                      <Settings className="mr-2 h-4 w-4" />
+                      <span>邮箱设置</span>
+                    </DropdownMenuItem>
+                  </Link>
                   {user?.role === 'admin' && (
                     <Link to="/lynchpin-admin">
                       <DropdownMenuItem className="cursor-pointer text-amber-400">

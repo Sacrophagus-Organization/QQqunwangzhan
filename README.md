@@ -309,3 +309,45 @@ P2 中:
 - 内容编辑仅限作者本人 + admin
 - `lynchpin` SSH 密钥、`.env`、`*.db` 已加入 `.gitignore`
 - 后端端口 3001 不对外开放，仅 Nginx 反向代理
+---
+
+## Enterprise Mail
+
+> 当前实现采用站内邮箱模式：不接入外部邮箱 API，不需要 25/465/587/993 等邮件端口。邮件只在本站已开通邮箱的用户之间投递；发送给未开通的地址会被拒绝。运行时只需要 `MAIL_DOMAIN=example.com` 与 `MAIL_PROVIDER=local`。
+
+项目新增企业邮箱模块，后端代码集中在 `server/src/mail`，前端页面为：
+
+- `/settings/mail`：用户申请企业邮箱账号。
+- `/mail`：WebMail 工作台，支持收件箱、发件箱、草稿箱、垃圾邮件、垃圾箱、已删除、搜索、分页、未读计数、实时刷新、邮件详情、回复、转发、附件上传与下载。
+
+默认 `MAIL_PROVIDER=local`，用于开发和站内邮箱流转。真实企业邮箱供应商请实现 `server/src/mail/providers/MailProvider.ts`，或扩展 `EnterpriseMailProvider`。
+
+需要的环境变量：
+
+```bash
+MAIL_DOMAIN=example.com
+MAIL_PROVIDER=local
+
+# 企业邮箱供应商管理 API（如供应商支持）
+MAIL_ADMIN_API_URL=https://provider.example.com/admin/mailboxes
+MAIL_ADMIN_API_TOKEN=replace-with-provider-token
+
+# 真实 SMTP/IMAP 接入时使用
+MAIL_SMTP_HOST=smtp.example.com
+MAIL_SMTP_PORT=587
+MAIL_SMTP_USER=service-user
+MAIL_SMTP_PASSWORD=secret-from-env-or-vault
+MAIL_IMAP_HOST=imap.example.com
+MAIL_IMAP_PORT=993
+MAIL_IMAP_USER=service-user
+MAIL_IMAP_PASSWORD=secret-from-env-or-vault
+```
+
+安全约定：本站不保存邮箱密码明文。数据库 `mail_accounts.credential_ref` 只保存供应商账号 ID、KMS/Vault 引用或供应商返回的 credential reference。真实 SMTP/IMAP 密码应通过环境变量、密钥管理服务或企业邮箱供应商托管。
+
+接口文档见 `server/src/mail/README.md`。单元测试：
+
+```bash
+cd server
+npm test
+```

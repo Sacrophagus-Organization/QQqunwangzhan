@@ -123,6 +123,61 @@ export interface AuthState {
   isAuthenticated: boolean;
 }
 
+export type MailFolder = 'inbox' | 'sent' | 'drafts' | 'spam' | 'trash' | 'deleted';
+
+export interface MailAddress {
+  address: string;
+  name?: string;
+}
+
+export interface MailAccount {
+  id: string;
+  userId: string;
+  address: string;
+  displayName: string;
+  provider: string;
+  providerAccountId: string;
+  status: 'active' | 'pending' | 'disabled';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MailMessage {
+  id: string;
+  ownerUserId: string;
+  accountId: string;
+  providerMessageId: string;
+  threadId: string;
+  folder: MailFolder;
+  from: MailAddress;
+  to: MailAddress[];
+  cc: MailAddress[];
+  bcc: MailAddress[];
+  subject: string;
+  bodyHtml: string;
+  bodyText: string;
+  isRead: number;
+  isStarred: number;
+  hasAttachments: number;
+  attachments: FileAttachment[];
+  sentAt: string;
+  receivedAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MailListResult {
+  messages: MailMessage[];
+  page: number;
+  pageSize: number;
+  total: number;
+}
+
+export interface MailFolderInfo {
+  folder: MailFolder;
+  unread: number;
+}
+
 export interface PaginatedResponse<T> {
   data: T[];
   page: number;

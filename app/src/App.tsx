@@ -17,6 +17,8 @@ import MessageBoard from '@/pages/MessageBoard';
 import AdminPage from '@/pages/AdminPage';
 import SarcophagusTerminal from '@/pages/SarcophagusTerminal';
 import TestPage from '@/pages/TestPage';
+import WebMailPage from '@/pages/WebMailPage';
+import MailSettingsPage from '@/pages/MailSettingsPage';
 import './App.css';
 
 // 全局 spoiler 点击固定显示（覆盖所有 dangerouslySetInnerHTML 渲染区域）
@@ -102,6 +104,22 @@ function App() {
             element={
               <PageAccessRoute routePath="/messages">
                 <AppLayout><MessageBoard /></AppLayout>
+              </PageAccessRoute>
+            }
+          />
+          <Route
+            path="/mail"
+            element={
+              <PageAccessRoute routePath="/mail">
+                <AppLayout><WebMailPage /></AppLayout>
+              </PageAccessRoute>
+            }
+          />
+          <Route
+            path="/settings/mail"
+            element={
+              <PageAccessRoute routePath="/settings/mail">
+                <AppLayout><MailSettingsPage /></AppLayout>
               </PageAccessRoute>
             }
           />

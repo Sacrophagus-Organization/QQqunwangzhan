@@ -17,6 +17,7 @@ import likeRoutes from './routes/likes.js';
 import sarcophagusRoutes from './routes/sarcophagus.js';
 import imageRoutes from './routes/images.js';
 import siteRoutes from './routes/site.js';
+import mailRoutes from './routes/mail.js';
 import { globalLimiter } from './lib/rateLimiter.js';
 import { startDiskCleanup } from './lib/diskCleanup.js';
 
@@ -26,8 +27,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 import * as fs from 'fs';
 const avatarDir = path.join(__dirname, '..', 'uploads', 'avatars');
 const imageDir = path.join(__dirname, '..', 'uploads', 'images');
+const mailDir = path.join(__dirname, '..', 'uploads', 'mail');
 if (!fs.existsSync(avatarDir)) fs.mkdirSync(avatarDir, { recursive: true });
 if (!fs.existsSync(imageDir)) fs.mkdirSync(imageDir, { recursive: true });
+if (!fs.existsSync(mailDir)) fs.mkdirSync(mailDir, { recursive: true });
 
 const app = express();
 const PORT = parseInt(process.env.PORT || '3001');
@@ -89,6 +92,7 @@ app.use('/api/likes', likeRoutes);
 app.use('/api/sarcophagus', sarcophagusRoutes);
 app.use('/api/images', imageRoutes);
 app.use('/api/site', siteRoutes);
+app.use('/api/mail', mailRoutes);
 
 // Serve uploaded avatars with caching (avatar filenames are UUID-based, immutable)
 app.use('/uploads/avatars', express.static(path.join(__dirname, '..', 'uploads', 'avatars'), {

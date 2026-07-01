@@ -138,9 +138,49 @@ db.exec(`
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 
+  CREATE TABLE IF NOT EXISTS mail_accounts (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL UNIQUE,
+    address TEXT NOT NULL UNIQUE,
+    display_name TEXT NOT NULL DEFAULT '',
+    provider TEXT NOT NULL DEFAULT 'local',
+    provider_account_id TEXT NOT NULL DEFAULT '',
+    credential_ref TEXT NOT NULL DEFAULT '',
+    status TEXT NOT NULL DEFAULT 'active',
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS mail_messages (
+    id TEXT PRIMARY KEY,
+    owner_user_id TEXT NOT NULL,
+    account_id TEXT NOT NULL,
+    provider_message_id TEXT NOT NULL DEFAULT '',
+    thread_id TEXT NOT NULL DEFAULT '',
+    folder TEXT NOT NULL DEFAULT 'inbox',
+    from_address TEXT NOT NULL,
+    from_name TEXT NOT NULL DEFAULT '',
+    to_addresses TEXT NOT NULL DEFAULT '[]',
+    cc_addresses TEXT NOT NULL DEFAULT '[]',
+    bcc_addresses TEXT NOT NULL DEFAULT '[]',
+    subject TEXT NOT NULL DEFAULT '',
+    body_html TEXT NOT NULL DEFAULT '',
+    body_text TEXT NOT NULL DEFAULT '',
+    is_read INTEGER NOT NULL DEFAULT 0,
+    is_starred INTEGER NOT NULL DEFAULT 0,
+    has_attachments INTEGER NOT NULL DEFAULT 0,
+    sent_at TEXT NOT NULL DEFAULT (datetime('now')),
+    received_at TEXT NOT NULL DEFAULT (datetime('now')),
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    deleted_at TEXT
+  );
+
   CREATE INDEX IF NOT EXISTS idx_likes_entity ON likes(entity_type, entity_id);
   CREATE INDEX IF NOT EXISTS idx_comments_entity ON comments(entity_type, entity_id);
   CREATE INDEX IF NOT EXISTS idx_attachments_entity ON attachments(entity_type, entity_id);
+  CREATE INDEX IF NOT EXISTS idx_mail_messages_owner_folder ON mail_messages(owner_user_id, folder, received_at);
+  CREATE INDEX IF NOT EXISTS idx_mail_messages_account ON mail_messages(account_id);
 `);
 
 // Migration: add columns for existing databases
@@ -157,6 +197,14 @@ try { db.exec('ALTER TABLE messages ADD COLUMN updated_at TEXT NOT NULL DEFAULT 
 try { db.exec('ALTER TABLE users ADD COLUMN avatar_url TEXT NOT NULL DEFAULT \"\"'); console.log('[DB] Added avatar_url column to users'); } catch {}
 try { db.exec('ALTER TABLE users ADD COLUMN requested_role TEXT NOT NULL DEFAULT \"\"'); console.log('[DB] Added requested_role column to users'); } catch {}
 try { db.exec('ALTER TABLE users ADD COLUMN requested_role_reason TEXT NOT NULL DEFAULT \"\"'); console.log('[DB] Added requested_role_reason column to users'); } catch {}
+
+// Seed new page_access routes added after initial installation.
+try {
+  db.prepare('INSERT OR IGNORE INTO page_access (id, route_path, route_name, access_level, is_enabled, description) VALUES (?, ?, ?, ?, ?, ?)')
+    .run('pa-mail', '/mail', '企业邮箱', 'member', 1, 'WebMail 企业邮箱工作台');
+  db.prepare('INSERT OR IGNORE INTO page_access (id, route_path, route_name, access_level, is_enabled, description) VALUES (?, ?, ?, ?, ?, ?)')
+    .run('pa-settings-mail', '/settings/mail', '邮箱设置', 'member', 1, '企业邮箱申请与配置');
+} catch {}
 
 // Seed page_access - 初始化所有页面访问配置
 const seedPageAccess = db.transaction(() => {

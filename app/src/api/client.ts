@@ -85,6 +85,19 @@ export async function apiUpload(entityType: string, entityId: string, files: Fil
   return res.json();
 }
 
+export async function apiMultipart<T>(path: string, formData: FormData): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: 'POST',
+    headers: buildHeaders(),
+    body: formData,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(err.error || '请求失败');
+  }
+  return res.json();
+}
+
 export async function apiDownload(url: string, filename: string) {
   const res = await fetch(url, {
     headers: buildHeaders(),

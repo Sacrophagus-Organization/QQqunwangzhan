@@ -2,12 +2,13 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
 // 启动时强制检查：禁止使用默认密钥
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
+const envJwtSecret = process.env.JWT_SECRET;
+if (!envJwtSecret) {
   console.error('[FATAL] JWT_SECRET 环境变量未设置，出于安全原因拒绝启动');
   console.error('请设置: export JWT_SECRET=<您的随机密钥>');
   process.exit(1);
 }
+const JWT_SECRET: string = envJwtSecret;
 
 export interface AuthRequest extends Request {
   userId?: string;
@@ -40,7 +41,7 @@ export function authMiddleware(req: AuthRequest, res: Response, next: NextFuncti
     return;
   }
   try {
-    const payload = jwt.verify(token, JWT_SECRET) as { id: string; role: string; username: string };
+    const payload = jwt.verify(token, JWT_SECRET) as unknown as { id: string; role: string; username: string };
     req.userId = payload.id;
     req.userRole = payload.role;
     req.userName = payload.username;
