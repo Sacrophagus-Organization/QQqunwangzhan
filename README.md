@@ -17,6 +17,8 @@
 - **管理员面板** — 审核用户、管理内容（`/lynchpin-admin`）
 - **石棺彩蛋** — CRT 终端解密页面，访问代码验证，自运行程序效果
 - **系统崩溃特效** — WinXP 风格全屏崩溃转场动画，Glitch + 代码瀑布 + CRT 关机（`/test`，admin 专属）
+- **剧情播放器** — 全屏沉浸式视觉小说引擎：双位立绘 crossfade、打字机对话、旁白模式、选项分支、震屏/闪白特效、场景 BGM（`/juqing?story=<id>`）
+- **剧情编辑器** — 可视化剧本管理后台（admin/editor 专属）：元信息/场景/角色/台词/分支选项五个标签页，本地图片上传，角色名下拉选择，自动立绘推导
 - **页面访问控制** — 数据库驱动三级系统（public/member/admin），前后端统一控制，访客 Navbar 自适应
 - **BGM 系统** — 赛博朋克风背景音乐，路由切换，循环+间隔播放，崩溃特效联动静音
 - **用户头像** — 上传+拖拽定位+缩放裁剪，GIF 自动跳过裁剪保留动画
@@ -99,6 +101,7 @@ bash verify.sh
 │   │       ├── comments.ts  # 评论 CRUD
 │   │       ├── likes.ts     # 点赞 API
 │   │       ├── sarcophagus.ts # 石棺彩蛋 API
+│   │       ├── stories.ts     # 剧情 CRUD API
 │   │       ├── site.ts      # 公开配置接口
 │   │       └── admin.ts     # 用户审核 + 页面访问控制
 │   └── uploads/avatars/   # 用户头像存储
@@ -117,6 +120,8 @@ bash verify.sh
 │       │   ├── RoleApply.tsx          # 角色申请组件
 │       │   ├── TerminalAutopilot.tsx  # 终端自运行程序
 │       │   ├── SystemCrashOverlay.tsx  # 系统崩溃转场动画
+│       │   ├── StoryPlayer.tsx         # 视觉小说播放器核心组件
+│       │   ├── StoryBGM.tsx            # 剧情 BGM/SFX 管理器
 │       │   ├── CommentSection.tsx     # 评论区（含折叠）
 │       │   ├── PageAccessRoute.tsx    # 页面访问控制路由守卫
 │       │   ├── ForbiddenPage.tsx      # 403 禁止访问页
@@ -127,10 +132,14 @@ bash verify.sh
 │       │   └── Footer.tsx             # 全局页脚
 │       ├── pages/         # 页面
 │       │   ├── HomePage.tsx / LoginPage.tsx / TestPage.tsx
+│       │   ├── StoryPlayerPage.tsx   # /juqing 剧情播放页
+│       │   ├── StoryEditorPage.tsx   # 剧情编辑器（admin/editor）
 │       │   ├── MessageBoard.tsx     # 留言板
 │       │   ├── SarcophagusTerminal.tsx # 石棺彩蛋终端
 │       │   └── AdminPage.tsx / Records / Puzzles / Wiki
 │       ├── contexts/      # AuthContext
+│       ├── hooks/          # useStoryPlayer 等自定义 Hook
+│       ├── data/           # 测试剧本数据
 │       └── api/           # API 客户端
 ├── go_live.sh             # 生产上线脚本（Nginx + SSL + 防火墙）
 ├── redeploy.sh            # 日常更新脚本
@@ -144,6 +153,26 @@ bash verify.sh
 ---
 
 ## 更新日志
+
+### 2026-07-02 — 剧情编辑器与播放器模块
+
+**剧情播放器：**
+- 全屏沉浸式视觉小说引擎 `StoryPlayer`：双位立绘 front/back 双层 crossfade、金色名签 + 逐字打字机对话、旁白模式全屏覆盖层、选项分支跳转、震屏/淡入/缩放/闪光四种特效、场景 BGM crossfade
+- 统一播放入口 `/juqing?story=<id>`，URL 参数加载对应剧情，播放完毕返回上一页
+- 右侧立绘自动水平翻转（`scaleX(-1)`），角色面朝屏幕内侧
+- 支持点击/键盘（空格/回车/方向键）/触摸推进交互
+- 内置测试剧本：明日方舟·孤星片段（27句台词，3角色，1场景，/test 页面嵌入可体验）
+
+**剧情编辑器（admin/editor 专属）：**
+- Navbar 用户下拉菜单「剧情编辑器」入口，跳转 `/juqing/editor` 独立管理页面
+- 五个管理标签页：元信息（标题/描述/发布状态）/ 场景（背景图本地上传 + BGM）/ 角色（名签颜色 + 立绘本地上传，提醒面朝右侧）/ 台词（场景关联 + 说话人位置 + 角色名下拉选择，立绘自动推导）/ 分支选项（指定触发 order + 跳转目标）
+- 剧情列表支持复制超链接 HTML（自定义链接文本），发布后一键分享
+
+**后端：**
+- 6 张新表：`stories` / `story_scenes` / `story_lines` / `story_characters` / `story_choices` / `story_progress`
+- 10 个 REST API：CRUD + 播放数据聚合 + 批量更新场景/台词/角色/选项 + 阅读进度存取
+- `page_access` 种子：`/juqing`(public) + `/juqing/editor`(admin)
+- 文件上传复用现有 `/api/images/upload` 端点
 
 ### 2026-06-29 — 页面访问控制系统 + 安全性修复 + 性能优化
 
