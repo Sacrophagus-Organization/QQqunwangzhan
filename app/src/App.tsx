@@ -17,6 +17,8 @@ import MessageBoard from '@/pages/MessageBoard';
 import AdminPage from '@/pages/AdminPage';
 import SarcophagusTerminal from '@/pages/SarcophagusTerminal';
 import TestPage from '@/pages/TestPage';
+import StoryPlayerPage from '@/pages/StoryPlayerPage';
+import StoryEditorPage from '@/pages/StoryEditorPage';
 import WebMailPage from '@/pages/WebMailPage';
 import MailSettingsPage from '@/pages/MailSettingsPage';
 import './App.css';
@@ -144,6 +146,26 @@ function App() {
             element={
               <PageAccessRoute routePath="/test">
                 <AppLayout><TestPage /></AppLayout>
+              </PageAccessRoute>
+            }
+          />
+          <Route
+            path="/juqing"
+            element={<StoryPlayerPage />}
+          />
+          <Route
+            path="/juqing/editor"
+            element={
+              <PageAccessRoute routePath="/juqing/editor">
+                <AppLayout><StoryEditorPage /></AppLayout>
+              </PageAccessRoute>
+            }
+          />
+          <Route
+            path="/juqing/editor/:id"
+            element={
+              <PageAccessRoute routePath="/juqing/editor">
+                <AppLayout><StoryEditorPage /></AppLayout>
               </PageAccessRoute>
             }
           />

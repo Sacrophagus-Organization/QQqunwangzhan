@@ -195,3 +195,85 @@ export interface PageAccessConfig {
   description: string;
   updated_at: string;
 }
+
+// ═══════════════════════════════════════
+//  剧情模块类型定义
+// ═══════════════════════════════════════
+
+export interface Story {
+  id: string;
+  title: string;
+  description: string;
+  cover?: string;
+  author: string;
+  authorId: string;
+  bgm?: string;
+  status: 'draft' | 'published';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StoryScene {
+  id: string;
+  storyId: string;
+  name: string;
+  background?: string;
+  bgm?: string;
+  bgmVolume?: number;
+  order: number;
+  transition: 'fade' | 'slide' | 'none';
+}
+
+export type StorySpeaker = 'left' | 'right' | 'narrator';
+export type StoryEffect = 'shake' | 'fadein' | 'zoom' | 'flash' | 'none';
+
+export interface StoryLine {
+  id: string;
+  storyId: string;
+  sceneId: string;
+  speaker: StorySpeaker;
+  characterName: string;
+  text: string;
+  leftImage?: string;
+  rightImage?: string;
+  effect?: StoryEffect;
+  sfx?: string;
+  order: number;
+}
+
+export interface StoryCharacter {
+  id: string;
+  storyId: string;
+  name: string;
+  defaultSprite?: string;
+  nameTagColor?: string;
+  sprites: Record<string, string>; // { expressionKey: imageUrl }
+}
+
+export interface StoryChoice {
+  id: string;
+  storyId: string;
+  lineId: string;
+  text: string;
+  targetLineOrder: number;
+}
+
+export interface StoryProgress {
+  id: string;
+  userId: string;
+  storyId: string;
+  sceneIndex: number;
+  lineIndex: number;
+  updatedAt: string;
+}
+
+/** 播放器用——一次加载全部数据 */
+export interface StoryPlayData {
+  story: Story;
+  characters: StoryCharacter[];
+  scenes: StoryScene[];
+  lines: StoryLine[];
+  choices: StoryChoice[];
+}
+
+export type PlayerPhase = 'loading' | 'idle' | 'typing' | 'waiting' | 'choosing' | 'ending';

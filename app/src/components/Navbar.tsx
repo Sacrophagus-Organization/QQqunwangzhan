@@ -27,6 +27,7 @@ import {
   LogIn,
   Mail,
   Settings,
+  Film,
 } from 'lucide-react';
 
 const navItems = [
@@ -153,6 +154,14 @@ export function Navbar() {
                         {pendingCount > 0 && (
                           <span className="ml-auto bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center">{pendingCount}</span>
                         )}
+                      </DropdownMenuItem>
+                    </Link>
+                  )}
+                  {(user?.role === 'admin' || user?.role === 'editor') && (
+                    <Link to="/juqing/editor">
+                      <DropdownMenuItem className="cursor-pointer">
+                        <Film className="mr-2 h-4 w-4" />
+                        <span>剧情编辑器</span>
                       </DropdownMenuItem>
                     </Link>
                   )}

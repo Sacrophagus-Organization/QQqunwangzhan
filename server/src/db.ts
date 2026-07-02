@@ -181,6 +181,81 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_attachments_entity ON attachments(entity_type, entity_id);
   CREATE INDEX IF NOT EXISTS idx_mail_messages_owner_folder ON mail_messages(owner_user_id, folder, received_at);
   CREATE INDEX IF NOT EXISTS idx_mail_messages_account ON mail_messages(account_id);
+
+  -- ═══ 剧情模块 ═══
+  CREATE TABLE IF NOT EXISTS stories (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    cover TEXT NOT NULL DEFAULT '',
+    author TEXT NOT NULL DEFAULT '',
+    author_id TEXT NOT NULL DEFAULT '',
+    bgm TEXT NOT NULL DEFAULT '',
+    status TEXT NOT NULL DEFAULT 'draft',
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS story_scenes (
+    id TEXT PRIMARY KEY,
+    story_id TEXT NOT NULL,
+    name TEXT NOT NULL DEFAULT '',
+    background TEXT NOT NULL DEFAULT '',
+    bgm TEXT NOT NULL DEFAULT '',
+    bgm_volume REAL NOT NULL DEFAULT 0.3,
+    "order" INTEGER NOT NULL DEFAULT 0,
+    transition TEXT NOT NULL DEFAULT 'none',
+    FOREIGN KEY (story_id) REFERENCES stories(id) ON DELETE CASCADE
+  );
+
+  CREATE TABLE IF NOT EXISTS story_lines (
+    id TEXT PRIMARY KEY,
+    story_id TEXT NOT NULL,
+    scene_id TEXT NOT NULL DEFAULT '',
+    speaker TEXT NOT NULL DEFAULT 'narrator',
+    character_name TEXT NOT NULL DEFAULT '',
+    text TEXT NOT NULL DEFAULT '',
+    left_image TEXT NOT NULL DEFAULT '',
+    right_image TEXT NOT NULL DEFAULT '',
+    effect TEXT NOT NULL DEFAULT 'none',
+    sfx TEXT NOT NULL DEFAULT '',
+    "order" INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (story_id) REFERENCES stories(id) ON DELETE CASCADE
+  );
+
+  CREATE TABLE IF NOT EXISTS story_characters (
+    id TEXT PRIMARY KEY,
+    story_id TEXT NOT NULL,
+    name TEXT NOT NULL DEFAULT '',
+    default_sprite TEXT NOT NULL DEFAULT '',
+    name_tag_color TEXT NOT NULL DEFAULT '#c9a96e',
+    sprites TEXT NOT NULL DEFAULT '{}',
+    FOREIGN KEY (story_id) REFERENCES stories(id) ON DELETE CASCADE
+  );
+
+  CREATE TABLE IF NOT EXISTS story_choices (
+    id TEXT PRIMARY KEY,
+    story_id TEXT NOT NULL,
+    line_id TEXT NOT NULL DEFAULT '',
+    text TEXT NOT NULL DEFAULT '',
+    target_line_order INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (story_id) REFERENCES stories(id) ON DELETE CASCADE
+  );
+
+  CREATE TABLE IF NOT EXISTS story_progress (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    story_id TEXT NOT NULL,
+    scene_index INTEGER NOT NULL DEFAULT 0,
+    line_index INTEGER NOT NULL DEFAULT 0,
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE(user_id, story_id)
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_story_scenes_story ON story_scenes(story_id, "order");
+  CREATE INDEX IF NOT EXISTS idx_story_lines_story ON story_lines(story_id, "order");
+  CREATE INDEX IF NOT EXISTS idx_story_choices_story ON story_choices(story_id);
+  CREATE INDEX IF NOT EXISTS idx_story_progress_user ON story_progress(user_id, story_id);
 `);
 
 // Migration: add columns for existing databases
@@ -204,6 +279,10 @@ try {
     .run('pa-mail', '/mail', '企业邮箱', 'member', 1, 'WebMail 企业邮箱工作台');
   db.prepare('INSERT OR IGNORE INTO page_access (id, route_path, route_name, access_level, is_enabled, description) VALUES (?, ?, ?, ?, ?, ?)')
     .run('pa-settings-mail', '/settings/mail', '邮箱设置', 'member', 1, '企业邮箱申请与配置');
+  db.prepare('INSERT OR IGNORE INTO page_access (id, route_path, route_name, access_level, is_enabled, description) VALUES (?, ?, ?, ?, ?, ?)')
+    .run('pa-juqing', '/juqing', '剧情播放', 'public', 1, '视觉小说剧情播放器');
+  db.prepare('INSERT OR IGNORE INTO page_access (id, route_path, route_name, access_level, is_enabled, description) VALUES (?, ?, ?, ?, ?, ?)')
+    .run('pa-juqing-editor', '/juqing/editor', '剧情编辑器', 'admin', 1, '剧本编辑器（仅管理员/编辑可见）');
 } catch {}
 
 // Seed page_access - 初始化所有页面访问配置
