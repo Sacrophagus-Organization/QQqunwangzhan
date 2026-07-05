@@ -101,6 +101,17 @@ router.delete('/messages/:id', (req: AuthRequest, res) => {
   catch (err) { sendError(res, err); }
 });
 
+
+// 销毁邮箱账号 — 软删除
+router.delete('/account', (req: AuthRequest, res) => {
+  try {
+    const account = db.prepare('SELECT * FROM mail_accounts WHERE user_id=?').get(req.userId!) as any;
+    if (!account) { res.status(404).json({ error: '未找到邮箱账号' }); return; }
+    db.prepare('UPDATE mail_accounts SET status=?, updated_at=? WHERE user_id=?').run('disabled', new Date().toISOString(), req.userId!);
+    res.json({ success: true, message: '邮箱已停用，已有邮件将保留90天后自动清除' });
+  } catch (err) { sendError(res, err); }
+});
+
 router.get('/messages/:messageId/attachments/:attachmentId/download', (req: AuthRequest, res) => {
   const message = db.prepare('SELECT id FROM mail_messages WHERE owner_user_id=? AND id=? AND deleted_at IS NULL')
     .get(req.userId!, String(req.params.messageId)) as any;
@@ -111,6 +122,85 @@ router.get('/messages/:messageId/attachments/:attachmentId/download', (req: Auth
   res.attachment(att.name);
   res.setHeader('Content-Type', att.mime_type || 'application/octet-stream');
   res.sendFile(att.file_path);
+});
+
+// Poll for new mail notifications
+router.get('/poll', (req: AuthRequest, res) => {
+  try {
+    const since = String(req.query.since || '');
+    const account = db.prepare('SELECT id FROM mail_accounts WHERE user_id=? AND status=?').get(req.userId!, 'active') as any;
+    if (!account) { res.json({ newCount: 0, unreadCounts: {} }); return; }
+    
+    // New inbox messages since timestamp
+    let newCount = 0;
+    let latestMessages: any[] = [];
+    if (since) {
+      latestMessages = db.prepare(
+        "SELECT id, from_address, from_name, subject, received_at FROM mail_messages WHERE owner_user_id=? AND folder='inbox' AND is_read=0 AND received_at > ? AND deleted_at IS NULL ORDER BY received_at DESC LIMIT 10"
+      ).all(req.userId!, since) as any[];
+      newCount = latestMessages.length;
+    }
+    
+    // Unread counts per folder
+    const unreadRows = db.prepare(
+      "SELECT folder, COUNT(*) as cnt FROM mail_messages WHERE owner_user_id=? AND is_read=0 AND deleted_at IS NULL GROUP BY folder"
+    ).all(req.userId!) as any[];
+    const unreadCounts: Record<string, number> = {};
+    for (const r of unreadRows) { unreadCounts[r.folder] = r.cnt; }
+    
+    res.json({
+      newCount,
+      unreadCounts,
+      latest: latestMessages.map(function(m: any) { return {
+        id: m.id,
+        fromAddress: m.from_address,
+        fromName: m.from_name,
+        subject: m.subject,
+        receivedAt: m.received_at,
+      };}),
+    });
+  } catch (err) { res.status(400).json({ error: err instanceof Error ? err.message : 'Request failed' }); }
+});
+
+// Recent recipients for compose autocomplete
+router.get('/recipients', (req: AuthRequest, res) => {
+  try {
+    const account = db.prepare('SELECT id FROM mail_accounts WHERE user_id=? AND status=?').get(req.userId!, 'active') as any;
+    if (!account) { res.json([]); return; }
+      // Get all active mail accounts as base recipient pool
+      const accounts = db.prepare(
+        "SELECT ma.address, ma.display_name FROM mail_accounts ma WHERE ma.status='active' AND ma.user_id!=? ORDER BY ma.address"
+      ).all(req.userId!) as any[];
+      const seen = new Set<string>();
+      const result: {address:string;name:string}[] = [];
+      for (const a of accounts) {
+        const key = a.address.toLowerCase();
+        if (!seen.has(key)) { seen.add(key); result.push({ address: a.address, name: a.display_name || "" }); }
+      }
+      // Also add recipients from inbox senders (if any)
+      const inboxRows = db.prepare(
+        "SELECT DISTINCT from_address, from_name FROM mail_messages WHERE owner_user_id=? AND folder='inbox' ORDER BY received_at DESC LIMIT 30"
+      ).all(req.userId!) as any[];
+      for (const r of inboxRows) {
+        const key = r.from_address.toLowerCase();
+        if (!seen.has(key)) { seen.add(key); result.push({ address: r.from_address, name: r.from_name || "" }); }
+      }
+      // Plus recipients from sent messages (to_addresses JSON)
+      const sentRows = db.prepare(
+        "SELECT to_addresses FROM mail_messages WHERE owner_user_id=? AND folder='sent' ORDER BY received_at DESC LIMIT 30"
+      ).all(req.userId!) as any[];
+      for (const r of sentRows) {
+        try {
+          const tos = JSON.parse(r.to_addresses || "[]");
+          for (const t of tos) {
+            if (!t || !t.address) continue;
+            const key = t.address.toLowerCase();
+            if (!seen.has(key)) { seen.add(key); result.push({ address: t.address, name: t.name || "" }); }
+          }
+        } catch(e) {}
+      }
+    res.json(result);
+  } catch (err) { res.status(400).json({ error: err instanceof Error ? err.message : 'Request failed' }); }
 });
 
 export default router;

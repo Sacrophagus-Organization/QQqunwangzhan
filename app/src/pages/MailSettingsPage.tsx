@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Mail, CheckCircle2, Loader2, Settings, ShieldCheck } from 'lucide-react';
+import { AlertTriangle, Mail, CheckCircle2, Loader2, Settings, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { apiGet, apiPost } from '@/api/client';
+import { apiDelete, apiGet, apiPost } from '@/api/client';
 import { useAuth } from '@/contexts/AuthContext';
 import type { MailAccount } from '@/types';
 
@@ -22,6 +23,8 @@ export default function MailSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [destroyOpen, setDestroyOpen] = useState(false);
+  const [destroying, setDestroying] = useState(false);
 
   useEffect(() => {
     apiGet<MailAccount | null>('/mail/account')
@@ -41,6 +44,16 @@ export default function MailSettingsPage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const destroyAccount = async () => {
+    setDestroying(true);
+    try {
+      await apiDelete('/mail/account');
+      setAccount(null);
+      setDestroyOpen(false);
+    } catch (e: any) { alert(e.message); }
+    finally { setDestroying(false); }
   };
 
   if (loading) {
@@ -90,6 +103,14 @@ export default function MailSettingsPage() {
                 <p className="text-sm text-muted-foreground">
                   邮箱密码不会保存在本站数据库中。真实企业邮箱供应商接入后，凭据应由供应商或密钥管理服务托管。
                 </p>
+                <div className="pt-4 mt-4 border-t border-border/50">
+                  <button
+                    onClick={() => setDestroyOpen(true)}
+                    className="flex items-center gap-2 text-sm text-red-400 hover:text-red-300 transition-colors"
+                  >
+                    <AlertTriangle className="h-4 w-4" />销毁邮箱
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="space-y-4">
@@ -116,6 +137,27 @@ export default function MailSettingsPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={destroyOpen} onOpenChange={setDestroyOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle className="text-destructive flex items-center gap-2"><AlertTriangle className="h-5 w-5" />确认销毁邮箱</DialogTitle></DialogHeader>
+          <div className="space-y-4 text-sm">
+            <p className="text-muted-foreground">销毁后：</p>
+            <ul className="list-disc pl-5 space-y-1 text-muted-foreground">
+              <li>邮箱账号将被停用，无法收发新邮件</li>
+              <li>已有邮件将保留 90 天后自动清除</li>
+              <li>其他用户将无法向你的邮箱地址发送邮件</li>
+              <li>此操作不可撤销</li>
+            </ul>
+            <div className="flex gap-3 pt-2">
+              <Button variant="outline" onClick={() => setDestroyOpen(false)} className="flex-1">取消</Button>
+              <Button variant="destructive" onClick={destroyAccount} disabled={destroying} className="flex-1">
+                {destroying ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}确认销毁
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

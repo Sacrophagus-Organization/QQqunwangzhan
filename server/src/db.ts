@@ -182,8 +182,110 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_mail_messages_owner_folder ON mail_messages(owner_user_id, folder, received_at);
   CREATE INDEX IF NOT EXISTS idx_mail_messages_account ON mail_messages(account_id);
 
-  -- ═══ 剧情模块 ═══
-  CREATE TABLE IF NOT EXISTS stories (
+  CREATE TABLE IF NOT EXISTS mail_admin_logs (
+    id TEXT PRIMARY KEY,
+    admin_id TEXT NOT NULL,
+    admin_name TEXT NOT NULL,
+    action TEXT NOT NULL,
+    target_type TEXT NOT NULL DEFAULT '',
+    target_id TEXT NOT NULL DEFAULT '',
+    detail TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS mail_bots (
+    id TEXT PRIMARY KEY,
+    username TEXT NOT NULL,
+    domain TEXT NOT NULL DEFAULT 'example.com',
+    display_name TEXT NOT NULL DEFAULT '',
+    note TEXT NOT NULL DEFAULT '',
+    status TEXT NOT NULL DEFAULT 'active',
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS mail_bot_rules (
+    id TEXT PRIMARY KEY,
+    bot_id TEXT NOT NULL,
+    title TEXT NOT NULL DEFAULT '',
+    trigger_keyword TEXT NOT NULL,
+    reply_subject TEXT NOT NULL DEFAULT '',
+    reply_body TEXT NOT NULL DEFAULT '',
+    delay_seconds INTEGER NOT NULL DEFAULT 0,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS mail_bot_submissions (
+    id TEXT PRIMARY KEY,
+    bot_id TEXT NOT NULL,
+    rule_id TEXT NOT NULL,
+    from_address TEXT NOT NULL,
+    trigger_keyword TEXT NOT NULL,
+    submitted_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  -- Rule-to-rule prerequisites (direct connections between rules)
+  CREATE TABLE IF NOT EXISTS mail_bot_rule_prerequisites (
+    id TEXT PRIMARY KEY,
+    rule_id TEXT NOT NULL,
+    prerequisite_rule_id TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (rule_id) REFERENCES mail_bot_rules(id) ON DELETE CASCADE,
+    FOREIGN KEY (prerequisite_rule_id) REFERENCES mail_bot_rules(id) ON DELETE CASCADE
+  );
+  CREATE INDEX IF NOT EXISTS idx_rule_prerequisites_rule ON mail_bot_rule_prerequisites(rule_id);
+  -- TTT 飺õĹ飬֧ǰ TTT
+  CREATE TABLE IF NOT EXISTS mail_bot_trigger_groups (
+    id TEXT PRIMARY KEY,
+    bot_id TEXT NOT NULL,
+    name TEXT NOT NULL DEFAULT '',
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS mail_bot_trigger_group_rules (
+    id TEXT PRIMARY KEY,
+    group_id TEXT NOT NULL,
+    trigger_keyword TEXT NOT NULL,
+    reply_subject TEXT NOT NULL DEFAULT '',
+    reply_body TEXT NOT NULL DEFAULT '',
+    delay_seconds INTEGER NOT NULL DEFAULT 0,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    node_x REAL NOT NULL DEFAULT 0,
+    node_y REAL NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (group_id) REFERENCES mail_bot_trigger_groups(id) ON DELETE CASCADE
+  );
+
+  CREATE TABLE IF NOT EXISTS mail_bot_trigger_group_deps (
+    id TEXT PRIMARY KEY,
+    group_id TEXT NOT NULL,
+    from_rule_id TEXT NOT NULL,
+    to_rule_id TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (group_id) REFERENCES mail_bot_trigger_groups(id) ON DELETE CASCADE
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_trigger_group_deps_group ON mail_bot_trigger_group_deps(group_id);
+
+  -- Track per-user per-rule completion status within trigger groups
+  CREATE TABLE IF NOT EXISTS mail_bot_trigger_progress (
+    id TEXT PRIMARY KEY,
+    group_id TEXT NOT NULL,
+    rule_id TEXT NOT NULL,
+    from_address TEXT NOT NULL,
+    triggered_at TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE(group_id, rule_id, from_address),
+    FOREIGN KEY (group_id) REFERENCES mail_bot_trigger_groups(id) ON DELETE CASCADE
+  );
+
+
+
+  -- ══?剧情模块 ══?
+
+CREATE TABLE IF NOT EXISTS stories (
     id TEXT PRIMARY KEY,
     title TEXT NOT NULL,
     description TEXT NOT NULL DEFAULT '',
@@ -258,9 +360,26 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_story_progress_user ON story_progress(user_id, story_id);
 `);
 
+// Migration: mail_bot_rules title column and mail_bot_rule_prerequisites table
+try { db.exec("ALTER TABLE mail_bot_rules ADD COLUMN title TEXT NOT NULL DEFAULT ''"); console.log("[DB] Added title column to mail_bot_rules (migration)"); } catch {}
+
+try {
+  db.exec("CREATE TABLE IF NOT EXISTS mail_bot_rule_prerequisites (" +
+    "id TEXT PRIMARY KEY, " +
+    "rule_id TEXT NOT NULL, " +
+    "prerequisite_rule_id TEXT NOT NULL, " +
+    "created_at TEXT NOT NULL DEFAULT (datetime('now')), " +
+    "FOREIGN KEY (rule_id) REFERENCES mail_bot_rules(id) ON DELETE CASCADE, " +
+    "FOREIGN KEY (prerequisite_rule_id) REFERENCES mail_bot_rules(id) ON DELETE CASCADE" +
+  ")");
+  db.exec("CREATE INDEX IF NOT EXISTS idx_rule_prerequisites_rule ON mail_bot_rule_prerequisites(rule_id)");
+  console.log("[DB] mail_bot_rule_prerequisites table ensured (migration)");
+} catch {}
+
+
 // Migration: add columns for existing databases
 try { db.exec('ALTER TABLE users ADD COLUMN status TEXT NOT NULL DEFAULT "active"'); console.log('[DB] Added status column (migration)'); } catch {}
-try { db.exec('ALTER TABLE users ADD COLUMN register_reason TEXT NOT NULL DEFAULT ""'); console.log('[DB] Added register_reason column (migration)'); } catch {}
+try { db.exec('ALTER TABLE users ADD COLUMN register_reason TEXT NOT NULL DEFAULT ""'); console.log('[DB] Added register_reason 字段 column (migration)'); } catch {}
 try { db.exec('ALTER TABLE records ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0'); console.log('[DB] Added pinned column to records'); } catch {}
 try { db.exec('ALTER TABLE records ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0'); console.log('[DB] Added sort_order column to records'); } catch {}
 try { db.exec('ALTER TABLE wiki_entries ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0'); console.log('[DB] Added pinned column to wiki'); } catch {}
@@ -283,14 +402,18 @@ try {
     .run('pa-juqing', '/juqing', '剧情播放', 'public', 1, '视觉小说剧情播放器');
   db.prepare('INSERT OR IGNORE INTO page_access (id, route_path, route_name, access_level, is_enabled, description) VALUES (?, ?, ?, ?, ?, ?)')
     .run('pa-juqing-editor', '/juqing/editor', '剧情编辑器', 'admin', 1, '剧本编辑器（仅管理员/编辑可见）');
+  db.prepare('INSERT OR IGNORE INTO page_access (id, route_path, route_name, access_level, is_enabled, description) VALUES (?, ?, ?, ?, ?, ?)')
+    .run('pa-mail-admin', '/mail/admin', '邮件管理', 'admin', 1, '邮箱管理后台（仅管理员可见）');
+  db.prepare('INSERT OR IGNORE INTO page_access (id, route_path, route_name, access_level, is_enabled, description) VALUES (?, ?, ?, ?, ?, ?)')
+    .run('pa-mail-admin-bots', '/mail/admin/bots', 'Bot管理', 'admin', 1, 'Bot自动回复管理（仅管理员可见）');
 } catch {}
 
-// Seed page_access - 初始化所有页面访问配置
+// Seed page_access - 初始化所有页面访问配?
 const seedPageAccess = db.transaction(() => {
   const existing = db.prepare('SELECT COUNT(*) as cnt FROM page_access').get() as { cnt: number };
   if (existing.cnt > 0) return;
 
-  const pages = [
+    const pages = [
     { id: 'pa-home', route_path: '/', route_name: '首页', access_level: 'member', is_enabled: 1, description: '网站首页' },
     { id: 'pa-records', route_path: '/records', route_name: '破译战绩', access_level: 'member', is_enabled: 1, description: '群友战绩记录' },
     { id: 'pa-puzzles', route_path: '/puzzles', route_name: '谜题广场', access_level: 'member', is_enabled: 1, description: '谜题展示与解答' },
@@ -304,7 +427,6 @@ const seedPageAccess = db.transaction(() => {
     { id: 'pa-comments', route_path: '/comments', route_name: '评论(共享)', access_level: 'member', is_enabled: 1, description: '评论系统（共享资源，由父页面控制）' },
     { id: 'pa-likes', route_path: '/likes', route_name: '点赞(共享)', access_level: 'member', is_enabled: 1, description: '点赞系统（共享资源，由父页面控制）' },
   ];
-
   const insert = db.prepare('INSERT INTO page_access (id, route_path, route_name, access_level, is_enabled, description) VALUES (?, ?, ?, ?, ?, ?)');
   for (const p of pages) {
     insert.run(p.id, p.route_path, p.route_name, p.access_level, p.is_enabled, p.description);

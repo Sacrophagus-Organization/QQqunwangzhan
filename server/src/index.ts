@@ -18,6 +18,7 @@ import sarcophagusRoutes from './routes/sarcophagus.js';
 import imageRoutes from './routes/images.js';
 import siteRoutes from './routes/site.js';
 import mailRoutes from './routes/mail.js';
+import mailAdminRoutes from './routes/mailAdmin.js';
 import storyRoutes from './routes/stories.js';
 import { globalLimiter } from './lib/rateLimiter.js';
 import { startDiskCleanup } from './lib/diskCleanup.js';
@@ -94,6 +95,7 @@ app.use('/api/sarcophagus', sarcophagusRoutes);
 app.use('/api/images', imageRoutes);
 app.use('/api/site', siteRoutes);
 app.use('/api/mail', mailRoutes);
+app.use('/api/mail/admin', mailAdminRoutes);
 app.use('/api/stories', storyRoutes);
 
 // Serve uploaded avatars with caching (avatar filenames are UUID-based, immutable)

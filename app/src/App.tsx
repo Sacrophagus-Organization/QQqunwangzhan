@@ -21,6 +21,9 @@ import StoryPlayerPage from '@/pages/StoryPlayerPage';
 import StoryEditorPage from '@/pages/StoryEditorPage';
 import WebMailPage from '@/pages/WebMailPage';
 import MailSettingsPage from '@/pages/MailSettingsPage';
+import MailAdminPage from '@/pages/MailAdminPage';
+import MailBotListPage from '@/pages/MailBotListPage';
+import MailBotDetailPage from '@/pages/MailBotDetailPage';
 import './App.css';
 
 // 全局 spoiler 点击固定显示（覆盖所有 dangerouslySetInnerHTML 渲染区域）
@@ -146,6 +149,30 @@ function App() {
             element={
               <PageAccessRoute routePath="/test">
                 <AppLayout><TestPage /></AppLayout>
+              </PageAccessRoute>
+            }
+          />
+          <Route
+            path="/mail/admin"
+            element={
+              <PageAccessRoute routePath="/mail/admin">
+                <AppLayout><MailAdminPage /></AppLayout>
+              </PageAccessRoute>
+            }
+          />
+          <Route
+            path="/mail/admin/bots"
+            element={
+              <PageAccessRoute routePath="/mail/admin/bots">
+                <AppLayout><MailBotListPage /></AppLayout>
+              </PageAccessRoute>
+            }
+          />
+          <Route
+            path="/mail/admin/bots/:id"
+            element={
+              <PageAccessRoute routePath="/mail/admin/bots">
+                <AppLayout><MailBotDetailPage /></AppLayout>
               </PageAccessRoute>
             }
           />

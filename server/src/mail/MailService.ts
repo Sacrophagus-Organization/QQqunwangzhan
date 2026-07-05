@@ -1,5 +1,6 @@
 import fs from 'fs';
 import { v4 as uuid } from 'uuid';
+import { v4 as uuid } from 'uuid';
 import { db } from '../db.js';
 import { parseAddresses, stripHtml } from './address.js';
 import { getMailProvider } from './providerFactory.js';
@@ -97,7 +98,13 @@ export class MailService {
 
   private assertLocalRecipients(recipients: ReturnType<typeof parseAddresses>) {
     const missing = uniqueRecipients(recipients)
-      .filter(recipient => !getAccountByAddress(recipient.address))
+      .filter(recipient => {
+        if (getAccountByAddress(recipient.address)) return false;
+        // Also check bot table
+        const localPart = recipient.address.split('@')[0];
+        const bot = db.prepare('SELECT id FROM mail_bots WHERE username=? AND status=?').get(localPart, 'active');
+        return !bot;
+      })
       .map(recipient => recipient.address);
     if (missing.length > 0) {
       throw new Error(`只能发送给已开通的站内邮箱：${missing.join(', ')}`);
@@ -128,6 +135,7 @@ export class MailService {
           payload.bodyHtml, payload.bodyText, 0, 0, payload.files.length > 0 ? 1 : 0,
           payload.now, payload.now, payload.now, payload.now);
       saveAttachments(id, payload.files);
+      this.processBotReply(recipient.address, id, sender, payload.subject, payload.bodyText, recipient);
     }
   }
 
@@ -173,6 +181,66 @@ export class MailService {
     }
     db.prepare('UPDATE mail_messages SET folder=?, updated_at=? WHERE owner_user_id=? AND id=?').run('deleted', now, userId, id);
     return { success: true };
+  }
+
+  private processBotReply(recipientAddress: string, messageId: string, sender: { address: string; displayName: string }, subject: string, bodyText: string, recipient: { address: string }) {
+    const bot = db.prepare('SELECT * FROM mail_bots WHERE username=?').get(recipientAddress.split('@')[0]) as any;
+    if (!bot || bot.status !== 'active') return;
+
+    const rules = db.prepare('SELECT * FROM mail_bot_rules WHERE bot_id=? ORDER BY sort_order ASC').all(bot.id) as any[];
+    for (const rule of rules) {
+      const keyword = rule.trigger_keyword.trim();
+      if (!keyword) continue;
+      if (!bodyText.toLowerCase().includes(keyword.toLowerCase())) continue;
+
+      // Check prerequisites: all prerequisite rules must have been triggered by this sender
+      const prereqs = db.prepare('SELECT prerequisite_rule_id FROM mail_bot_rule_prerequisites WHERE rule_id=?').all(rule.id) as any[];
+      let allPrereqsMet = true;
+      for (const pre of prereqs) {
+        const subExists = db.prepare('SELECT COUNT(*) as cnt FROM mail_bot_submissions WHERE bot_id=? AND rule_id=? AND from_address=?').get(bot.id, pre.prerequisite_rule_id, sender.address) as any;
+        if (!subExists || subExists.cnt === 0) { allPrereqsMet = false; break; }
+      }
+      if (!allPrereqsMet) continue; // Skip if prerequisites not met
+
+      // Record submission
+      const subId = 'botsub-' + uuid().slice(0, 8);
+      db.prepare('INSERT INTO mail_bot_submissions (id, bot_id, rule_id, from_address, trigger_keyword, submitted_at) VALUES (?,?,?,?,?,?)')
+        .run(subId, bot.id, rule.id, sender.address, keyword, new Date().toISOString());
+
+      // Auto-reply after delay
+      const delayMs = (rule.delay_seconds || 0) * 1000;
+      const botAddress = bot.username + '@' + bot.domain;
+      const botDisplayName = bot.display_name || bot.username;
+      const replySubject = rule.reply_subject || ('Re: ' + subject);
+      const replyBody = rule.reply_body || '';
+
+      if (delayMs > 0) {
+        setTimeout(() => {
+          this.deliverBotReply(bot, botAddress, botDisplayName, sender.address, replySubject, replyBody);
+        }, delayMs);
+      } else {
+        this.deliverBotReply(bot, botAddress, botDisplayName, sender.address, replySubject, replyBody);
+      }
+      break; // Only match first rule with met prerequisites
+    }
+  }
+
+  private deliverBotReply(bot: any, botAddress: string, botDisplayName: string, toAddress: string, subject: string, bodyHtml: string) {
+    const now = new Date().toISOString();
+    const replyId = 'botreply-' + uuid().slice(0, 12);
+    // Find recipient account
+    const recipientAcct = db.prepare('SELECT * FROM mail_accounts WHERE address=? AND status=?').get(toAddress, 'active') as any;
+    if (!recipientAcct) return;
+
+    db.prepare(`INSERT INTO mail_messages
+      (id, owner_user_id, account_id, provider_message_id, thread_id, folder, from_address, from_name, to_addresses, cc_addresses, bcc_addresses, subject, body_html, body_text, is_read, is_starred, has_attachments, sent_at, received_at, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      .run(replyId, recipientAcct.user_id, recipientAcct.id, '', replyId, 'inbox',
+        botAddress, botDisplayName,
+        JSON.stringify([{ address: toAddress, name: '' }]),
+        JSON.stringify([]), JSON.stringify([]),
+        subject, bodyHtml, bodyHtml, 0, 0, 0,
+        now, now, now, now);
   }
 }
 
