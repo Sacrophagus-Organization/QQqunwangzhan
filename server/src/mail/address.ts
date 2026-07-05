@@ -11,7 +11,7 @@ export function normalizeLocalPart(value: string): string {
 }
 
 export function getMailDomain(): string {
-  return process.env.MAIL_DOMAIN || 'example.com';
+  return process.env.DOMAIN || 'example.com';
 }
 
 export function buildAddress(localPart: string): string {
