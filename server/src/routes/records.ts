@@ -4,7 +4,6 @@ import { unlinkSync } from 'node:fs';
 import { db } from '../db.js';
 import { authMiddleware, AuthRequest } from '../middleware/auth.js';
 import { optionalAuth } from '../middleware/pageAccess.js';
-import { sanitizeRichHtml } from '../lib/sanitize.js';
 import { getAttachments, getAttachmentsMap, safeParseTags } from '../lib/attachments.js';
 import { deleteImagesFromHtml } from '../lib/imageCleanup.js';
 
@@ -52,7 +51,7 @@ router.post('/', authMiddleware, (req: AuthRequest, res) => {
   const now = new Date().toISOString();
   db.prepare(`INSERT INTO records (id, title, content, summary, date, tags, author, author_id, importance, created_at, updated_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
-    id, title, sanitizeRichHtml(content || ''), summary || '', date || new Date().toISOString().split('T')[0],
+    id, title, content || '', summary || '', date || new Date().toISOString().split('T')[0],
     JSON.stringify(tags || []), req.userName, req.userId, importance || 'normal', now, now
   );
   const record = db.prepare('SELECT * FROM records WHERE id = ?').get(id) as any;
@@ -69,7 +68,7 @@ router.put('/:id', authMiddleware, (req: AuthRequest, res) => {
   const { title, content, summary, tags, importance, pinned, sortOrder } = req.body;
   db.prepare(`UPDATE records SET title=?, content=?, summary=?, tags=?, importance=?, pinned=?, sort_order=?, updated_at=? WHERE id=?`).run(
     title || record.title,
-    content !== undefined ? sanitizeRichHtml(content) : record.content,
+    content !== undefined ? content : record.content,
     summary ?? record.summary,
     JSON.stringify(tags ?? safeParseTags(record.tags)),
     importance || record.importance,

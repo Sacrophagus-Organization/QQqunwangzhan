@@ -5,10 +5,12 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const imageDir = path.join(__dirname, '..', '..', 'uploads', 'images');
 
-/** 从 HTML 中提取 /api/images/<filename> 的文件名列表 */
+/** 从 HTML/Markdown 文本中提取 /api/images/<filename> 的文件名列表 */
 function extractImageFiles(html: string | null | undefined): string[] {
   if (!html || typeof html !== 'string') return [];
-  const regex = /\/api\/images\/([\w.\-]+\.(?:jpg|jpeg|png|gif|webp|bmp))/gi;
+  // jpeg 必须放在 jpg 前面，否则 "image.jpeg" 会被匹配为 "image.jpg"
+  // 同时匹配 Markdown ![](url) 和 HTML <img src=url> 两种引用格式
+  const regex = /\/api\/images\/([\w.\-]+\.(?:jpeg|jpg|png|gif|webp|bmp))/gi;
   const files: string[] = [];
   let match: RegExpExecArray | null;
   while ((match = regex.exec(html)) !== null) {

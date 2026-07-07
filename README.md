@@ -154,6 +154,17 @@ bash verify.sh
 
 ## 更新日志
 
+### 2026-07-07 — 解密记录 Markdown 编辑器迁移
+
+-**编辑器替换**: 解密记录页面的富文本编辑器替换为 `@uiw/react-md-editor` + `markdown-it`，支持实时预览、工具栏（加粗/斜体/标题/代码块/引用/列表/链接/图片上传）
+-**双层 XSS 防御**: `markdown-it` 关闭 HTML 标签解析（第一层）+ 前端 `DOMPurify` 消毒渲染结果（第二层）
+-**图片上传**: 工具栏按钮 + 粘贴 + 拖拽三种方式，复用现有 `/api/images/upload` 端点
+-**后端适配**: 移除 `records.ts` 中服务端 HTML 消毒（Markdown 内容无需预处理），`imageCleanup.ts` 正则同步匹配 Markdown `![](url)` 格式
+-**桌面端优化**: 编辑弹窗 75vw 宽度 + 编辑器 60vh 高度，移动端显示提示横幅引导使用电脑访问
+-**Bug 修复**: 清理 `app/src/RecordDetail.tsx` 死代码（缺失 sanitizeHtml 安全调用）+ 移除 `MarkdownEditor` 无用 ref
+
+**注意**: 仅 `/records` 页面迁移至 Markdown，Wiki/留言板/评论区等其他模块保持不变。
+
 ### 2026-07-02 — 剧情编辑器与播放器模块
 
 **剧情播放器：**

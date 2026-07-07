@@ -10,7 +10,8 @@ import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger,
 } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { RichTextEditor, htmlToSummary } from '@/components/RichTextEditor';
+import MarkdownEditor from '@/components/MarkdownEditor';
+import { markdownToSummary } from '@/lib/markdown';
 import { RecordCardSkeleton } from '@/components/Skeleton';
 import { apiGet, apiPost, apiDelete, apiUpload } from '@/api/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -90,7 +91,7 @@ export default function DecryptRecords() {
       const created = await apiPost<DecryptRecord>('/records', {
         title: newRecord.title.trim(),
         content: newContent,
-        summary: newRecord.summary.trim() || htmlToSummary(newContent, 120),
+        summary: newRecord.summary.trim() || markdownToSummary(newContent, 120),
         tags: newRecord.tags.split(',').map(t => t.trim()).filter(Boolean),
         importance: newRecord.importance,
         date: new Date().toISOString().split('T')[0],
@@ -127,7 +128,8 @@ export default function DecryptRecords() {
           </div>
           <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
             <DialogTrigger asChild><Button className="bg-primary hover:bg-primary/90 text-primary-foreground"><Plus className="h-4 w-4 mr-2" />新建记录</Button></DialogTrigger>
-            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="!w-[75vw] !max-w-[75vw] max-h-[92vh] overflow-y-auto">
+              <div className="md:hidden mb-2 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg text-sm text-amber-400 flex items-start gap-2"><AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" /><span>本页面为桌面端设计，请使用电脑访问以获得最佳编辑体验。</span></div>
               <DialogHeader><DialogTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-primary" />新建解密记录</DialogTitle><DialogDescription>创建后将自动跳转至独立记录页面</DialogDescription></DialogHeader>
               <div className="space-y-4 mt-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -135,7 +137,7 @@ export default function DecryptRecords() {
                   <div className="space-y-2"><Label>重要程度</Label><Select value={newRecord.importance} onValueChange={(v: DecryptRecord['importance']) => setNewRecord(p => ({ ...p, importance: v }))}><SelectTrigger className="bg-secondary/30 border-border/50"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="normal">普通</SelectItem><SelectItem value="important">重要</SelectItem><SelectItem value="critical">关键</SelectItem></SelectContent></Select></div>
                 </div>
                 <div className="space-y-2"><Label>摘要</Label><Input value={newRecord.summary} onChange={e => setNewRecord(p => ({ ...p, summary: e.target.value }))} className="bg-secondary/30 border-border/50" /></div>
-                <div className="space-y-2"><Label>正文（富文本）</Label><RichTextEditor value={newContent} onChange={setNewContent} placeholder="开始编写解密记录正文..." minHeight="250px" /></div>
+                <div className="space-y-2"><Label>正文（Markdown）</Label><MarkdownEditor value={newContent} onChange={setNewContent} placeholder="支持 Markdown 语法：**加粗**、# 标题、```代码块```、![图片](url) 等" minHeight="60vh" /></div>
                 <div className="space-y-2"><Label>附件</Label><Input type="file" multiple onChange={handleFileChange} className="bg-secondary/30 border-border/50 text-sm" /></div>
                 <div className="space-y-2"><Label>标签（逗号分隔）</Label><Input value={newRecord.tags} onChange={e => setNewRecord(p => ({ ...p, tags: e.target.value }))} className="bg-secondary/30 border-border/50" /></div>
                 <Button onClick={handleCreate} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">提交并查看</Button>
