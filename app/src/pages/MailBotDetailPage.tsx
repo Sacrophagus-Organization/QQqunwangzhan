@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
   ArrowLeft, Bot, ChevronDown, ChevronUp, Clock, GripHorizontal, Search,
-  Loader2, Pencil, Plus, RefreshCw, Save, Trash2, X,
+  Loader2, Pencil, Plus, Save, Trash2, X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -159,7 +159,7 @@ export default function MailBotDetailPage() {
       if (draggingNode) {
         setPositions(function(prev) {
           var np = { ...prev };
-          np[draggingNode] = { x: e.clientX - dragOffset.current.x, y: e.clientY - dragOffset.current.y };
+          np[draggingNode!] = { x: e.clientX - dragOffset.current.x, y: e.clientY - dragOffset.current.y };
           return np;
         });
       }
@@ -337,8 +337,8 @@ export default function MailBotDetailPage() {
                 <div className="rounded-md border border-border/50 p-3">
                   <p className="text-xs text-muted-foreground mb-2">前提规则（点击 × 移除）：</p>
                   <div className="flex flex-wrap gap-1">
-                    {editingRule.prerequisiteIds.map(function(preId){var pre=rules.find(function(r){return r.id===preId;});
-                      return <Badge key={preId} variant="secondary" className="text-xs cursor-pointer" onClick={function(){removePrerequisite(editingRule.id,preId);}}>{pre?.title || pre?.triggerKeyword || preId} <X className="h-3 w-3 ml-1" /></Badge>;
+                    {editingRule?.prerequisiteIds.map(function(preId){var pre=rules.find(function(r){return r.id===preId;});
+                      return <Badge key={preId} variant="secondary" className="text-xs cursor-pointer" onClick={function(){removePrerequisite(editingRule!.id,preId);}}>{pre?.title || pre?.triggerKeyword || preId} <X className="h-3 w-3 ml-1" /></Badge>;
                     })}
                   </div>
                 </div>

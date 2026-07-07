@@ -392,7 +392,16 @@ export default function WebMailPage() {
                       <p className="text-sm text-muted-foreground">收件人：{addressList(selected.to)}</p>
                     </div>
                     {selected.folder === 'drafts' && (
-                      <Button variant="ghost" size="sm" onClick={sendDraft} className="text-green-400 hover:text-green-300">
+                      <Button variant="ghost" size="sm" onClick={() => {
+                        setCompose({
+                          to: selected.to.map((a: any) => a.address).join(','),
+                          cc: selected.cc.map((a: any) => a.address).join(','),
+                          bcc: selected.bcc.map((a: any) => a.address).join(','),
+                          subject: selected.subject,
+                          bodyHtml: selected.bodyHtml,
+                        });
+                        setTimeout(() => submitCompose(false), 100);
+                      }} className="text-green-400 hover:text-green-300">
                         <Send className="h-4 w-4 mr-1" />发送
                       </Button>
                     )}

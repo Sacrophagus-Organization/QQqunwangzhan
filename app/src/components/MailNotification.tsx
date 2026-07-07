@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { Mail, X } from 'lucide-react';
 
 interface MailNotif {

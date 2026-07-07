@@ -196,6 +196,22 @@ export interface PageAccessConfig {
   updated_at: string;
 }
 
+// ═══ 邮箱管理/Bot 模块 ═══
+export interface MailAdminAccount { id: string; address: string; displayName: string; username?: string; userRole?: string; status: string; userId: string; createdAt: string; }
+export interface MailAdminLog { id: string; action: string; detail: string; adminName?: string; createdAt: string; }
+export interface MailAdminMessage { id: string; subject: string; from: { address: string; name?: string }; to: { address: string; name?: string }[]; isRead?: number; receivedAt: string; createdAt: string; }
+export interface MailAdminStats { totalAccounts: number; activeAccounts: number; pendingAccounts?: number; totalMessages: number; todayReceived?: number; bots?: number; botCount?: number; }
+
+export interface MailBot {
+  id: string;
+  username: string;
+  displayName?: string;
+  address: string;
+  note?: string;
+  status: 'active' | 'stopped';
+  createdAt: string;
+}
+
 // ═══════════════════════════════════════
 //  剧情模块类型定义
 // ═══════════════════════════════════════

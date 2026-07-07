@@ -1,7 +1,6 @@
 import { Component, useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Bot,
   CheckCircle2,
   Loader2,
   Mail,
@@ -11,7 +10,6 @@ import {
   Send,
   Shield,
   Trash2,
-  Users,
   XCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -271,7 +269,7 @@ function MessagesPanel() {
   const forceDelete = async (id: string) => {
     if (!confirm('确定删除该邮件？')) return;
     await apiDelete(`/mail/admin/messages/${id}`);
-    fetchMessages().catch(console.error);
+    fetchMessages('', '', '', 1).catch(console.error);
   };
 
   const addressStr = (list?: { address: string; name?: string }[]) => !list ? '' : list.map(i => i.name ? i.name + ' <' + i.address + '>' : i.address).join(', ');
