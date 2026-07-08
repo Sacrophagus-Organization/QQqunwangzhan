@@ -45,6 +45,18 @@ export default function RecordDetail() {
   };
   useEffect(() => { load(); }, [id]);
 
+  // 修复 Radix Dialog 关闭后 body 的 overflow: hidden 残留导致页面无法滚动
+  useEffect(() => {
+    if (!showEdit) {
+      const t = setTimeout(() => {
+        document.body.style.overflow = '';
+        document.body.style.pointerEvents = '';
+        document.body.style.paddingRight = '';
+      }, 150);
+      return () => clearTimeout(t);
+    }
+  }, [showEdit]);
+
   const canEdit = user && record && (user.id === record.authorId || user.role === 'admin' || user.role === 'editor');
 
   const openEdit = () => {

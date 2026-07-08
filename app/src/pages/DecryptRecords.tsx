@@ -51,6 +51,18 @@ export default function DecryptRecords() {
 
   useEffect(() => { fetchRecords(); }, [fetchRecords]);
 
+  // 修复 Radix Dialog 关闭后 body 的 overflow: hidden 残留导致页面无法滚动
+  useEffect(() => {
+    if (!showCreateDialog) {
+      const t = setTimeout(() => {
+        document.body.style.overflow = '';
+        document.body.style.pointerEvents = '';
+        document.body.style.paddingRight = '';
+      }, 150);
+      return () => clearTimeout(t);
+    }
+  }, [showCreateDialog]);
+
   const filtered = records
     .filter(r => {
       if (!r) return false;

@@ -1844,12 +1844,22 @@
   background: hsl(230 25% 4%);
 }
 
+/* 语法高亮蒙层：必须穿透鼠标事件，让光标落到 textarea */
+[data-color-mode="dark"] .w-md-editor-text-pre {
+  pointer-events: none !important;
+}
+
 [data-color-mode="dark"] .w-md-editor-text-pre > code,
 [data-color-mode="dark"] .w-md-editor-text-input {
   color: hsl(215 30% 80%);
   font-family: 'JetBrains Mono', 'Fira Code', monospace;
   font-size: 0.9em;
   line-height: 1.7;
+}
+
+/* textarea 光标颜色 — 与主题一致 */
+[data-color-mode="dark"] .w-md-editor-text-input {
+  caret-color: hsl(190 100% 48%);
 }
 
 [data-color-mode="dark"] .wmde-markdown {
