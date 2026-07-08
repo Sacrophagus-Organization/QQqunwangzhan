@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -51,17 +51,35 @@ export default function DecryptRecords() {
 
   useEffect(() => { fetchRecords(); }, [fetchRecords]);
 
-  // 修复 Radix Dialog 关闭后 body 的 overflow: hidden 残留导致页面无法滚动
+  /* ─── 修复 Radix Dialog 的 body 样式残留 ───
+   * 问题 A：Dialog 关闭后 Radix 有时不清理 body { overflow:hidden; pointer-events:none }
+   *        导致 /records 页面滚轮失效。
+   * 问题 B：在 Dialog 打开时强制刷新页面，body 样式在卸载前来不及清理，
+   *        新页面加载后残留样式导致白屏/无法交互。
+   * 方案：① 组件挂载时无条件清理残留  ② Dialog 关闭后双 rAF 等待动画完成再清理
+   */
+  const cleanupBody = useCallback(() => {
+    document.body.style.removeProperty('overflow');
+    document.body.style.removeProperty('pointer-events');
+    document.body.style.removeProperty('padding-right');
+  }, []);
+
+  // 挂载时清理任何残留（解决刷新白屏）
+  useEffect(() => { cleanupBody(); }, [cleanupBody]);
+
+  // Dialog 关闭时延迟清理（等待 Radix 关闭动画 300ms）
+  const prevDialogOpen = useRef(false);
   useEffect(() => {
-    if (!showCreateDialog) {
-      const t = setTimeout(() => {
-        document.body.style.overflow = '';
-        document.body.style.pointerEvents = '';
-        document.body.style.paddingRight = '';
-      }, 150);
-      return () => clearTimeout(t);
+    if (prevDialogOpen.current && !showCreateDialog) {
+      // Dialog 从开→关
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          cleanupBody();
+        });
+      });
     }
-  }, [showCreateDialog]);
+    prevDialogOpen.current = showCreateDialog;
+  }, [showCreateDialog, cleanupBody]);
 
   const filtered = records
     .filter(r => {

@@ -1844,22 +1844,59 @@
   background: hsl(230 25% 4%);
 }
 
-/* 语法高亮蒙层：必须穿透鼠标事件，让光标落到 textarea */
+/*
+ * ─── 编辑器 pre/code 蒙层 与 textarea 像素级对齐 ───
+ * @uiw/react-md-editor 在编辑区使用 position:absolute 的 <pre><code>
+ * 叠加在 <textarea> 上实现语法高亮。两层必须拥有完全相同的文本渲染属性
+ * 才能精确对齐——font/line-height/white-space/word-wrap/tab-size 一个不能少。
+ */
 [data-color-mode="dark"] .w-md-editor-text-pre {
   pointer-events: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  white-space: pre-wrap !important;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+  overflow: hidden !important;
 }
 
-[data-color-mode="dark"] .w-md-editor-text-pre > code,
-[data-color-mode="dark"] .w-md-editor-text-input {
-  color: hsl(215 30% 80%);
-  font-family: 'JetBrains Mono', 'Fira Code', monospace;
-  font-size: 0.9em;
-  line-height: 1.7;
+[data-color-mode="dark"] .w-md-editor-text-pre > code {
+  display: block !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace !important;
+  font-size: 14px !important;
+  font-weight: 400 !important;
+  line-height: 1.7 !important;
+  letter-spacing: normal !important;
+  word-spacing: normal !important;
+  white-space: pre-wrap !important;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+  tab-size: 2 !important;
+  -moz-tab-size: 2 !important;
 }
 
-/* textarea 光标颜色 — 与主题一致 */
 [data-color-mode="dark"] .w-md-editor-text-input {
-  caret-color: hsl(190 100% 48%);
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace !important;
+  font-size: 14px !important;
+  font-weight: 400 !important;
+  line-height: 1.7 !important;
+  letter-spacing: normal !important;
+  word-spacing: normal !important;
+  white-space: pre-wrap !important;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+  tab-size: 2 !important;
+  -moz-tab-size: 2 !important;
+  caret-color: hsl(190 100% 48%) !important;
+  color: hsl(215 30% 80%) !important;
+  resize: none;
 }
 
 [data-color-mode="dark"] .wmde-markdown {
