@@ -9,7 +9,7 @@
 ## 功能
 
 - **JWT 认证 + 注册审核** — 新用户注册后需管理员审核通过
-- **解密记录** — 富文本编辑，马赛克/图片/链接/GIF插入，附件上传，含 PV4 全阶段解密归档
+- **解密记录** — Markdown 编辑（编辑/预览切换），图片上传（粘贴/拖放/按钮），附件上传，含 PV4 全阶段解密归档
 - **自制谜题** — 创建/发布谜题，提交答案自动判定，威胁等级+印章状态展示
 - **解密Wiki** — 密码学知识库，分类浏览，词条折叠展开
 - **留言板 + 评论区** — 富文本编辑，点赞，嵌套回复，评论折叠
@@ -109,7 +109,7 @@ bash verify.sh
 │   ├── public/
 │   │   └── assets/audio/  # BGM 音频文件
 │   └── src/
-│       ├── components/    # 组件（Navbar, RichTextEditor, shadcn/ui 等）
+│       ├── components/    # 组件（Navbar, MarkdownEditor, shadcn/ui 等）
 │       │   ├── AvatarDisplay.tsx      # 通用头像组件
 │       │   ├── AvatarUpload.tsx       # 头像上传+拖动缩放裁剪
 │       │   ├── BackgroundMusic.tsx    # 全局 BGM 管理
@@ -154,16 +154,21 @@ bash verify.sh
 
 ## 更新日志
 
-### 2026-07-07 — 解密记录 Markdown 编辑器迁移
+### 2026-07-08 — Markdown 编辑器重做 + 白屏修复
 
--**编辑器替换**: 解密记录页面的富文本编辑器替换为 `@uiw/react-md-editor` + `markdown-it`，支持实时预览、工具栏（加粗/斜体/标题/代码块/引用/列表/链接/图片上传）
--**双层 XSS 防御**: `markdown-it` 关闭 HTML 标签解析（第一层）+ 前端 `DOMPurify` 消毒渲染结果（第二层）
--**图片上传**: 工具栏按钮 + 粘贴 + 拖拽三种方式，复用现有 `/api/images/upload` 端点
--**后端适配**: 移除 `records.ts` 中服务端 HTML 消毒（Markdown 内容无需预处理），`imageCleanup.ts` 正则同步匹配 Markdown `![](url)` 格式
--**桌面端优化**: 编辑弹窗 75vw 宽度 + 编辑器 60vh 高度，移动端显示提示横幅引导使用电脑访问
--**Bug 修复**: 清理 `app/src/RecordDetail.tsx` 死代码（缺失 sanitizeHtml 安全调用）+ 移除 `MarkdownEditor` 无用 ref
+-**编辑器重做**: 彻底移除 `@uiw/react-md-editor`（其 pre/code overlay 方案导致文字错位、光标选不中字）。改为纯 `<textarea>` + 编辑/预览 Tab 切换方案，所见即所得，零对齐问题。
+-**编辑器功能**: 工具栏（加粗/斜体/标题/引用/代码/无序列表/有序列表/分隔线/插入图片）+ 粘贴/拖放图片上传 + 预览模式 markdown-it 渲染
+-**嵌套路由白屏修复**: `vite.config.ts` 中 `base: './'` 导致 SPA 嵌套路由（如 `/records/rec-xxx`）下资源路径解析错误，JS 文件被当作 HTML 返回 → SyntaxError → 白屏。改为 `base: '/'` 绝对路径。
+-**Dialog body 污染修复**: 两个编辑弹窗 `<Dialog modal={false}>` 切断 Radix 对 `body{overflow:hidden}` 的操控，手动 backdrop 遮罩。根除弹窗关闭后页面无法滚动 + 弹窗内刷新白屏两个陈年问题。
+-**清理**: 移除 `@uiw/react-md-editor` 依赖及所有关联 CSS 覆盖代码，`package.json` 减重。
 
-**注意**: 仅 `/records` 页面迁移至 Markdown，Wiki/留言板/评论区等其他模块保持不变。
+### 2026-07-07 — 解密记录 Markdown 编辑器初次迁移
+
+-**编辑器替换**: 解密记录页面的富文本编辑器迁移至 Markdown（`markdown-it` + `DOMPuriy` 双层 XSS 防御）
+-**图片上传**: 工具栏 + 粘贴 + 拖拽三种方式，复用 `/api/images/upload`
+-**后端适配**: 移除 `records.ts` 中服务端 HTML 消毒，`imageCleanup.ts` 正则同步 Markdown `![](url)` 格式
+-**桌面端优化**: 编辑弹窗 75vw + 编辑器 60vh，移动端提示横幅
+-**Bug 修复**: 清理 `app/src/RecordDetail.tsx` 死代码 + 移除无用 ref
 
 ### 2026-07-02 — 剧情编辑器与播放器模块
 
