@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -44,36 +44,6 @@ export default function RecordDetail() {
     finally { setLoading(false); }
   };
   useEffect(() => { load(); }, [id]);
-
-  /* ─── 修复 Radix Dialog 的 body 样式残留 ───
-   * 问题 A：Dialog 关闭后 Radix 有时不清理 body { overflow:hidden; pointer-events:none }
-   *        导致页面滚轮失效。
-   * 问题 B：在 Dialog 打开时强制刷新页面，body 样式在卸载前来不及清理，
-   *        新页面加载后残留样式导致白屏/无法交互。
-   * 方案：① 组件挂载时无条件清理残留  ② Dialog 关闭后双 rAF 等待动画完成再清理
-   */
-  const cleanupBody = useCallback(() => {
-    document.body.style.removeProperty('overflow');
-    document.body.style.removeProperty('pointer-events');
-    document.body.style.removeProperty('padding-right');
-  }, []);
-
-  // 挂载时清理任何残留（解决刷新白屏）
-  useEffect(() => { cleanupBody(); }, [cleanupBody]);
-
-  // Dialog 关闭时延迟清理（等待 Radix 关闭动画 300ms）
-  const prevDialogOpen = useRef(false);
-  useEffect(() => {
-    if (prevDialogOpen.current && !showEdit) {
-      // Dialog 从开→关
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          cleanupBody();
-        });
-      });
-    }
-    prevDialogOpen.current = showEdit;
-  }, [showEdit, cleanupBody]);
 
   const canEdit = user && record && (user.id === record.authorId || user.role === 'admin' || user.role === 'editor');
 
@@ -126,7 +96,9 @@ export default function RecordDetail() {
         <div className="flex items-center justify-between anim-fade-up" style={{ animationDelay: '0.4s' } as any}><Button variant="ghost" onClick={() => navigate('/records')} className="text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4 mr-2" />返回列表</Button><p className="text-xs text-muted-foreground mono-text">ID: {record.id}</p></div>
       </div>
 
-      <Dialog open={showEdit} onOpenChange={setShowEdit}>
+      <Dialog open={showEdit} onOpenChange={setShowEdit} modal={false}>
+        {/* 手动遮罩：modal={false} 切断 Radix 对 body 的操控 */}
+        {showEdit && <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm" onClick={() => setShowEdit(false)} />}
         <DialogContent className="!w-[75vw] !max-w-[75vw] max-h-[92vh] overflow-y-auto">
           <div className="md:hidden mb-2 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg text-sm text-amber-400 flex items-start gap-2"><AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" /><span>本页面为桌面端设计，请使用电脑访问以获得最佳编辑体验。</span></div>
           <DialogHeader><DialogTitle className="flex items-center gap-2 font-heading tracking-wide"><Edit3 className="h-5 w-5 text-primary" />编辑解密记录</DialogTitle></DialogHeader>

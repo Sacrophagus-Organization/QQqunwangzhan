@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -50,36 +50,6 @@ export default function DecryptRecords() {
   }, []);
 
   useEffect(() => { fetchRecords(); }, [fetchRecords]);
-
-  /* ─── 修复 Radix Dialog 的 body 样式残留 ───
-   * 问题 A：Dialog 关闭后 Radix 有时不清理 body { overflow:hidden; pointer-events:none }
-   *        导致 /records 页面滚轮失效。
-   * 问题 B：在 Dialog 打开时强制刷新页面，body 样式在卸载前来不及清理，
-   *        新页面加载后残留样式导致白屏/无法交互。
-   * 方案：① 组件挂载时无条件清理残留  ② Dialog 关闭后双 rAF 等待动画完成再清理
-   */
-  const cleanupBody = useCallback(() => {
-    document.body.style.removeProperty('overflow');
-    document.body.style.removeProperty('pointer-events');
-    document.body.style.removeProperty('padding-right');
-  }, []);
-
-  // 挂载时清理任何残留（解决刷新白屏）
-  useEffect(() => { cleanupBody(); }, [cleanupBody]);
-
-  // Dialog 关闭时延迟清理（等待 Radix 关闭动画 300ms）
-  const prevDialogOpen = useRef(false);
-  useEffect(() => {
-    if (prevDialogOpen.current && !showCreateDialog) {
-      // Dialog 从开→关
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          cleanupBody();
-        });
-      });
-    }
-    prevDialogOpen.current = showCreateDialog;
-  }, [showCreateDialog, cleanupBody]);
 
   const filtered = records
     .filter(r => {
@@ -156,8 +126,10 @@ export default function DecryptRecords() {
             <h1 className="text-2xl sm:text-3xl font-display text-gradient-flow flex items-center gap-2"><FileText className="h-6 w-6 text-primary animate-breathe-glow" />解密记录</h1>
             <p className="text-sm text-muted-foreground/90 mt-1 mono-text">&gt; 共 {records.length} 条记录</p>
           </div>
-          <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+          <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog} modal={false}>
             <DialogTrigger asChild><Button className="bg-primary hover:bg-primary/90 text-primary-foreground"><Plus className="h-4 w-4 mr-2" />新建记录</Button></DialogTrigger>
+            {/* 手动遮罩：modal={false} 切断 Radix 对 body 的操控，由我们自己画 backdrop */}
+            {showCreateDialog && <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm" onClick={() => setShowCreateDialog(false)} />}
             <DialogContent className="!w-[75vw] !max-w-[75vw] max-h-[92vh] overflow-y-auto">
               <div className="md:hidden mb-2 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg text-sm text-amber-400 flex items-start gap-2"><AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" /><span>本页面为桌面端设计，请使用电脑访问以获得最佳编辑体验。</span></div>
               <DialogHeader><DialogTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-primary" />新建解密记录</DialogTitle><DialogDescription>创建后将自动跳转至独立记录页面</DialogDescription></DialogHeader>
