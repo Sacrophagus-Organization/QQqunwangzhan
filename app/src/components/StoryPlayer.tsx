@@ -126,6 +126,21 @@ export default function StoryPlayer({ storyId, onComplete, allowSkip = true }: S
     preload.src = url;
   }, [bgImages.front]);
 
+  // 立绘常驻：加载后立即把左/右固定角色立绘显示在对应侧（不随台词消失）
+  useEffect(() => {
+    if (!playData) return;
+    const leftLine = playData.lines.find(l => l.speaker === 'left' && l.characterName);
+    const rightLine = playData.lines.find(l => l.speaker === 'right' && l.characterName);
+    if (leftLine?.characterName) {
+      const c = playData.characters.find(ch => ch.name === leftLine.characterName);
+      if (c?.defaultSprite) switchSprite('left', c.defaultSprite);
+    }
+    if (rightLine?.characterName) {
+      const c = playData.characters.find(ch => ch.name === rightLine.characterName);
+      if (c?.defaultSprite) switchSprite('right', c.defaultSprite);
+    }
+  }, [playData]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // React to line changes — update sprites and background
   useEffect(() => {
     if (!currentLine || !playData) return;
@@ -133,6 +148,7 @@ export default function StoryPlayer({ storyId, onComplete, allowSkip = true }: S
     const lineData = currentLine;
 
     // Derive sprite from character data instead of line.leftImage/line.rightImage
+    // 'mystery' 角色（如 ? ? ?）不触发任何立绘切换
     if (lineData.speaker === 'left' && lineData.characterName) {
       const char = playData.characters.find(c => c.name === lineData.characterName);
       if (char?.defaultSprite) switchSprite('left', char.defaultSprite);
@@ -267,13 +283,17 @@ export default function StoryPlayer({ storyId, onComplete, allowSkip = true }: S
         )}
       </div>
 
-      {/* ── 左侧立绘 ── */}
+      {/* ── 左侧立绘（干员A 固定左侧） ── */}
       <div
-        className={`absolute bottom-0 left-[2vw] z-[2] pointer-events-none max-sm:left-[1vw] max-sm:w-[65vw] max-sm:h-[85vh]`}
+        className={`absolute bottom-0 left-[1vw] z-[2] pointer-events-none max-sm:left-0 max-sm:w-[70vw] max-sm:h-[85vh]`}
         style={{
-          width: '55vw',
-          maxWidth: '700px',
-          height: '95vh',
+          width: '46vw',
+          maxWidth: '560px',
+          height: '90vh',
+          // 说话时略微放大、未说话时置灰（'? ? ?'/旁白时 leftSpeaking=false 也置灰）
+          transform: state.leftSpeaking ? 'scale(1.06)' : 'scale(1)',
+          transformOrigin: 'bottom center',
+          filter: state.leftSpeaking ? 'none' : 'grayscale(0.9) brightness(0.72)',
           transition: 'opacity 0.5s cubic-bezier(0.4,0,0.2,1), filter 0.5s cubic-bezier(0.4,0,0.2,1), transform 0.5s cubic-bezier(0.4,0,0.2,1)',
         }}
       >
@@ -292,15 +312,18 @@ export default function StoryPlayer({ storyId, onComplete, allowSkip = true }: S
         ))}
       </div>
 
-      {/* ── 右侧立绘 ── */}
+      {/* ── 右侧立绘（干员B 固定右侧） ── */}
       <div
-        className={`absolute bottom-0 right-[2vw] z-[2] pointer-events-none max-sm:right-[1vw] max-sm:w-[65vw] max-sm:h-[85vh]`}
+        className={`absolute bottom-0 right-[1vw] z-[2] pointer-events-none max-sm:right-0 max-sm:w-[70vw] max-sm:h-[85vh]`}
         style={{
-          width: '55vw',
-          maxWidth: '700px',
-          height: '95vh',
+          width: '46vw',
+          maxWidth: '560px',
+          height: '90vh',
+          // 说话时略微放大、未说话时置灰（'? ? ?'/旁白时 rightSpeaking=false 也置灰）
+          transform: state.rightSpeaking ? 'scale(1.06)' : 'scale(1)',
+          transformOrigin: 'bottom center',
+          filter: state.rightSpeaking ? 'none' : 'grayscale(0.9) brightness(0.72)',
           transition: 'opacity 0.5s cubic-bezier(0.4,0,0.2,1), filter 0.5s cubic-bezier(0.4,0,0.2,1), transform 0.5s cubic-bezier(0.4,0,0.2,1)',
-          transform: 'scaleX(-1)',
         }}
       >
         {(['front', 'back'] as const).map(layer => (
@@ -383,13 +406,6 @@ export default function StoryPlayer({ storyId, onComplete, allowSkip = true }: S
           {currentLine && !isNarrator && (
             <p className="text-[#e8e4dd] text-[1.15rem] leading-[1.8] tracking-[0.03em] min-h-[3.6em] whitespace-pre-wrap break-words pr-10 max-sm:text-[1rem] max-sm:leading-[1.6] max-sm:pr-[30px]">
               {currentLine.text.slice(0, state.displayedChars)}
-            </p>
-          )}
-
-          {/* 初始提示 */}
-          {state.phase === 'idle' && (
-            <p className="text-[#e8e4dd] text-[1.15rem] leading-[1.8] tracking-[0.03em] min-h-[3.6em]">
-              点击屏幕开始...
             </p>
           )}
         </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Volume2, VolumeX } from 'lucide-react';
 
 /* ═══════════════════════════════════════
@@ -39,6 +39,60 @@ const DIALOGS: CrashDialog[] = [
   { id: 15, title: 'WINHTTP.DLL — SSL/TLS Fatal', text: 'SEC_E_INTERNAL_ERROR\n\nEncryption handshake failed.\nAll cipher suites rejected.', appearAt: 9260, top: 68, left: 68 },
   { id: 16, title: 'VCRUNTIME140.DLL — Pure Virtual Call', text: 'R6025 — pure virtual function call.\n\nAbstract destructor invoked.\nProgram terminated.', appearAt: 9300, top: 76, left: 76 },
 ];
+
+/* ═══════════════════════════════════════
+   Button Jam — 提交按钮随机乱码序列（TestPage 与节点一崩溃按钮共用）
+   ═══════════════════════════════════════ */
+
+export const JAM_SEQUENCE = [
+  '提交答案',
+  '提?答案',
+  '??#??',
+  'SYN_ERR',
+  'SYS.BREAK',
+];
+
+export const JAM_INTERVALS = [120, 100, 80, 60];
+
+/* ═══════════════════════════════════════
+   Zalgo 腐蚀 — 真正的 Unicode 组合标记堆叠
+   使用经典 Zalgo 字符集（U+0300–U+036F 常用组合音标），
+   仅生成一次并缓存（useMemo），避免每帧重算。
+   这些组合字符在主流系统字体（Segoe UI / 微软雅黑 / 宋体等）中均有覆盖；
+   不使用双组合符等冷门字符，避免系统字体缺字时显示为白框。
+   ═══════════════════════════════════════ */
+
+// 组合标记：字母上方（U+0300–U+0314）
+const ZALGO_UP = [
+  0x0300, 0x0301, 0x0302, 0x0303, 0x0304, 0x0305, 0x0306, 0x0307,
+  0x0308, 0x0309, 0x030A, 0x030B, 0x030C, 0x030D, 0x030E, 0x030F,
+  0x0310, 0x0311, 0x0312, 0x0313, 0x0314,
+];
+// 组合标记：字母下方（U+0316–U+0328）
+const ZALGO_DOWN = [
+  0x0316, 0x0317, 0x0318, 0x0319, 0x031A, 0x031B, 0x031C, 0x031D,
+  0x031E, 0x031F, 0x0320, 0x0321, 0x0322, 0x0323, 0x0324, 0x0325,
+  0x0326, 0x0327, 0x0328,
+];
+// 组合标记：覆盖字母本身（U+0334–U+0338）
+const ZALGO_MID = [0x0334, 0x0335, 0x0336, 0x0337, 0x0338];
+
+const randOf = (list: number[]): number => list[Math.floor(Math.random() * list.length)];
+
+function zalgoText(text: string, strength: { up?: number; down?: number; mid?: number } = {}): string {
+  const { up = 4, down = 4, mid = 1 } = strength;
+  let out = '';
+  for (const ch of text) {
+    const code = ch.charCodeAt(0);
+    // 空格与已存在的组合标记直接透传，避免重复堆叠
+    if (/\s/.test(ch) || (code >= 0x0300 && code <= 0x036f)) { out += ch; continue; }
+    out += ch;
+    for (let i = 0; i < up; i++) out += String.fromCharCode(randOf(ZALGO_UP));
+    for (let i = 0; i < down; i++) out += String.fromCharCode(randOf(ZALGO_DOWN));
+    for (let i = 0; i < mid; i++) out += String.fromCharCode(randOf(ZALGO_MID));
+  }
+  return out;
+}
 
 const CODE_LINES: string[] = [
   'at 0x7FFA3C001 memory violation (read access)',
@@ -280,6 +334,8 @@ export default function SystemCrashOverlay({ trigger, onComplete }: SystemCrashO
   const [muted, setMuted] = useState(false);
   const [screenRage, setScreenRage] = useState(false);
   const [crtOff, setCrtOff] = useState(false);
+  // Zalgo 文本仅在首次渲染时生成一次并缓存，整段动画期间保持不变
+  const zalgoLoop = useMemo(() => zalgoText('Secrets hidden in the dark', { up: 5, down: 5, mid: 2 }), []);
 
   const soundRef = useRef<CrashSoundEngine | null>(null);
   const dataNoiseRef = useRef<{ osc: OscillatorNode; lfo: OscillatorNode; gain: GainNode; hpf: BiquadFilterNode } | null>(null);
@@ -361,7 +417,11 @@ export default function SystemCrashOverlay({ trigger, onComplete }: SystemCrashO
     addTimer(() => setCodeSpeed(0.4), 12000);
 
     // ═══ PHASE 4: Finale — moved earlier (10.5s) ═══
-    addTimer(() => { setPhase('finale'); setShowFinale(true); setFinalePhase('appear'); }, 10500);
+    addTimer(() => {
+      setPhase('finale');
+      setShowFinale(true);
+      setFinalePhase('appear');
+    }, 10500);
     addTimer(() => setFinalePhase('flash'), 12000);
 
     // ═══ CRT Power-Off sequence (15.5s, shortened alarm by 1.5s) ═══
@@ -429,9 +489,12 @@ export default function SystemCrashOverlay({ trigger, onComplete }: SystemCrashO
           </div>
         )}
         {showFinale && (
-          <div className="crash-finale-text">
-            <span className={finalePhase === 'appear' ? 'crash-finale-appear' : 'crash-finale-flash'} style={{ opacity: isCrtOff ? 0 : 1, transition: 'opacity 0.3s ease' }}>
-              LOOP IS ETERNAL
+          <div className="crash-finale-text crash-zalgo-active">
+            <span
+              className={`crash-finale-zalgo ${finalePhase === 'appear' ? 'crash-finale-appear' : 'crash-finale-flash'}`}
+              style={{ opacity: isCrtOff ? 0 : 1, transition: 'opacity 0.3s ease' }}
+            >
+              {zalgoLoop}
             </span>
           </div>
         )}

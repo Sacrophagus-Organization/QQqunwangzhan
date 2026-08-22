@@ -30,6 +30,15 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': 'http://localhost:3001',
+      // /loop 静态页由后端 Express 提供（论文网页），dev 下转发到后端端口
+      '/loop': {
+        target: 'http://localhost:3001',
+        // 立绘等素材放在 app/public/loop/sprites，由 Vite 直接提供（生产构建会复制进 dist，由 Express 托管）
+        bypass: (req: any) => {
+          if (req.url && req.url.startsWith('/loop/sprites/')) return req.url;
+          return undefined;
+        },
+      },
     },
   },
 });

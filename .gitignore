@@ -2,6 +2,7 @@ node_modules/
 dist/
 server/data/
 server/uploads/
+server/seed-assets/
 *.db
 .env
 .DS_Store
@@ -12,4 +13,10 @@ read_xlsx.py
 .codebuddy/
 PV4解密.xlsx
 提示词.txt
+__pycache__/
+*.pyc
+# 内部开发进度文档：含谜题明文密码与素材路径，禁止提交
+LOOP_PROGRESS.md
+# 临时调试脚本/产物
+tmp_*
 

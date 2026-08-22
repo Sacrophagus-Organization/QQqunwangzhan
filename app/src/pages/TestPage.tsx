@@ -1,21 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { AlertTriangle, Bug, Zap, Play } from 'lucide-react';
-import SystemCrashOverlay, { playButtonError } from '@/components/SystemCrashOverlay';
+import SystemCrashOverlay, { playButtonError, JAM_SEQUENCE, JAM_INTERVALS } from '@/components/SystemCrashOverlay';
 import StoryPlayer from '@/components/StoryPlayer';
-
-/* ═══════════════════════════════════════
-   Button Jam — 按钮文字随机乱码
-   ═══════════════════════════════════════ */
-
-const JAM_SEQUENCE = [
-  '提交答案',
-  '提?答案',
-  '??#??',
-  'SYN_ERR',
-  'SYS.BREAK',
-];
-
-const JAM_INTERVALS = [120, 100, 80, 60];
 
 export default function TestPage() {
   const [showOverlay, setShowOverlay] = useState(false);

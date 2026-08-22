@@ -1309,6 +1309,36 @@
   animation: crash-button-jitter 0.08s linear infinite;
 }
 
+/* ═══ 谜题封印按钮 — glitch 触发后提交按钮被封印（纯黑底 + 白色菱形） ═══ */
+.crash-sealed-btn {
+  cursor: not-allowed;
+  background: #000000;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+  font-family: var(--font-mono);
+  letter-spacing: 0.1em;
+  opacity: 0.92;
+  box-shadow: inset 0 0 16px rgba(255, 255, 255, 0.06);
+}
+.crash-sealed-btn:hover {
+  background: #000000;
+  color: #ffffff;
+}
+.crash-sealed-btn:disabled {
+  opacity: 0.92;
+}
+.crash-sealed-diamond {
+  display: inline-block;
+  font-size: 1.05em;
+  line-height: 1;
+  color: #ffffff;
+  animation: crash-sealed-pulse 1.6s ease-in-out infinite;
+}
+@keyframes crash-sealed-pulse {
+  0%, 100% { opacity: 0.55; filter: drop-shadow(0 0 0 rgba(255, 255, 255, 0)); }
+  50%      { opacity: 1; filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.75)); }
+}
+
 /* ═══ 屏幕烧毁残留 — glitch 废墟痕迹，大字从废墟中浮现 ═══ */
 .crash-glitch-aftermath {
   position: absolute;
@@ -1565,6 +1595,53 @@
   animation: crash-finale-appear 0.8s ease-out both;
 }
 
+/* ═══ Zalgo 腐蚀终幕（真·Unicode 组合标记堆叠） ═══
+   文本由 SystemCrashOverlay 用经典 Zalgo 字符集生成（U+0300–U+036F），
+   该字符集在主流系统字体中均有覆盖，避免缺字白框。
+   这里只负责展示：白色大字 + 红色腐蚀光晕；
+   行高与内边距留足空间，组合标记上下溢出不被裁切。 */
+.crash-finale-zalgo {
+  position: relative;
+  display: inline-block;
+  white-space: nowrap;
+  letter-spacing: 0.14em;
+  line-height: 1.5;
+  padding: 16px 28px;
+  /* 组合标记优先用系统 UI 字体渲染（覆盖最全），display 字体缺字形时自动回退 */
+  font-family: var(--font-display), "Segoe UI", "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+  color: #ffffff;
+  text-shadow:
+    0 0 10px rgba(255, 255, 255, 0.55),
+    0 0 28px rgba(220, 38, 38, 0.5),
+    0 0 64px rgba(139, 0, 255, 0.3);
+  will-change: transform;
+}
+
+/* finale 容器在 Zalgo 生效期间持续抖动（仅位移，不覆盖 appear/flash 动画） */
+.crash-zalgo-active {
+  animation: crash-finale-wobble 0.32s steps(2, jump-none) infinite;
+}
+
+@keyframes crash-finale-wobble {
+  0%, 100% { transform: translate(0, 0); }
+  20%      { transform: translate(-2px, 1px); }
+  40%      { transform: translate(2px, -1px); }
+  60%      { transform: translate(-1px, -2px); }
+  80%      { transform: translate(1px, 2px); }
+}
+
+/* Zalgo 文本在 flash 阶段的额外腐蚀脉冲 */
+.crash-finale-flash.crash-finale-zalgo {
+  animation:
+    crash-finale-flash 0.4s ease-in-out 3,
+    crash-zalgo-decay 0.5s steps(2, jump-none) infinite;
+}
+
+@keyframes crash-zalgo-decay {
+  0%, 100% { filter: none; }
+  50%      { filter: blur(1px) brightness(1.3) contrast(1.4); }
+}
+
 /* 终幕全黑 */
 .crash-finale-blackout {
   position: fixed;
@@ -1809,6 +1886,222 @@
 .markdown-content input[type="checkbox"] {
   accent-color: hsl(190 100% 48%);
   margin-right: 0.4em;
+}
+
+/* 节点6 线索板：密码错误抖动 */
+@keyframes loop-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-8px); }
+  40% { transform: translateX(8px); }
+  60% { transform: translateX(-5px); }
+  80% { transform: translateX(5px); }
+}
+.animate-loop-shake {
+  animation: loop-shake 0.45s ease;
+}
+
+/* ═══════════════════════════════════════════
+   节点6 线索板：木质现实感主题
+   ═══════════════════════════════════════════ */
+
+/* 木纹背景：横向木条接缝 + 纵向木纹 + 深浅木色拼接 */
+.loop-wood-bg {
+  background-color: #4a2f18;
+  background-image:
+    /* 木条横向接缝 */
+    repeating-linear-gradient(
+      90deg,
+      transparent 0px,
+      transparent 94px,
+      rgba(0, 0, 0, 0.22) 94px,
+      rgba(0, 0, 0, 0.22) 96px,
+      rgba(255, 255, 255, 0.07) 96px,
+      rgba(255, 255, 255, 0.07) 97px,
+      transparent 97px,
+      transparent 120px
+    ),
+    /* 纵向木纹纤维 */
+    repeating-linear-gradient(
+      0deg,
+      transparent 0px,
+      transparent 2px,
+      rgba(0, 0, 0, 0.06) 2px,
+      rgba(0, 0, 0, 0.06) 3px,
+      transparent 3px,
+      transparent 7px,
+      rgba(0, 0, 0, 0.045) 7px,
+      transparent 9px,
+      transparent 13px,
+      rgba(0, 0, 0, 0.035) 13px,
+      transparent 15px,
+      transparent 19px
+    ),
+    /* 横向年轮细纹 */
+    repeating-linear-gradient(
+      90deg,
+      transparent 0px,
+      transparent 18px,
+      rgba(0, 0, 0, 0.05) 18px,
+      rgba(0, 0, 0, 0.05) 19px,
+      transparent 19px,
+      transparent 46px,
+      rgba(0, 0, 0, 0.035) 46px,
+      rgba(0, 0, 0, 0.035) 47px,
+      transparent 47px,
+      transparent 90px
+    ),
+    /* 木色基座（不同木板深浅拼接） */
+    linear-gradient(100deg, #55361c 0%, #6b4525 18%, #57381e 38%, #7a4e2a 58%, #5e3d1f 78%, #6b4525 100%);
+}
+
+/* 角落暗角 — 增加木板纵深 */
+.loop-wood-vignette {
+  background: radial-gradient(ellipse at 50% 40%, transparent 55%, rgba(30, 14, 4, 0.5) 100%);
+}
+
+/* 高光扫过 — 木板上方一层若有若无的光 */
+.loop-wood-sheen {
+  background: linear-gradient(115deg, transparent 30%, rgba(255, 235, 200, 0.05) 45%, rgba(255, 235, 200, 0.08) 50%, transparent 65%);
+}
+
+/* 已解锁：泛黄牛皮纸卡片 */
+.loop-paper-card {
+  background:
+    radial-gradient(ellipse at 18% 8%, rgba(255, 255, 255, 0.55), transparent 55%),
+    radial-gradient(ellipse at 88% 92%, rgba(130, 85, 35, 0.16), transparent 52%),
+    linear-gradient(160deg, #f6ecd4 0%, #efe0ba 55%, #e6d3a6 100%);
+  box-shadow:
+    0 6px 14px rgba(50, 25, 5, 0.5),
+    0 2px 4px rgba(50, 25, 5, 0.32),
+    inset 0 0 24px rgba(130, 90, 40, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+
+/* 未解锁：深色硬纸板/牛皮卡 */
+.loop-locked-card {
+  background:
+    radial-gradient(ellipse at 20% 12%, rgba(255, 255, 255, 0.07), transparent 55%),
+    radial-gradient(ellipse at 85% 95%, rgba(0, 0, 0, 0.25), transparent 55%),
+    linear-gradient(160deg, #4c3722 0%, #3c2c1b 55%, #332417 100%);
+  box-shadow:
+    0 6px 14px rgba(30, 15, 5, 0.6),
+    0 2px 4px rgba(30, 15, 5, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+/* 真实图钉：金属钉帽 + 高光 + 阴影 */
+.loop-pushpin {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ffe9c0 0%, #e8a85c 48%, #b06a28 82%, #7a4318 100%);
+  box-shadow:
+    0 4px 6px rgba(0, 0, 0, 0.5),
+    0 1px 2px rgba(0, 0, 0, 0.4),
+    inset 0 -3px 4px rgba(0, 0, 0, 0.35),
+    inset 0 2px 3px rgba(255, 255, 255, 0.45);
+}
+/* 钉帽下的投影 */
+.loop-pushpin::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 7px;
+  border-radius: 2px;
+  background: radial-gradient(rgba(0, 0, 0, 0.5), transparent 70%);
+}
+
+/* 未解锁图钉：哑光铁钉 */
+.loop-pushpin-dim {
+  background: radial-gradient(circle at 35% 30%, #b9b2a2 0%, #8a8374 48%, #5c574c 82%, #3a372f 100%);
+  box-shadow:
+    0 4px 6px rgba(0, 0, 0, 0.5),
+    inset 0 -3px 4px rgba(0, 0, 0, 0.4),
+    inset 0 2px 3px rgba(255, 255, 255, 0.18);
+}
+
+/* 木刻招牌标题 — 雕刻感文字 */
+.loop-board-title {
+  background: linear-gradient(150deg, #8a5c30 0%, #c99a58 45%, #6b4525 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 1px 1px rgba(255, 240, 210, 0.35)) drop-shadow(0 2px 2px rgba(40, 18, 4, 0.55));
+}
+
+/* 论文大卡：旧羊皮纸 */
+.loop-thesis-card {
+  background:
+    radial-gradient(ellipse at 15% 10%, rgba(255, 250, 235, 0.6), transparent 50%),
+    radial-gradient(ellipse at 90% 100%, rgba(120, 78, 32, 0.18), transparent 55%),
+    linear-gradient(165deg, #f4ead0 0%, #ecdcb6 60%, #e2cea0 100%);
+  box-shadow:
+    0 10px 26px rgba(45, 22, 6, 0.55),
+    0 3px 6px rgba(45, 22, 6, 0.35),
+    inset 0 0 36px rgba(130, 90, 40, 0.13),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+/* 阅读弹窗：纸张背景下的 markdown 覆盖色 */
+.markdown-content.markdown-paper h1,
+.markdown-content.markdown-paper h2,
+.markdown-content.markdown-paper h3,
+.markdown-content.markdown-paper h4 {
+  color: #3a2a14;
+}
+.markdown-content.markdown-paper p,
+.markdown-content.markdown-paper li {
+  color: #4a3620;
+}
+.markdown-content.markdown-paper code {
+  background: #e9dab6;
+  color: #6b4420;
+  border-color: #d8c191;
+}
+.markdown-content.markdown-paper pre {
+  background: #efe3c8;
+  border-color: #d8c191;
+}
+.markdown-content.markdown-paper pre code {
+  color: #4a3620;
+}
+.markdown-content.markdown-paper blockquote {
+  border-left-color: #a07040;
+  background: #f0e5ca;
+  color: #5a4630;
+}
+.markdown-content.markdown-paper table th,
+.markdown-content.markdown-paper table td {
+  border-color: #d8c191;
+}
+.markdown-content.markdown-paper table th {
+  background: #e9dab6;
+}
+.markdown-content.markdown-paper a {
+  color: #8a5c30;
+}
+.markdown-content.markdown-paper strong {
+  color: #3a2a14;
+}
+.markdown-content.markdown-paper hr {
+  border-top-color: #d8c191;
+}
+.markdown-content.markdown-paper img {
+  box-shadow: 0 4px 12px rgba(60, 30, 10, 0.35);
+  border: 1px solid #d8c191;
+}
+
+/* 图钉轻微呼吸 — 卡片 hover 时图钉"被按下"的错觉 */
+@keyframes loop-nail-press {
+  0%, 100% { transform: translate(-50%, 0) scale(1); }
+  50% { transform: translate(-50%, 1px) scale(0.96); }
+}
+.loop-pushpin-live {
+  animation: loop-nail-press 2.2s ease-in-out infinite;
 }
 
 

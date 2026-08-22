@@ -16,6 +16,7 @@ import DecryptWiki from '@/pages/DecryptWiki';
 import MessageBoard from '@/pages/MessageBoard';
 import AdminPage from '@/pages/AdminPage';
 import SarcophagusTerminal from '@/pages/SarcophagusTerminal';
+import LoopNode6Board from '@/pages/LoopNode6Board';
 import TestPage from '@/pages/TestPage';
 import StoryPlayerPage from '@/pages/StoryPlayerPage';
 import StoryEditorPage from '@/pages/StoryEditorPage';
@@ -141,6 +142,14 @@ function App() {
             element={
               <PageAccessRoute routePath="/sarcophagus">
                 <SarcophagusTerminal />
+              </PageAccessRoute>
+            }
+          />
+          <Route
+            path="/THEDARKSIDESOFTHETWINTERRAHOPES"
+            element={
+              <PageAccessRoute routePath="/THEDARKSIDESOFTHETWINTERRAHOPES">
+                <LoopNode6Board />
               </PageAccessRoute>
             }
           />

@@ -20,6 +20,7 @@ import siteRoutes from './routes/site.js';
 import mailRoutes from './routes/mail.js';
 import mailAdminRoutes from './routes/mailAdmin.js';
 import storyRoutes from './routes/stories.js';
+import loopPuzzleRoutes from './routes/loopPuzzle.js';
 import { globalLimiter } from './lib/rateLimiter.js';
 import { startDiskCleanup } from './lib/diskCleanup.js';
 
@@ -97,6 +98,7 @@ app.use('/api/site', siteRoutes);
 app.use('/api/mail', mailRoutes);
 app.use('/api/mail/admin', mailAdminRoutes);
 app.use('/api/stories', storyRoutes);
+app.use('/api/loop', loopPuzzleRoutes);
 
 // Serve uploaded avatars with caching (avatar filenames are UUID-based, immutable)
 app.use('/uploads/avatars', express.static(path.join(__dirname, '..', 'uploads', 'avatars'), {
@@ -117,6 +119,11 @@ app.use('/api/images', express.static(imageDir, {
 
 // Serve static frontend build
 const staticDir = path.join(__dirname, '..', '..', 'app', 'dist');
+// /loop 静态页面（节点2 论文网页 Loop Is All You Need）—— 显式路由，置于 express.static 之前，
+// 避免 express.static 对目录的 301 重定向与 SPA fallback 冲突
+app.get(['/loop', '/loop/'], (_req, res) => {
+  res.sendFile(path.join(staticDir, 'loop', 'index.html'));
+});
 // index: false — 不让 express.static 直接返回 index.html，留给下边的 SPA fallback 处理（那里会设置 Cache-Control: no-cache）
 app.use(express.static(staticDir, { index: false }));
 

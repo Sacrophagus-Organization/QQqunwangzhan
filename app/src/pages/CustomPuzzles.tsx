@@ -12,7 +12,8 @@ import { RichTextEditor } from '@/components/RichTextEditor';
 import { PuzzleCardSkeleton } from '@/components/Skeleton';
 import { apiGet, apiPost, apiPut, apiDelete, apiUpload, apiDownload } from '@/api/client';
 import { LikeButton } from '@/components/LikeButton';
-import { Puzzle, Plus, Search, User, Tag, Lightbulb, Key, CheckCircle2, HelpCircle, Brain, Zap, Filter, Sparkles, Trophy, Paperclip, Download, Edit3, Save, Trash2 } from 'lucide-react';
+import CrashSubmitButton from '@/components/CrashSubmitButton';
+import { Puzzle, Plus, Search, User, Tag, Lightbulb, Key, CheckCircle2, HelpCircle, Brain, Zap, Filter, Sparkles, Trophy, Paperclip, Download, Edit3, Save, Trash2, RotateCcw } from 'lucide-react';
 import type { Puzzle as PuzzleType, FileAttachment } from '@/types';
 import { sanitizeHtml } from '@/lib/sanitize';
 
@@ -80,11 +81,19 @@ export default function CustomPuzzles() {
     } catch {}
   };
 
-  const openEdit = (p: PuzzleType) => { setEditId(p.id); setEt(p.title); setEd(p.description); setEc(p.content); setEcat(p.category); setEdiff(p.difficulty); setEh(p.hint); setEs(p.solution); setEtags((p.tags || []).join(', ')); setEfiles([]); };
+  // 管理员解除节点一谜题的封印（便于反复测试 glitch 效果）
+  const handleUnseal = async (id: string) => {
+    try {
+      await apiPost(`/puzzles/${id}/unseal`);
+      load();
+    } catch (e: any) { alert(e.message); }
+  };
+
+  const openEdit = (p: PuzzleType) => { setEditId(p.id); setEt(p.title); setEd(p.description); setEc(p.content); setEcat(p.category); setEdiff(p.difficulty); setEh(p.hint); setEs(''); setEtags((p.tags || []).join(', ')); setEfiles([]); };
   const handleEditSave = async () => {
     if (!editId) return;
     try {
-      await apiPut(`/puzzles/${editId}`, { title: et, description: ed, content: ec, category: ecat, difficulty: ediff, hint: eh, solution: es, tags: etags.split(',').map(t => t.trim()).filter(Boolean) });
+      await apiPut(`/puzzles/${editId}`, { title: et, description: ed, content: ec, category: ecat, difficulty: ediff, hint: eh, ...(es.trim() ? { solution: es } : {}), tags: etags.split(',').map(t => t.trim()).filter(Boolean) });
       if (efiles.length > 0) await apiUpload('puzzle', editId, efiles);
       setEditId(null); load();
     } catch (e: any) { alert(e.message); }
@@ -175,7 +184,26 @@ export default function CustomPuzzles() {
                 {pz.status === 'solved' && pz.solvedBy && <div className="flex items-center gap-1.5 text-xs text-green-400"><Trophy className="h-3 w-3" />由 {pz.solvedBy} 破解</div>}
                 {pz.hint && <div className="flex items-start gap-1.5 text-xs bg-amber-500/10 border border-amber-500/20 rounded-md p-2"><Lightbulb className="h-3 w-3 text-amber-400 shrink-0 mt-0.5" /><span className="text-amber-400/80">{pz.hint}</span></div>}
                 <div className="flex gap-2 pt-1">
-                  <Dialog open={solveId === pz.id} onOpenChange={o => { if (!o) { setSolveId(null); setSolveAnswer(''); setSolveResult(null); } }}><DialogTrigger asChild><Button size="sm" className="flex-1" variant={pz.status === 'solved' ? 'outline' : 'default'} disabled={pz.status === 'solved'} onClick={() => setSolveId(pz.id)}>{pz.status === 'solved' ? <><CheckCircle2 className="h-4 w-4 mr-1" />已破解</> : <><Key className="h-4 w-4 mr-1" />提交答案</>}</Button></DialogTrigger><DialogContent><DialogHeader><DialogTitle className="flex items-center gap-2"><Key className="h-5 w-5 text-amber-400" />提交答案</DialogTitle></DialogHeader><div className="space-y-4 mt-4">{solveResult === null && <><div className="space-y-2"><Label>你的答案</Label><Input value={solveAnswer} onChange={e => setSolveAnswer(e.target.value)} className="bg-secondary/30 border-border/50 mono-text" /></div><Button onClick={() => handleSolve(pz.id)} className="w-full" disabled={!solveAnswer.trim()}><Zap className="h-4 w-4 mr-2" />提交</Button></>}{solveResult === 'correct' && <div className="text-center py-4"><CheckCircle2 className="h-12 w-12 text-green-400 mx-auto mb-2" /><p className="text-lg font-bold text-green-400">回答正确！</p></div>}{solveResult === 'wrong' && <div className="text-center py-4"><HelpCircle className="h-12 w-12 text-red-400 mx-auto mb-2" /><p className="text-lg font-bold text-red-400">回答错误</p></div>}</div></DialogContent></Dialog>
+                  {pz.id === 'puz-loop-node1' ? (
+                    /* 节点一谜题：提交答案会触发系统崩溃（与 /test 一致）；
+                       触发过一次后按账号封印提交按钮（文字变为菱形），仅 admin 可解除 */
+                    <div className="flex flex-1 gap-2">
+                      <CrashSubmitButton size="sm" className="flex-1" puzzleId={pz.id} sealed={!!pz.sealed} onSealed={load} />
+                      {user?.role === 'admin' && pz.sealed && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="shrink-0 border-border/40 text-amber-400 hover:text-amber-300 hover:border-amber-400/40"
+                          title="解除封印（管理员）"
+                          onClick={() => handleUnseal(pz.id)}
+                        >
+                          <RotateCcw className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                    </div>
+                  ) : (
+                    <Dialog open={solveId === pz.id} onOpenChange={o => { if (!o) { setSolveId(null); setSolveAnswer(''); setSolveResult(null); } }}><DialogTrigger asChild><Button size="sm" className="flex-1" variant={pz.status === 'solved' ? 'outline' : 'default'} disabled={pz.status === 'solved'} onClick={() => setSolveId(pz.id)}>{pz.status === 'solved' ? <><CheckCircle2 className="h-4 w-4 mr-1" />已破解</> : <><Key className="h-4 w-4 mr-1" />提交答案</>}</Button></DialogTrigger><DialogContent><DialogHeader><DialogTitle className="flex items-center gap-2"><Key className="h-5 w-5 text-amber-400" />提交答案</DialogTitle></DialogHeader><div className="space-y-4 mt-4">{solveResult === null && <><div className="space-y-2"><Label>你的答案</Label><Input value={solveAnswer} onChange={e => setSolveAnswer(e.target.value)} className="bg-secondary/30 border-border/50 mono-text" /></div><Button onClick={() => handleSolve(pz.id)} className="w-full" disabled={!solveAnswer.trim()}><Zap className="h-4 w-4 mr-2" />提交</Button></>}{solveResult === 'correct' && <div className="text-center py-4"><CheckCircle2 className="h-12 w-12 text-green-400 mx-auto mb-2" /><p className="text-lg font-bold text-green-400">回答正确！</p></div>}{solveResult === 'wrong' && <div className="text-center py-4"><HelpCircle className="h-12 w-12 text-red-400 mx-auto mb-2" /><p className="text-lg font-bold text-red-400">回答错误</p></div>}</div></DialogContent></Dialog>
+                  )}
                   <Dialog><DialogTrigger asChild><Button size="sm" variant="ghost">详情</Button></DialogTrigger><DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto"><DialogHeader><div className="flex items-center justify-between"><DialogTitle className="flex items-center gap-2"><Puzzle className="h-5 w-5 text-accent" />{pz.title}</DialogTitle>{canEdit(pz) && <div className="flex items-center gap-1"><Button variant="outline" size="sm" onClick={() => openEdit(pz)} className="border-border/40 hover:border-accent/30 hover:text-accent"><Edit3 className="h-4 w-4 mr-1" />编辑</Button><Button variant="outline" size="sm" onClick={() => handleDelete(pz.id)} className="border-border/40 hover:border-destructive/30 hover:text-destructive"><Trash2 className="h-4 w-4" /></Button></div>}</div></DialogHeader><div className="mt-4 space-y-4"><div className="text-sm bg-secondary/20 rounded-lg p-4 border border-border/20 rich-editor-content" dangerouslySetInnerHTML={{ __html: sanitizeHtml(pz.content) }} />{pz.hint && <div className="flex items-start gap-2 text-sm bg-amber-500/10 border border-amber-500/20 rounded-lg p-3"><Lightbulb className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" /><span className="text-amber-400">{pz.hint}</span></div>}{pz.tags?.length > 0 && <div className="flex flex-wrap gap-1.5">{pz.tags.map((t: string) => <Badge key={t} variant="secondary" className="text-xs"><Tag className="h-3 w-3 mr-1" />{t}</Badge>)}</div>}{pz.attachments?.length > 0 && <div className="border-t border-border/20 pt-3"><p className="text-xs text-muted-foreground mb-2"><Paperclip className="h-3 w-3 inline mr-1" />附件</p><div className="flex flex-wrap gap-2">{pz.attachments.map((a: FileAttachment) => <Button key={a.id} variant="outline" size="sm" onClick={() => downloadAtt(a)} className="text-xs"><Download className="h-3 w-3 mr-1" />{a.name}</Button>)}</div></div>}</div></DialogContent></Dialog>
                 </div>
               </CardContent>
@@ -190,7 +218,7 @@ export default function CustomPuzzles() {
           <div className="space-y-2"><Label>正文</Label><RichTextEditor value={ec} onChange={setEc} minHeight="200px" /></div>
           <div className="grid grid-cols-2 gap-4"><div className="space-y-2"><Label>分类</Label><Select value={ecat} onValueChange={setEcat}><SelectTrigger className="bg-secondary/30 border-border/50"><SelectValue /></SelectTrigger><SelectContent>{Object.entries(catLabels).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}</SelectContent></Select></div><div className="space-y-2"><Label>难度</Label><Select value={ediff} onValueChange={setEdiff}><SelectTrigger className="bg-secondary/30 border-border/50"><SelectValue /></SelectTrigger><SelectContent>{Object.entries(diffLabels).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}</SelectContent></Select></div></div>
           <div className="space-y-2"><Label>提示</Label><Input value={eh} onChange={e => setEh(e.target.value)} className="bg-secondary/30 border-border/50" /></div>
-          <div className="space-y-2"><Label>正确答案</Label><Input value={es} onChange={e => setEs(e.target.value)} className="bg-secondary/30 border-border/50" /></div>
+          <div className="space-y-2"><Label>正确答案</Label><Input value={es} onChange={e => setEs(e.target.value)} placeholder="答案不回显，留空则保持原答案不变" className="bg-secondary/30 border-border/50" /></div>
           <div className="space-y-2"><Label>新增附件</Label><Input type="file" multiple onChange={e => setEfiles(e.target.files ? Array.from(e.target.files) : [])} className="bg-secondary/30 border-border/50 text-sm" /></div>
           <div className="space-y-2"><Label>标签</Label><Input value={etags} onChange={e => setEtags(e.target.value)} className="bg-secondary/30 border-border/50" /></div>
           <Button onClick={handleEditSave} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"><Save className="h-4 w-4 mr-2" />保存修改</Button>

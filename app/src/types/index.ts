@@ -57,6 +57,8 @@ export interface Puzzle {
   tags: string[];
   attachments: FileAttachment[];
   likeCount?: number;
+  /** 当前账号是否已触发该谜题的 glitch 崩溃（封印提交按钮） */
+  sealed?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -240,7 +242,7 @@ export interface StoryScene {
   transition: 'fade' | 'slide' | 'none';
 }
 
-export type StorySpeaker = 'left' | 'right' | 'narrator';
+export type StorySpeaker = 'left' | 'right' | 'narrator' | 'mystery';
 export type StoryEffect = 'shake' | 'fadein' | 'zoom' | 'flash' | 'none';
 
 export interface StoryLine {

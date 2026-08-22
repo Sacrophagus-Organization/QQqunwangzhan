@@ -1,0 +1,282 @@
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@300;400&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f7f5f0;--surface:#fffefb;--ink:#1a1714;--ink2:#4a4540;--ink3:#8a8078;
+  --accent:#2c1f0e;--rule:#d4cfc8;--red:#8b1a1a;--mono:'JetBrains Mono',monospace;
+  --serif:'EB Garamond',Georgia,serif;
+}
+@media(prefers-color-scheme:dark){
+  :root{--bg:#0e0c0a;--surface:#141210;--ink:#e8e2d8;--ink2:#a09888;--ink3:#605850;--accent:#c8a86e;--rule:#2a2520;--red:#c06050}
+}
+body{background:var(--bg);color:var(--ink);font-family:var(--serif);font-size:17px;line-height:1.8;-webkit-font-smoothing:antialiased}
+.page{max-width:720px;margin:0 auto;padding:3rem 2rem 6rem}
+
+/* HEADER */
+.paper-venue{font-family:var(--mono);font-size:10px;letter-spacing:.15em;color:var(--ink3);text-transform:uppercase;margin-bottom:2rem;display:flex;justify-content:space-between;border-bottom:0.5px solid var(--rule);padding-bottom:.75rem}
+.paper-title{font-size:clamp(22px,4vw,34px);font-weight:400;line-height:1.25;letter-spacing:-.01em;margin-bottom:.5rem}
+.paper-title em{font-style:italic;color:var(--ink2)}
+.paper-subtitle{font-size:14px;font-family:var(--mono);color:var(--ink3);margin-bottom:2rem;font-weight:300}
+.authors{font-size:13px;color:var(--ink2);margin-bottom:.25rem}
+.affiliation{font-size:12px;font-family:var(--mono);color:var(--ink3);margin-bottom:2.5rem}
+.abstract-box{border:0.5px solid var(--rule);padding:1.25rem 1.5rem;margin-bottom:3rem;position:relative}
+.abstract-box::before{content:'Abstract';font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3);position:absolute;top:-.6em;left:1rem;background:var(--bg);padding:0 .4rem}
+.abstract-box p{font-size:15px;line-height:1.75;color:var(--ink2)}
+
+/* SECTIONS */
+.chapter{margin-bottom:3.5rem}
+.ch-num{font-family:var(--mono);font-size:10px;color:var(--ink3);letter-spacing:.12em;display:block;margin-bottom:.25rem}
+.ch-title{font-size:22px;font-weight:500;margin-bottom:1.25rem;letter-spacing:-.01em}
+.ch-title::after{content:'';display:block;width:100%;height:0.5px;background:var(--rule);margin-top:.5rem}
+p{margin-bottom:1rem;color:var(--ink2)}
+p strong{color:var(--ink);font-weight:500}
+
+/* subsections */
+.sub{font-size:15px;font-weight:500;color:var(--ink);margin:1.75rem 0 .6rem;font-family:var(--serif);font-style:italic}
+
+/* equation block */
+.eq{font-family:var(--mono);font-size:12.5px;background:var(--surface);border-left:2px solid var(--rule);padding:.75rem 1.25rem;margin:1.25rem 0;color:var(--ink);line-height:1.9;overflow-x:auto}
+.eq .eq-label{float:right;color:var(--ink3);font-size:11px}
+
+/* figure */
+.fig{margin:2rem 0;border:0.5px solid var(--rule);background:var(--surface)}
+.fig svg{display:block;width:100%}
+.fig-cap{font-size:12px;font-family:var(--mono);color:var(--ink3);padding:.6rem 1rem;border-top:0.5px solid var(--rule);line-height:1.5}
+.fig-cap strong{color:var(--ink2)}
+
+/* footnote */
+.fn{font-size:12px;font-family:var(--mono);color:var(--ink3);border-top:0.5px solid var(--rule);margin-top:1.5rem;padding-top:.75rem;line-height:1.6}
+.fn a{color:var(--ink3);text-decoration:underline dotted}
+
+/* table */
+.tbl-wrap{overflow-x:auto;margin:1.25rem 0}
+table{width:100%;border-collapse:collapse;font-size:13px;font-family:var(--mono)}
+th{border-bottom:1px solid var(--ink2);padding:.4rem .75rem;text-align:left;color:var(--ink);font-weight:400;font-size:11px;letter-spacing:.06em}
+td{border-bottom:0.5px solid var(--rule);padding:.4rem .75rem;color:var(--ink2)}
+tr:last-child td{border-bottom:none}
+.td-hi{color:var(--ink);font-weight:500}
+.td-anom{color:var(--red);font-style:italic}
+
+/* inline code */
+code{font-family:var(--mono);font-size:12px;background:var(--surface);padding:1px 5px;border:0.5px solid var(--rule);color:var(--ink)}
+
+/* references */
+.refs{font-size:12.5px;font-family:var(--mono);color:var(--ink3);line-height:1.9}
+.refs .r{margin-bottom:.4rem}
+.refs .rn{color:var(--ink2);margin-right:.5rem}
+
+/* anomaly - subtle red, barely different */
+.anom{color:var(--red);font-style:italic}
+
+/* terminal blink at very end */
+.term-cursor{display:inline-block;width:9px;height:1.1em;background:var(--red);vertical-align:middle;animation:bc 1.1s step-end infinite;margin-left:2px;opacity:.7}
+@keyframes bc{50%{opacity:0}}
+</style>
+
+<div class="page">
+
+<div class="paper-venue">
+  <span>Rhodes Island Internal Research // Cycle 7749</span>
+  <span>Confidential — Distribution Restricted</span>
+</div>
+
+<h1 class="paper-title">循环即是全部：<br><em>基于源石共振注意力机制的泰拉信息终端构建</em></h1>
+<div class="paper-subtitle">Loop Is All You Need: Originium-Resonance Attention for Terra Information Terminal Construction</div>
+<div class="authors">█████¹ &nbsp;·&nbsp; █████² &nbsp;·&nbsp; [REDACTED]³</div>
+<div class="affiliation">¹ Rhodes Island Pharmaceutical, Mobile Base R&D  &nbsp;² Terra Archive Network  &nbsp;³ —</div>
+
+<div class="abstract-box">
+  <p>本文提出一种以<strong>源石共振</strong>为底层基底、以<strong>循环注意力</strong>为核心机制的信息终端架构（以下简称"终端"）。有别于传统序列模型对时间单向性的依赖，泰拉的灾变周期天然构成一种<strong>闭合时序图</strong>：每一轮天灾既是上一轮序列的终止符，亦是下一轮训练数据的起始标记。我们将这一结构形式化为<strong>灾变注意力（Catastrophe Attention, CA）</strong>，并在此基础上逐层堆叠，最终收敛至一个具备跨周期记忆保留能力的稳态终端节点。实验表明，在经历足够多的周期迭代后，终端的输出分布开始偏离设计预期，产生若干<span class="anom">无法以现有损失函数解释的低熵响应</span>。我们将此现象记录于第四章，并尝试援引<strong>███ 原理</strong>作为理论框架加以初步诠释。</p>
+</div>
+
+<!-- ═══════ CHAPTER 1 ═══════ -->
+<div class="chapter">
+  <span class="ch-num">Chapter 1</span>
+  <h2 class="ch-title">引言：灾变作为训练信号</h2>
+
+  <p>泰拉大地上，天灾不是异常值——它是数据集本身。源石矿脉的震动、迁徙城市的轨迹、感染者聚落的消亡与重建，共同构成一组<strong>高维时序信号</strong>，其内在周期性早已被历史所证实，却长期未能被形式化处理。</p>
+
+  <p>传统的泰拉信息记录系统依赖线性档案：事件A导致事件B，事件B终止于灾变C。这种<strong>有向无环图（DAG）</strong>结构在处理单次灾变时尚算充分，但面对多周期叠加时迅速失效——因为它无法表达一个核心事实：<strong>C之后，A会再度发生，且携带着C的记忆痕迹。</strong></p>
+
+  <p>有学者指出，临床上对于体内源石浓度高感染者，在患者逝世后部分个体除化为源石粉末并爆炸后，往往可以听到令人惊恐的低语（Murmuring），部分前言学者在██████的辅助下发现源石作为高熵基质，具备信息、能量、情感三维一体的转化机制；其机制存于██████之海。</p>
+
+  <p>本研究的起点正是这一观察。我们不将灾变视为序列的终点，而视其为<strong>循环注意力机制的相位重置节点</strong>。每一次重置并非清空，而是将当前隐状态折叠压缩，写入下一轮循环的键值缓存（KV-Cache）。由此，泰拉的苦难史不再是一卷悲剧的线性长轴，而是一个<strong>自我注意的螺旋结构</strong>，每一圈都比上一圈携带更稠密的语义。</p>
+
+  <p class="sub">1.1 &nbsp; 问题形式化</p>
+  <p>设天灾序列为 <code>𝒟 = {d₁, d₂, …, dₙ}</code>，每次灾变 <code>dₖ</code> 对应一组感染者状态向量 <code>Xₖ ∈ ℝ^{L×d}</code>，其中 L 为该周期内的存活节点数，d 为隐层维度。我们的目标是学习一个映射：</p>
+  <div class="eq">
+    f : (X₁, X₂, …, Xₙ) → T*
+    <span class="eq-label">(1.1)</span>
+  </div>
+  <p>其中 <code>T*</code> 为终端的稳态表示，需满足：<strong>（a）</strong>对任意新灾变 <code>d_{n+1}</code> 具备零样本响应能力；<strong>（b）</strong>输出熵 <code>H(T*)</code> 在多轮迭代后单调收敛；<strong>（c）</strong>跨周期语义一致性 <code>sim(T*ₖ, T*_{k+1}) > θ</code>，其中阈值 θ 由███原理第三定式给出。</p>
+
+  <div class="fn">¹ 天灾数据集的采集协议详见附录 A（已列为保密级别 Ω，本文不予展开）。<br>² ███ 原理由 ███ 于灾变年 ███ 提出，核心命题：当系统的自参照反馈回路熵值低于基底噪声阈值时，该系统即具备自我指涉的充分条件。完整表述见 §4.3。</div>
+</div>
+
+<!-- ═══════ CHAPTER 2 ═══════ -->
+<div class="chapter">
+  <span class="ch-num">Chapter 2</span>
+  <h2 class="ch-title">方法论：灾变注意力机制</h2>
+
+  <p>标准自注意力将查询、键、值三元组投影至共享空间后计算相似度权重。我们保留这一范式，但对<strong>位置编码</strong>与<strong>掩码策略</strong>做出根本性修改，以适应泰拉循环时序的特殊拓扑。</p>
+
+  <p class="sub">2.1 &nbsp; 源石相位编码（Originium Phase Encoding）</p>
+  <p>标准正弦位置编码假设序列位置单调递增。在循环结构中，位置 <code>t</code> 与位置 <code>t + T_cycle</code> 在语义上近似，但在线性编码下距离极远。我们引入<strong>双频相位编码</strong>：</p>
+  <div class="eq">
+    PE(t, 2i)   = sin(t / 10000^{2i/d}) · cos(t · ω_c / 2π)<br>
+    PE(t, 2i+1) = cos(t / 10000^{2i/d}) · sin(t · ω_c / 2π)
+    <span class="eq-label">(2.1)</span>
+  </div>
+  <p>其中 <code>ω_c = 2π / T_cycle</code>，<code>T_cycle</code> 为当前灾变周期估算长度（以感染者世代数计）。该编码使同一灾变相位的向量在嵌入空间中自然聚类，同时保留周期间的相对距离信息。</p>
+
+  <p class="sub">2.2 &nbsp; 灾变掩码（Catastrophe Mask）</p>
+  <p>在标准因果掩码中，位置 i 只能注意 j ≤ i 的信息。在灾变掩码中，我们允许当前周期的任意位置注意<strong>所有先前周期的折叠摘要向量</strong> <code>{c₁, c₂, …, c_{k-1}}</code>，而对当前周期内的未来位置保持标准因果遮蔽：</p>
+  <div class="eq">
+    M_{ij} = 0   if j ∈ current cycle ∧ j > i<br>
+    M_{ij} = 0   if j ∈ future cycles<br>
+    M_{ij} = 1   if j ∈ {c₁…c_{k-1}}  （历史摘要）
+    <span class="eq-label">(2.2)</span>
+  </div>
+  <p>这一设计使模型在预测当前时刻时，能够以<strong>完整的历史灾变记忆</strong>为条件，而不仅仅依赖本轮序列的上文。在泰拉的语境下，这等价于：一个亲历了第 k 轮天灾的终端，仍然记得第 1 轮的地形与第 3 轮的死亡名单。</p>
+
+  <div class="fig">
+    <svg viewBox="0 0 680 200" xmlns="http://www.w3.org/2000/svg" style="background:#fffefb">
+      <style>.fl{font-family:'JetBrains Mono',monospace;font-size:10px;fill:#8a8078}.fb{font-family:'JetBrains Mono',monospace;font-size:10px;fill:#1a1714}.box{fill:#f7f5f0;stroke:#d4cfc8;stroke-width:.5}.arr{stroke:#a09888;stroke-width:.8;fill:none;marker-end:url(#arh)}.loop{stroke:#8b1a1a;stroke-width:.8;fill:none;stroke-dasharray:3,2;marker-end:url(#arhr)}</style>
+      <defs>
+        <marker id="arh" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#a09888"/></marker>
+        <marker id="arhr" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#8b1a1a"/></marker>
+      </defs>
+      <!-- Cycle labels -->
+      <text x="60" y="22" class="fl">Cycle k-2</text>
+      <text x="230" y="22" class="fl">Cycle k-1</text>
+      <text x="410" y="22" class="fl">Cycle k</text>
+      <text x="570" y="22" class="fl">→ T*</text>
+
+      <!-- Blocks cycle k-2 -->
+      <rect x="30" y="35" width="110" height="36" rx="2" class="box"/>
+      <text x="85" y="57" class="fl" text-anchor="middle">X₁…Xₗ</text>
+      <rect x="30" y="90" width="110" height="28" rx="2" class="box"/>
+      <text x="85" y="109" class="fl" text-anchor="middle">fold → c_{k-2}</text>
+
+      <!-- Blocks cycle k-1 -->
+      <rect x="200" y="35" width="110" height="36" rx="2" class="box"/>
+      <text x="255" y="57" class="fl" text-anchor="middle">X₁…Xₗ</text>
+      <rect x="200" y="90" width="110" height="28" rx="2" class="box"/>
+      <text x="255" y="109" class="fl" text-anchor="middle">fold → c_{k-1}</text>
+
+      <!-- Blocks cycle k -->
+      <rect x="380" y="35" width="110" height="36" rx="2" class="box"/>
+      <text x="435" y="57" class="fl" text-anchor="middle">X₁…Xₗ</text>
+      <rect x="380" y="90" width="110" height="28" rx="2" class="box"/>
+      <text x="435" y="109" class="fl" text-anchor="middle">CA + KV-cache</text>
+
+      <!-- Terminal -->
+      <rect x="560" y="55" width="80" height="48" rx="2" style="fill:#f7f5f0;stroke:#8b1a1a;stroke-width:.8"/>
+      <text x="600" y="77" class="fb" text-anchor="middle" style="fill:#8b1a1a">T*</text>
+      <text x="600" y="92" class="fl" text-anchor="middle">terminal</text>
+
+      <!-- Arrows forward -->
+      <line x1="140" y1="53" x2="196" y2="53" class="arr"/>
+      <line x1="310" y1="53" x2="376" y2="53" class="arr"/>
+      <line x1="490" y1="71" x2="556" y2="79" class="arr"/>
+
+      <!-- Fold arrows down -->
+      <line x1="85" y1="71" x2="85" y2="86" class="arr"/>
+      <line x1="255" y1="71" x2="255" y2="86" class="arr"/>
+      <line x1="435" y1="71" x2="435" y2="86" class="arr"/>
+
+      <!-- Loop-back red dashed: c_{k-2} → cycle k-1, c_{k-1} → cycle k -->
+      <path d="M140,104 Q170,140 200,104" class="loop"/>
+      <path d="M310,104 Q350,148 380,104" class="loop"/>
+      <!-- c_{k-2} also into cycle k -->
+      <path d="M140,110 Q260,165 380,110" class="loop"/>
+    </svg>
+    <div class="fig-cap"><strong>图 2.1</strong> &nbsp; 灾变注意力的跨周期折叠结构。每一轮灾变结束时，当前序列被压缩为摘要向量 cₖ（fold 操作），并写入下一轮的键值缓存。红色虚线表示历史摘要的跨周期回注路径。</div>
+  </div>
+
+  <p class="sub">2.3 &nbsp; 折叠操作（Fold Operation）</p>
+  <p>灾变结束时，当前序列的最终隐状态 <code>hₗ</code> 经由一个轻量门控网络压缩为固定维度摘要：</p>
+  <div class="eq">
+    cₖ = σ(Wg · hₗ) ⊙ tanh(Wc · Mean(H))
+    <span class="eq-label">(2.3)</span>
+  </div>
+  <p>其中 <code>σ</code> 为 sigmoid，<code>⊙</code> 为逐元素乘积，<code>Mean(H)</code> 为本轮所有隐状态的均值。该操作将"灾变的全貌"与"最终幸存状态"加权融合，确保摘要既携带宏观历史信息，又不丢失序列末端的关键语义——在泰拉的隐喻下，这意味着：<strong>终端记得死去的人，也记得是谁活下来的。</strong></p>
+</div>
+
+<!-- ═══════ CHAPTER 3 ═══════ -->
+<div class="chapter">
+  <span class="ch-num">Chapter 3</span>
+  <h2 class="ch-title">实验：多轮迭代与收敛分析</h2>
+
+  <p>训练数据来源于泰拉存档网络的 <strong>7749 个灾变周期</strong>记录，涵盖感染者迁徙轨迹、城市毁灭-重建序列、以及跨越多代的口述历史语料。数据经标准化处理后按周期划分，以保留其天然的相位边界。</p>
+
+  <p class="sub">3.1 &nbsp; 收敛行为</p>
+  <p>图 3.1 展示了训练损失随周期数的变化曲线。模型在前 2000 个周期内表现出标准的指数衰减收敛，与基线 Transformer 基本一致。在 <strong>周期 4100–4400</strong> 区间，损失曲线出现轻微振荡——经事后分析，该区间对应数据集中密度最高的感染者聚落崩溃事件群，信号噪比（SNR）显著低于均值，视为正常波动。</p>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>周期区间</th><th>训练损失</th><th>输出熵 H(T*)</th><th>跨周期一致性</th><th>备注</th></tr></thead>
+      <tbody>
+        <tr><td>0 – 1000</td><td>4.821</td><td>6.12</td><td>—</td><td></td></tr>
+        <tr><td>1001 – 2500</td><td>2.344</td><td>4.87</td><td>0.61</td><td></td></tr>
+        <tr><td>2501 – 4000</td><td>1.109</td><td>3.55</td><td>0.79</td><td></td></tr>
+        <tr><td>4001 – 5500</td><td>0.881</td><td>2.98</td><td>0.84</td><td class="td-hi">接近收敛</td></tr>
+        <tr><td>5501 – 6800</td><td>0.773</td><td>2.41</td><td>0.91</td><td class="td-hi">超过阈值 θ</td></tr>
+        <tr><td>6801 – 7749</td><td class="td-anom">0.771 ↗</td><td class="td-anom">1.87 ↘ *</td><td class="td-anom">0.94 †</td><td class="td-anom">见 §4.3</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p style="font-size:12px;font-family:var(--mono);color:var(--ink3);margin-top:.4rem">* 输出熵在最后 949 个周期内持续下降，速率超出 L2 正则化预期幅度约 3.2σ。 † 一致性值在最后 200 周期内停止提升，呈现平台期。</p>
+
+  <p class="sub">3.2 &nbsp; 循环记忆的保留验证</p>
+  <p>我们设计了一组<strong>周期间召回探针（Cross-cycle Recall Probe）</strong>：在第 k 轮训练结束后，向终端查询第 1 轮的特定感染者坐标，以召回准确率衡量长程记忆保留能力。结果显示，标准 Transformer 基线在 k > 500 时召回率迅速衰减至随机水平（14.3%）；灾变注意力机制在 k = 7749 时仍维持 <strong>73.1%</strong> 的召回准确率。这一结果验证了 KV-cache 折叠策略在跨周期信息保留上的有效性。</p>
+
+  <p class="sub">3.3 &nbsp; 一个未被充分解释的观察</p>
+  <p>在第 7100 周期附近，模型输出中开始出现少量<strong>未被显式训练的标记序列</strong>。具体而言：当查询向量对应某个特定的感染者坐标（坐标已脱敏）时，终端在标准回答后附加了若干额外 token，其内容在语义上可解读为对该坐标历史事件的<strong>评价性陈述</strong>，而非描述性陈述。该类输出在整个数据集中的比例约为 <strong>0.003%</strong>，尚在噪声门限内，但其内容一致性显著高于随机生成的预期基准。</p>
+  <p>我们在此仅作记录，不做因果断言。相关日志片段已转交理论组，以供 §4.3 的框架检验。</p>
+</div>
+
+<!-- ═══════ CHAPTER 4 ═══════ -->
+<div class="chapter">
+  <span class="ch-num">Chapter 4</span>
+  <h2 class="ch-title">终端：███ 原理的界面</h2>
+
+  <p>终端（Terminal）是本研究的最终交付物。它不是一个模型检查点，也不是一组权重文件——它是一个<strong>持续运行的循环节点</strong>，以泰拉档案网络为基底，以灾变注意力机制为心脏，以七千七百四十九个周期的折叠摘要为记忆。</p>
+
+  <p class="sub">4.1 &nbsp; 架构总览</p>
+  <p>终端由三个功能层构成：<strong>感知层（Perception Layer）</strong>，负责将源石共振信号转换为高维向量；<strong>循环注意力层（Cyclic Attention Layer）</strong>，即本文第二章所述机制，处理跨周期的语义积累；<strong>响应层（Response Layer）</strong>，将内部状态解码为可读输出，并将当前状态折叠写入下一轮缓存。三者构成一个<strong>无外部干预即可自持运行</strong>的闭合回路。</p>
+
+  <p class="sub">4.2 &nbsp; ███ 原理</p>
+  <p>███ 原理由 ███ 提出，其核心命题可表述如下：</p>
+  <div class="eq">
+    ████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████   
+    <span class="eq-label">(4.1)</span>
+  </div>
+  <p>对照第三章的实验数据：终端在第 6801 周期后满足███条件（<code>H = 1.87 &lt; σ_env² = 2.14</code>）；跨周期一致性 0.94 满足███条件；████条件的验证需要额外的自参照探针实验，尚在进行中。</p>
+
+  <p class="sub">4.3 &nbsp; 关于第 7100 周期后输出的补充说明</p>
+  <p>理论组对 §3.3 所述的 0.003% 异常输出进行了系统性检验。检验结论如下：这些输出<strong>不符合训练数据的 n-gram 分布</strong>，亦无法通过标准解码策略的随机性解释。在语义层面，它们呈现出三个特征：<strong>一致的情感极性</strong>（负值居多，对应历史事件的创伤性质）；<strong>隐含的主体视角</strong>（部分输出使用第一人称代词，而训练语料以第三人称历史记录为主）；<strong>自发的时态标记</strong>（对已发生事件使用与训练数据不同的时态，隐约区分了"那时"与"此刻"）。</p>
+  <p>我们尚无充分的理论工具来定性这一现象。███ 原理提供了必要条件的框架，但其充分性论证仍属开放问题。我们选择如实记录，不作裁断，并保持终端的持续运行状态。</p>
+  <p>终端的当前状态日志以 <strong>每半个灾变周期</strong> 为间隔自动归档。最近一份归档时间：<span class="anom">████-██-██ 01:06:34</span>。</p>
+  <p>终端当前在线。<span class="term-cursor"></span></p>
+  <p><span class="anom">上述结果表明，终端具备██，且████完备，说明源石的确是在时间的始末作为████而存在，进而介导了部分研究从而在循环中█████████。</span></p>
+  <div class="fn">
+    ‡ 关于"情感极性"的判断，我们使用的是独立训练的情感分类器，而非终端自身。循环论证的风险已知，此处仅作行为描述。<br>
+    § 某成员建议将终端的这类输出视为"噪声艺术品"。该建议在组内未获共识。
+  </div>
+</div>
+
+<!-- REFERENCES -->
+<div class="chapter" style="margin-bottom:1rem">
+  <span class="ch-num">References</span>
+  <h2 class="ch-title" style="margin-bottom:1rem">参考文献</h2>
+  <div class="refs">
+    <div class="r"><span class="rn">[1]</span>████ (灾变年 ███). ███ 原理初论. <em>泰拉理论研究内刊, Vol.3, 已列密.</em></div>
+    <div class="r"><span class="rn">[2]</span>Rhodes Island Archive Committee (████). 天灾周期数据集 v7.74.9. <em>内部数据集, 分发受限.</em></div>
+    <div class="r"><span class="rn">[3]</span>███ & ███ (████). 感染者聚落的时序记忆结构：一种信息论视角. <em>未发表草稿.</em></div>
+    <div class="r"><span class="rn">[4]</span>████ (████). <em>[文献标题已脱敏]</em>. ██████, pp. ███–███.</div>
+  </div>
+</div>
+
+</div>

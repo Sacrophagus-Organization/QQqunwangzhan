@@ -6,6 +6,13 @@ import { fileURLToPath } from 'url';
 import fs from 'fs';
 import { db } from '../db.js';
 import { authMiddleware, adminOnly, AuthRequest } from '../middleware/auth.js';
+import { upsertProgress } from './loopPuzzle.js';
+
+// 石棺下载文件 → 对应谜题节点进度的映射（与 seed/loop_seed.py 的约定保持一致）
+const FILE_NODE_MAP: Record<string, string> = {
+  'loop.zip': 'node2',
+  'loop-node4.zip': 'node4',
+};
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const uploadDir = path.join(__dirname, '..', '..', 'uploads');
@@ -122,6 +129,16 @@ router.post('/verify', authMiddleware, (req: AuthRequest, res) => {
 
   db.prepare('UPDATE sarcophagus_codes SET download_token = ?, token_expires_at = ? WHERE id = ?')
     .run(downloadToken, expiresAt, row.id);
+
+  // 验证成功即服务端标记对应节点完成（前端不再触碰任何密码/进度上报）
+  const nodeKey = FILE_NODE_MAP[row.file_name];
+  if (nodeKey && req.userId) {
+    try {
+      upsertProgress(req.userId, nodeKey, {});
+    } catch (err: any) {
+      console.error('[sarcophagus] mark node progress failed:', err);
+    }
+  }
 
   res.json({
     success: true,

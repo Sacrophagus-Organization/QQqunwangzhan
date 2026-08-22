@@ -1,6 +1,5 @@
 import fs from 'fs';
 import { v4 as uuid } from 'uuid';
-import { v4 as uuid } from 'uuid';
 import { db } from '../db.js';
 import { parseAddresses, stripHtml } from './address.js';
 import { getMailProvider } from './providerFactory.js';

@@ -8,7 +8,7 @@ import DOMPurify from 'dompurify';
 export function sanitizeHtml(dirty: string | undefined | null): string {
   if (!dirty) return '';
   return DOMPurify.sanitize(dirty, {
-    ADD_ATTR: ['target'],
+    ADD_ATTR: ['target', 'style'],
     ALLOW_DATA_ATTR: true,
     // 显式允许 Markdown 渲染输出的标签（含复选框任务列表）
     ADD_TAGS: ['del'],

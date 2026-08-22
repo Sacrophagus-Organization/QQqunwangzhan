@@ -5,7 +5,7 @@ import TEST_STORY from '@/data/testStory';
 
 const TEXT_SPEED = 45; // ms per char
 const NARRATOR_AUTO_ADVANCE = 2800; // ms
-const CLICK_COOLDOWN = 500;
+const CLICK_COOLDOWN = 150; // 防连点（原先 500ms 导致点击明显卡顿）
 
 // 中文标点停顿时间倍率
 const PUNCTUATION_DELAY_CHARS = new Set('，。！？、；：…—');
@@ -34,7 +34,8 @@ export function useStoryPlayer({ storyId, onComplete }: UseStoryPlayerOptions) {
   const [state, setState] = useState<PlayerState>({
     phase: 'loading',
     currentSceneIndex: 0,
-    currentLineIndex: 0,
+    // currentLineIndex = 当前正在显示的行索引；-1 表示尚未开播（首行由自动 advance 播放）
+    currentLineIndex: -1,
     displayedChars: 0,
     leftImage: null,
     rightImage: null,
@@ -50,6 +51,11 @@ export function useStoryPlayer({ storyId, onComplete }: UseStoryPlayerOptions) {
   const narratorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastClickRef = useRef(0);
   const isProcessingRef = useRef(false);
+  // 当前正在显示的行（避免用 currentLineIndex-1 取错行导致的闪烁/加载不全）
+  const currentLineRef = useRef<StoryLine | null>(null);
+  // 用 ref 解耦 startTyping <-> advance 的循环 useCallback 依赖
+  const startTypingRef = useRef<(text: string, isNarrator: boolean) => void>(() => {});
+  const advanceRef = useRef<(nextIndexOverride?: number) => void>(() => {});
 
   // Load story data
   useEffect(() => {
@@ -93,7 +99,7 @@ export function useStoryPlayer({ storyId, onComplete }: UseStoryPlayerOptions) {
   // Get current line
   const getCurrentLine = useCallback((): StoryLine | null => {
     if (!playData) return null;
-    if (state.currentLineIndex >= playData.lines.length) return null;
+    if (state.currentLineIndex < 0 || state.currentLineIndex >= playData.lines.length) return null;
     return playData.lines[state.currentLineIndex];
   }, [playData, state.currentLineIndex]);
 
@@ -117,7 +123,7 @@ export function useStoryPlayer({ storyId, onComplete }: UseStoryPlayerOptions) {
       if (charIndex >= totalChars) {
         setState(s => ({ ...s, phase: 'waiting', displayedChars: totalChars }));
         if (isNarrator) {
-          narratorTimerRef.current = setTimeout(() => advance(), NARRATOR_AUTO_ADVANCE);
+          narratorTimerRef.current = setTimeout(() => advanceRef.current(), NARRATOR_AUTO_ADVANCE);
         }
         return;
       }
@@ -135,22 +141,23 @@ export function useStoryPlayer({ storyId, onComplete }: UseStoryPlayerOptions) {
 
   // Finish typing immediately
   const completeTyping = useCallback(() => {
-    if (!playData) return;
-    const line = playData.lines[Math.max(0, state.currentLineIndex - 1)];
+    const line = currentLineRef.current;
     if (!line) return;
     clearTimers();
+    const isNarr = line.speaker === 'narrator';
     setState(s => ({
       ...s,
       phase: 'waiting',
       displayedChars: line.text.length,
+      isNarrator: isNarr,
     }));
-    if (line.speaker === 'narrator') {
-      narratorTimerRef.current = setTimeout(() => advance(), NARRATOR_AUTO_ADVANCE);
+    if (isNarr) {
+      narratorTimerRef.current = setTimeout(() => advanceRef.current(), NARRATOR_AUTO_ADVANCE);
     }
-  }, [playData, state.currentLineIndex, clearTimers]);
+  }, [clearTimers]);
 
-  // Advance to next line
-  const advance = useCallback(() => {
+  // Advance to next line (nextIndexOverride 用于分支跳转）
+  const advance = useCallback((nextIndexOverride?: number) => {
     if (isProcessingRef.current) return;
     isProcessingRef.current = true;
     clearTimers();
@@ -160,11 +167,16 @@ export function useStoryPlayer({ storyId, onComplete }: UseStoryPlayerOptions) {
       return;
     }
 
-    const nextIndex = state.currentLineIndex;
+    // 默认播完当前行后推进到下一行；首屏（-1）播第 0 行；分支用 override 直接跳转
+    const nextIndex = nextIndexOverride ?? state.currentLineIndex + 1;
     if (nextIndex >= playData.lines.length) {
       setState(s => ({ ...s, phase: 'ending' }));
       isProcessingRef.current = false;
       onComplete();
+      return;
+    }
+    if (nextIndex < 0) {
+      isProcessingRef.current = false;
       return;
     }
 
@@ -184,50 +196,74 @@ export function useStoryPlayer({ storyId, onComplete }: UseStoryPlayerOptions) {
     const leftSpeaking = line.speaker === 'left';
     const rightSpeaking = line.speaker === 'right';
 
+    currentLineRef.current = line;
+
+    const isNarr = line.speaker === 'narrator';
+    // 首屏：第一条旁白（> [Confidential] █████████ LOG）直接完整显示在屏幕中央，随后自动推进
+    const instantFull = isNarr && nextIndex === 0;
+
+    // 行索引与 displayedChars 原子更新，避免“新行+旧字数”错位导致的闪烁/加载不全
     setState(s => ({
       ...s,
       currentSceneIndex: nextSceneIndex,
-      currentLineIndex: nextIndex + 1,
+      currentLineIndex: nextIndex,
+      displayedChars: instantFull ? line.text.length : 0,
       leftImage: leftImg,
       rightImage: rightImg,
       leftSpeaking,
       rightSpeaking,
+      isNarrator: isNarr,
+      phase: instantFull ? 'waiting' : 'typing',
       effect: line.effect || 'none',
     }));
 
-    // Start typing after a small delay for sprite transitions
-    setTimeout(() => {
-      startTyping(line.text, line.speaker === 'narrator');
-    }, line.speaker !== 'narrator' ? 100 : 0);
+    if (instantFull) {
+      // LOG 行保持当前索引，定时自动推进到下一行
+      narratorTimerRef.current = setTimeout(() => advanceRef.current(), NARRATOR_AUTO_ADVANCE);
+    } else {
+      // 同步启动打字，避免延迟窗口期内的点击/渲染错乱
+      startTypingRef.current(line.text, isNarr);
+    }
 
-    setTimeout(() => { isProcessingRef.current = false; }, CLICK_COOLDOWN);
-  }, [playData, state, clearTimers, onComplete, startTyping]);
+    setTimeout(() => { isProcessingRef.current = false; }, 50);
+  }, [playData, state, clearTimers, onComplete]);
+
+  // 保持 refs 指向最新的实现
+  startTypingRef.current = startTyping;
+  advanceRef.current = advance;
+
+  // 数据加载完成后自动开始播放第一句（无需点击）
+  useEffect(() => {
+    if (state.phase === 'idle' && playData) {
+      advance();
+    }
+  }, [state.phase, playData, advance]);
 
   // Handle click / key press
   const handleClick = useCallback(() => {
     const now = Date.now();
-    if (isProcessingRef.current || (now - lastClickRef.current < CLICK_COOLDOWN)) return;
+    if (isProcessingRef.current) return;
 
     // Script ended
     if (state.phase === 'ending') return;
 
-    // Initial click to start
+    if (now - lastClickRef.current < CLICK_COOLDOWN) return;
+    lastClickRef.current = now;
+
+    // Initial click to start (fallback：自动播放失效时的兜底)
     if (state.phase === 'idle') {
-      lastClickRef.current = now;
       advance();
       return;
     }
 
     // Typing → complete
     if (state.phase === 'typing') {
-      lastClickRef.current = now;
       completeTyping();
       return;
     }
 
     // Waiting → advance
     if (state.phase === 'waiting') {
-      lastClickRef.current = now;
       clearTimers();
       setState(s => ({ ...s, effect: 'none' }));
       advance();
@@ -245,8 +281,8 @@ export function useStoryPlayer({ storyId, onComplete }: UseStoryPlayerOptions) {
     if (targetLine) {
       const idx = playData.lines.findIndex(l => l.id === targetLine.id);
       if (idx >= 0) {
-        setState(s => ({ ...s, currentLineIndex: idx, phase: 'waiting', choices: [] }));
-        advance();
+        setState(s => ({ ...s, phase: 'waiting', choices: [], effect: 'none' }));
+        advance(idx);
       }
     }
   }, [playData, advance]);

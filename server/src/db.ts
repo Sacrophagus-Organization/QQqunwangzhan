@@ -358,6 +358,17 @@ CREATE TABLE IF NOT EXISTS stories (
   CREATE INDEX IF NOT EXISTS idx_story_lines_story ON story_lines(story_id, "order");
   CREATE INDEX IF NOT EXISTS idx_story_choices_story ON story_choices(story_id);
   CREATE INDEX IF NOT EXISTS idx_story_progress_user ON story_progress(user_id, story_id);
+
+  -- 长夜尽头谜题链路：服务端进度记录（节点2/4 完成 + 节点6 附录解锁状态存于 state JSON）
+  CREATE TABLE IF NOT EXISTS puzzle_progress (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    node_key TEXT NOT NULL,
+    state TEXT NOT NULL DEFAULT '{}',
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE(user_id, node_key)
+  );
+  CREATE INDEX IF NOT EXISTS idx_puzzle_progress_user ON puzzle_progress(user_id, node_key);
 `);
 
 // Migration: mail_bot_rules title column and mail_bot_rule_prerequisites table
@@ -406,6 +417,8 @@ try {
     .run('pa-mail-admin', '/mail/admin', '邮件管理', 'admin', 1, '邮箱管理后台（仅管理员可见）');
   db.prepare('INSERT OR IGNORE INTO page_access (id, route_path, route_name, access_level, is_enabled, description) VALUES (?, ?, ?, ?, ?, ?)')
     .run('pa-mail-admin-bots', '/mail/admin/bots', 'Bot管理', 'admin', 1, 'Bot自动回复管理（仅管理员可见）');
+  db.prepare('INSERT OR IGNORE INTO page_access (id, route_path, route_name, access_level, is_enabled, description) VALUES (?, ?, ?, ?, ?, ?)')
+    .run('pa-loop-node6', '/THEDARKSIDESOFTHETWINTERRAHOPES', '长夜尽头·线索板', 'member', 1, 'LOOP 节点6 线索板（论文与附录解锁）');
 } catch {}
 
 // Seed page_access - 初始化所有页面访问配?

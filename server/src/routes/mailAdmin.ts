@@ -97,7 +97,7 @@ router.patch('/accounts/:id/status', (req: AuthRequest, res) => {
   const account = db.prepare('SELECT * FROM mail_accounts WHERE id=?').get(req.params.id) as any;
   if (!account) { res.status(404).json({ error: '账号不存在' }); return; }
   db.prepare('UPDATE mail_accounts SET status=?, updated_at=? WHERE id=?').run(status, new Date().toISOString(), req.params.id);
-  log(req.userId!, req.userName!, 'update_account_status', 'mail_account', req.params.id, `${account.status} -> ${status}`);
+  log(req.userId!, req.userName!, 'update_account_status', 'mail_account', String(req.params.id), `${account.status} -> ${status}`);
   res.json({ success: true });
 });
 
@@ -128,7 +128,7 @@ router.delete('/accounts/:id', (req: AuthRequest, res) => {
     }
   });
   del();
-  log(req.userId!, req.userName!, 'delete_account', 'mail_account', req.params.id, `删除账号 ${account.address}`);
+  log(req.userId!, req.userName!, 'delete_account', 'mail_account', String(req.params.id), `删除账号 ${account.address}`);
   res.json({ success: true });
 });
 
@@ -200,7 +200,7 @@ router.delete('/messages/:id', (req: AuthRequest, res) => {
   atts.forEach((a: any) => { try { fs.unlinkSync(a.file_path); } catch {} });
   db.prepare("DELETE FROM attachments WHERE entity_type='mail_message' AND entity_id=?").run(req.params.id);
   db.prepare('DELETE FROM mail_messages WHERE id=?').run(req.params.id);
-  log(req.userId!, req.userName!, 'force_delete_message', 'mail_message', req.params.id, `强制删除邮件: ${(row.subject || '').slice(0, 50)}`);
+  log(req.userId!, req.userName!, 'force_delete_message', 'mail_message', String(req.params.id), `强制删除邮件: ${(row.subject || '').slice(0, 50)}`);
   res.json({ success: true });
 });
 
@@ -353,7 +353,7 @@ router.delete('/bots/:id', (req: AuthRequest, res) => {
     }
   });
   del();
-  log(req.userId!, req.userName!, 'delete_bot', 'mail_bot', req.params.id, `删除Bot: ${botAddress}`);
+  log(req.userId!, req.userName!, 'delete_bot', 'mail_bot', String(req.params.id), `删除Bot: ${botAddress}`);
   res.json({ success: true });
 });
 
