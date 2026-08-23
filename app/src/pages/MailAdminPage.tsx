@@ -20,6 +20,8 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { apiDelete, apiGet, apiPatch, apiPost } from '@/api/client';
+import MarkdownEditor from '@/components/MarkdownEditor';
+import EmailBody from '@/components/EmailBody';
 import type { MailAdminAccount, MailAdminLog, MailAdminMessage, MailAdminStats } from '@/types';
 
 type Tab = 'accounts' | 'messages' | 'broadcast' | 'logs';
@@ -230,6 +232,7 @@ function MessagesPanel() {
   const [selected, setSelected] = useState<any>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   var debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchMessages = useCallback(async (fromQ: string, toQ: string, subjQ: string, pg: number) => {
@@ -272,6 +275,28 @@ function MessagesPanel() {
     fetchMessages('', '', '', 1).catch(console.error);
   };
 
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (messages.length === 0) return;
+    const allSelected = messages.every(m => selectedIds.has(m.id));
+    setSelectedIds(allSelected ? new Set() : new Set(messages.map(m => m.id)));
+  };
+
+  const batchForceDelete = async () => {
+    if (selectedIds.size === 0) return;
+    if (!confirm(`确定删除选中的 ${selectedIds.size} 封邮件？此操作不可恢复。`)) return;
+    await apiPost('/mail/admin/messages/batch-delete', { ids: Array.from(selectedIds) });
+    setSelectedIds(new Set());
+    fetchMessages('', '', '', 1).catch(console.error);
+  };
+
   const addressStr = (list?: { address: string; name?: string }[]) => !list ? '' : list.map(i => i.name ? i.name + ' <' + i.address + '>' : i.address).join(', ');
   const totalPages = Math.max(1, Math.ceil(total / 20));
 
@@ -293,16 +318,21 @@ function MessagesPanel() {
         <Button variant="outline" size="icon" onClick={() => { setPage(1); fetchMessages(fromInput, toInput, subjectInput, 1).catch(console.error); }} title="立即搜索">
           {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
         </Button>
+        {selectedIds.size > 0 && (
+          <Button variant="outline" size="sm" className="text-destructive" onClick={batchForceDelete}>
+            <Trash2 className="h-4 w-4 mr-1" />删除选中({selectedIds.size})
+          </Button>
+        )}
       </div>
       <div className="overflow-x-auto rounded-md border border-border/50">
         <table className="w-full text-sm">
           <thead className="bg-secondary/50">
-            <tr><th className="text-left p-3 w-8"></th><th className="text-left p-3">发件人</th><th className="text-left p-3">收件人</th><th className="text-left p-3">主题</th><th className="text-left p-3">时间</th><th className="text-right p-3">操作</th></tr>
+            <tr><th className="text-left p-3 w-8"><input type="checkbox" className="rounded" checked={messages.length > 0 && messages.every(m => selectedIds.has(m.id))} onChange={toggleSelectAll} /></th><th className="text-left p-3">发件人</th><th className="text-left p-3">收件人</th><th className="text-left p-3">主题</th><th className="text-left p-3">时间</th><th className="text-right p-3">操作</th></tr>
           </thead>
           <tbody>
             {messages.map(m => (
               <tr key={m.id} className="border-t border-border/30 hover:bg-secondary/30 cursor-pointer" onClick={() => viewDetail(m.id)}>
-                <td className="p-3">{m.isRead ? <MailOpen className="h-4 w-4 text-muted-foreground" /> : <Mail className="h-4 w-4 text-primary" />}</td>
+                <td className="p-3" onClick={e => e.stopPropagation()}><div className="flex items-center gap-2"><input type="checkbox" className="rounded" checked={selectedIds.has(m.id)} onChange={() => toggleSelect(m.id)} />{m.isRead ? <MailOpen className="h-4 w-4 text-muted-foreground" /> : <Mail className="h-4 w-4 text-primary" />}</div></td>
                 <td className="p-3 font-mono text-xs max-w-[160px] truncate">{m.from.address}</td>
                 <td className="p-3 font-mono text-xs max-w-[160px] truncate">{addressStr(m.to)}</td>
                 <td className="p-3 max-w-[200px] truncate font-medium">{m.subject}</td>
@@ -333,7 +363,7 @@ function MessagesPanel() {
                 <div>收件人：{addressStr(selected.to)}</div>
                 <div>时间：{new Date(selected.receivedAt).toLocaleString()}</div>
               </div>
-              <div className="border-t border-border/50 pt-3 prose prose-invert max-w-none text-sm" dangerouslySetInnerHTML={{ __html: selected.bodyHtml || selected.body_text || '' }} />
+              <EmailBody value={selected.bodyHtml || selected.body_text || ''} />
             </div>
           )}
         </DialogContent>
@@ -344,34 +374,40 @@ function MessagesPanel() {
 
 function BroadcastPanel() {
   const [subject, setSubject] = useState('');
-  const [bodyText, setBodyText] = useState('');
+  const [bodyHtml, setBodyHtml] = useState('');
   const [recipientType, setRecipientType] = useState<'all' | 'role' | 'selected'>('all');
   const [role, setRole] = useState('member');
-  const [users, setUsers] = useState<{ id: string; username: string; role: string }[]>([]);
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [addresses, setAddresses] = useState<{ address: string; displayName: string }[]>([]);
+  const [selectedAddresses, setSelectedAddresses] = useState<string[]>([]);
+  const [emailInput, setEmailInput] = useState('');
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState<{ sent: number; total: number } | null>(null);
 
   useEffect(() => {
-    apiGet<{ id: string; username: string; role: string }[]>('/mail/admin/users').then(setUsers).catch(console.error);
+    apiGet<{ address: string; displayName: string }[]>('/mail/admin/addresses').then(setAddresses).catch(console.error);
   }, []);
 
   const send = async () => {
-    if (!subject.trim() || !bodyText.trim()) return;
+    if (!subject.trim() || !bodyHtml.trim()) return;
     setSending(true);
     try {
       const data = await apiPost<{ sent: number; total: number }>('/mail/admin/broadcast', {
-        subject, bodyText, recipientType, role: recipientType === 'role' ? role : undefined, recipientIds: recipientType === 'selected' ? selectedIds : undefined,
+        subject, bodyHtml, recipientType, role: recipientType === 'role' ? role : undefined, recipientAddresses: recipientType === 'selected' ? selectedAddresses : undefined,
       });
       setResult(data);
       setSubject('');
-      setBodyText('');
+      setBodyHtml('');
     } catch (e: any) { alert(e.message); }
     finally { setSending(false); }
   };
 
-  const toggleUser = (id: string) => {
-    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  const addAddress = (address: string) => {
+    setSelectedAddresses(prev => prev.includes(address) ? prev : [...prev, address]);
+    setEmailInput('');
+  };
+
+  const removeAddress = (address: string) => {
+    setSelectedAddresses(prev => prev.filter(a => a !== address));
   };
 
   return (
@@ -399,14 +435,35 @@ function BroadcastPanel() {
             </Select>
           )}
           {recipientType === 'selected' && (
-            <div className="max-h-[200px] overflow-y-auto border border-border/50 rounded-md p-2 space-y-1">
-              {users.map(u => (
-                <label key={u.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-secondary/30 px-2 py-1 rounded">
-                  <input type="checkbox" checked={selectedIds.includes(u.id)} onChange={() => toggleUser(u.id)} className="rounded" />
-                  <span>{u.username}</span>
-                  <Badge variant="outline" className="text-xs">{u.role}</Badge>
-                </label>
-              ))}
+            <div className="space-y-2">
+              <div className="flex flex-wrap gap-1.5 min-h-[28px]">
+                {selectedAddresses.length === 0 && <span className="text-xs text-muted-foreground">尚未选择收件人</span>}
+                {selectedAddresses.map(addr => (
+                  <Badge key={addr} variant="secondary" className="gap-1.5 px-2 py-1">
+                    <span className="font-mono">{addr}</span>
+                    <button type="button" onClick={() => removeAddress(addr)} className="text-muted-foreground hover:text-destructive leading-none">×</button>
+                  </Badge>
+                ))}
+              </div>
+              <div className="relative">
+                <Input value={emailInput} onChange={e => setEmailInput(e.target.value)} placeholder="输入邮箱地址前缀进行匹配" autoComplete="off" />
+                {(() => {
+                  const prefix = emailInput.trim().toLowerCase();
+                  const matches = prefix ? addresses.filter(a => a.address.toLowerCase().startsWith(prefix)).slice(0, 8) : [];
+                  if (matches.length === 0) return null;
+                  return (
+                    <div className="absolute z-10 mt-1 w-full bg-popover border border-border/50 rounded-md shadow-lg max-h-56 overflow-y-auto">
+                      {matches.map(m => (
+                        <button key={m.address} type="button" onClick={() => addAddress(m.address)}
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-secondary/40 flex items-center justify-between gap-2">
+                          <span className="font-mono">{m.address}</span>
+                          {m.displayName && m.displayName !== m.address && <span className="text-xs text-muted-foreground truncate">{m.displayName}</span>}
+                        </button>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
             </div>
           )}
           <div className="space-y-2">
@@ -415,10 +472,9 @@ function BroadcastPanel() {
           </div>
           <div className="space-y-2">
             <Label>正文</Label>
-            <textarea value={bodyText} onChange={e => setBodyText(e.target.value)} placeholder="群发通知正文内容" rows={8}
-              className="w-full rounded-md border border-border/50 bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 resize-y" />
+            <MarkdownEditor value={bodyHtml} onChange={setBodyHtml} placeholder="群发通知正文内容，支持 Markdown" minHeight="260px" />
           </div>
-          <Button onClick={send} disabled={sending || !subject.trim() || !bodyText.trim()} className="w-full">
+          <Button onClick={send} disabled={sending || !subject.trim() || !bodyHtml.trim() || (recipientType === 'selected' && selectedAddresses.length === 0)} className="w-full">
             {sending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}发送群发通知
           </Button>
           {result && (
@@ -484,3 +540,4 @@ function LogsPanel() {
     </div>
   );
 }
+

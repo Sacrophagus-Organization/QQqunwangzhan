@@ -43,3 +43,50 @@ export function stripHtml(html: string): string {
     .replace(/\s+/g, ' ')
     .trim();
 }
+
+/**
+ * 将 Markdown 文本转换为用于列表预览、Bot 关键词匹配的纯文本。
+ * 新邮件正文统一保存为 Markdown，因此这里同时兼容旧版 HTML 正文。
+ */
+export function markdownToPlainText(markdown: string): string {
+  if (!markdown || typeof markdown !== 'string') return '';
+  let text = markdown;
+
+  // 代码块 / 行内代码：保留代码文字
+  text = text.replace(/```[a-zA-Z0-9_-]*\n?([\s\S]*?)```/g, '$1');
+  text = text.replace(/`([^`\n]+)`/g, '$1');
+
+  // 图片与链接：保留显示文字
+  text = text.replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1');
+  text = text.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1');
+
+  // 标题、引用、列表、分隔线
+  text = text.replace(/^\s{0,3}#{1,6}\s+/gm, '');
+  text = text.replace(/^\s{0,3}>\s?/gm, '');
+  text = text.replace(/^\s{0,3}[-+*]\s+/gm, '');
+  text = text.replace(/^\s{0,3}\d+[.)]\s+/gm, '');
+  text = text.replace(/^\s{0,3}([-*_])\1{2,}\s*$/gm, '');
+
+  // 粗体、斜体、删除线
+  text = text.replace(/(\*\*|__)([^*_]+)\1/g, '$2');
+  text = text.replace(/(\*|_)([^*_]+)\1/g, '$2');
+  text = text.replace(/~~([^~]+)~~/g, '$1');
+
+  // 旧版富文本 HTML
+  text = text
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<[^>]+>/g, ' ');
+
+  // 常见 HTML 实体
+  text = text
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/&apos;/gi, "'");
+
+  return text.replace(/\s+/g, ' ').trim();
+}

@@ -2105,3 +2105,56 @@
 }
 
 
+
+/* ═══ 邮件正文图片交互 ═══ */
+.email-image-wrap {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  line-height: 0;
+}
+.email-image-wrap .email-body-image {
+  display: block;
+  max-width: 100%;
+  border-radius: 8px;
+}
+.email-image-download {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: hsla(230, 25%, 10%, 0.85);
+  color: hsl(215, 30%, 82%);
+  border: 1px solid hsl(230, 20%, 20%);
+  cursor: pointer;
+  z-index: 10;
+  backdrop-filter: blur(4px);
+}
+.email-image-wrap:hover .email-image-download {
+  display: flex;
+}
+.email-image-download:hover {
+  background: hsla(190, 100%, 25%, 0.92);
+  color: white;
+}
+.email-preview-control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: hsla(230, 25%, 10%, 0.88);
+  color: hsl(215, 30%, 82%);
+  border: 1px solid hsl(230, 20%, 20%);
+  cursor: pointer;
+}
+.email-preview-control:hover {
+  background: hsla(190, 100%, 25%, 0.92);
+  color: white;
+}

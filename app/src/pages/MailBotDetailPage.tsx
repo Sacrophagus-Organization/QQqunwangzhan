@@ -9,7 +9,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import MarkdownEditor from '@/components/MarkdownEditor';
 import { Badge } from '@/components/ui/badge';
 import { apiDelete, apiGet, apiPost, apiPut } from '@/api/client';
 import type { MailBot } from '@/types';
@@ -327,8 +327,8 @@ export default function MailBotDetailPage() {
                 <Input value={ruleForm.triggerKeyword} onChange={function(e){setRuleForm(function(f){return{...f,triggerKeyword:e.target.value};});}} placeholder="收到包含此关键词的邮件时触发" /></div>
               <div className="space-y-2"><Label>回复标题</Label>
                 <Input value={ruleForm.replySubject} onChange={function(e){setRuleForm(function(f){return{...f,replySubject:e.target.value};});}} placeholder="留空则使用 Re: 原标题" /></div>
-              <div className="space-y-2"><Label>回复正文 (支持HTML)</Label>
-                <Textarea value={ruleForm.replyBody} onChange={function(e){setRuleForm(function(f){return{...f,replyBody:e.target.value};});}} placeholder="自动回复的邮件内容" rows={6} /></div>
+              <div className="space-y-2"><Label>回复正文（Markdown）</Label>
+                <MarkdownEditor value={ruleForm.replyBody} onChange={function(v){setRuleForm(function(f){return{...f,replyBody:v};});}} placeholder="自动回复的邮件内容，支持 Markdown" minHeight="200px" /></div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2"><Label>延迟秒数</Label><Input type="number" min={0} value={ruleForm.delaySeconds} onChange={function(e){setRuleForm(function(f){return{...f,delaySeconds:Number(e.target.value)};});}} /></div>
                 <div className="space-y-2"><Label>排序</Label><Input type="number" min={0} value={ruleForm.sortOrder} onChange={function(e){setRuleForm(function(f){return{...f,sortOrder:Number(e.target.value)};});}} /></div>
@@ -354,3 +354,4 @@ export default function MailBotDetailPage() {
     </div>
   );
 }
+

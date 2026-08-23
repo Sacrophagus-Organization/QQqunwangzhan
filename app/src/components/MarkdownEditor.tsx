@@ -122,16 +122,10 @@ export default function MarkdownEditor({
   );
 
   const handleToolClick = useCallback((action: ToolAction) => {
-    if (textareaRef.current) applyTool(textareaRef.current, action);
-    // 触发 React onChange 以同步状态
-    if (textareaRef.current) {
-      const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
-        HTMLTextAreaElement.prototype, 'value'
-      )?.set;
-      nativeInputValueSetter?.call(textareaRef.current, textareaRef.current.value);
-      textareaRef.current.dispatchEvent(new Event('input', { bubbles: true }));
-    }
-  }, []);
+    if (!textareaRef.current) return;
+    applyTool(textareaRef.current, action);
+    onChange(textareaRef.current.value);
+  }, [onChange]);
 
   /** 粘贴/拖放图片上传 */
   const handleImageUpload = useCallback(async (file: File) => {
@@ -140,19 +134,14 @@ export default function MarkdownEditor({
       const { url } = await uploadImage(file);
       if (textareaRef.current) {
         insertAtCursor(textareaRef.current, `![](${url})`, '');
-        const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
-          HTMLTextAreaElement.prototype, 'value'
-        )?.set;
-        nativeInputValueSetter?.call(textareaRef.current, textareaRef.current.value);
-        textareaRef.current.dispatchEvent(new Event('input', { bubbles: true }));
+        onChange(textareaRef.current.value);
       }
     } catch (e: any) {
       alert('图片上传失败：' + e.message);
     } finally {
       setUploading(false);
     }
-  }, []);
-
+  }, [onChange]);
   const handlePaste = useCallback((e: React.ClipboardEvent) => {
     const items = e.clipboardData?.items;
     if (!items) return;
@@ -305,3 +294,5 @@ export default function MarkdownEditor({
     </div>
   );
 }
+
+

@@ -1,12 +1,12 @@
 import fs from 'fs';
 import { v4 as uuid } from 'uuid';
 import { db } from '../db.js';
-import { parseAddresses, stripHtml } from './address.js';
+import { parseAddresses, markdownToPlainText } from './address.js';
 import { getMailProvider } from './providerFactory.js';
 import { getAccountByAddress, getAccountByUserId, getMessageForUser, listMessages, mapMessage, unreadCounts } from './repository.js';
 import type { CreateMailAccountInput, MailFolder, MailListResult, MailMessage, SendMailInput } from './types.js';
 
-const folders: MailFolder[] = ['inbox', 'sent', 'drafts', 'spam', 'trash', 'deleted'];
+const folders: MailFolder[] = ['inbox', 'sent', 'drafts', 'spam', 'deleted'];
 
 function assertFolder(folder: string): MailFolder {
   if (!folders.includes(folder as MailFolder)) throw new Error('未知邮箱文件夹');
@@ -73,7 +73,7 @@ export class MailService {
     if (!draft) this.assertLocalRecipients([...to, ...cc, ...bcc]);
 
     const bodyHtml = payload.bodyHtml || payload.body || '';
-    const bodyText = payload.bodyText || stripHtml(bodyHtml);
+    const bodyText = payload.bodyText || markdownToPlainText(bodyHtml);
     const subject = (payload.subject || '').trim() || '(无主题)';
     const now = new Date().toISOString();
     const id = 'mail-' + uuid().slice(0, 12);
@@ -170,16 +170,79 @@ export class MailService {
   delete(userId: string, id: string) {
     const message = getMessageForUser(userId, id);
     if (!message) throw new Error('邮件不存在');
-    const now = new Date().toISOString();
     if (message.folder === 'deleted') {
-      const atts = db.prepare('SELECT * FROM attachments WHERE entity_type=? AND entity_id=?').all('mail_message', id) as any[];
-      for (const att of atts) { try { fs.unlinkSync(att.file_path); } catch {} }
-      db.prepare('DELETE FROM attachments WHERE entity_type=? AND entity_id=?').run('mail_message', id);
-      db.prepare('UPDATE mail_messages SET deleted_at=?, updated_at=? WHERE owner_user_id=? AND id=?').run(now, now, userId, id);
+      this.permanentlyDelete(userId, id);
       return { success: true };
     }
-    db.prepare('UPDATE mail_messages SET folder=?, updated_at=? WHERE owner_user_id=? AND id=?').run('deleted', now, userId, id);
+    db.prepare('UPDATE mail_messages SET folder=?, updated_at=? WHERE owner_user_id=? AND id=?')
+      .run('deleted', new Date().toISOString(), userId, id);
     return { success: true };
+  }
+
+  batchDelete(userId: string, ids: string[]) {
+    if (!Array.isArray(ids) || ids.length === 0) throw new Error('请选择要删除的邮件');
+    let permanentCount = 0;
+    const trashedAt = new Date().toISOString();
+    const moveToTrash = db.prepare('UPDATE mail_messages SET folder=?, updated_at=? WHERE owner_user_id=? AND id=? AND deleted_at IS NULL');
+    const trashTx = db.transaction((list: string[]) => {
+      for (const id of list) {
+        const message = getMessageForUser(userId, id);
+        if (!message) continue;
+        if (message.folder === 'deleted') {
+          this.permanentlyDelete(userId, id);
+          permanentCount++;
+        } else {
+          moveToTrash.run('deleted', trashedAt, userId, id);
+        }
+      }
+    });
+    trashTx(ids);
+    return { success: true, count: ids.length, permanentCount };
+  }
+
+  batchMove(userId: string, ids: string[], folder: string) {
+    if (!Array.isArray(ids) || ids.length === 0) throw new Error('请选择要移动的邮件');
+    const target = assertFolder(folder);
+    const now = new Date().toISOString();
+    const stmt = db.prepare('UPDATE mail_messages SET folder=?, updated_at=? WHERE owner_user_id=? AND id=? AND deleted_at IS NULL');
+    const moveTx = db.transaction((list: string[]) => {
+      for (const id of list) {
+        if (!getMessageForUser(userId, id)) continue;
+        stmt.run(target, now, userId, id);
+      }
+    });
+    moveTx(ids);
+    return { success: true, count: ids.length, folder: target };
+  }
+
+  emptyTrash(userId: string) {
+    const rows = db.prepare("SELECT id FROM mail_messages WHERE owner_user_id=? AND folder='deleted' AND deleted_at IS NULL").all(userId) as any[];
+    let count = 0;
+    for (const row of rows) {
+      this.permanentlyDelete(userId, row.id);
+      count++;
+    }
+    return { success: true, count };
+  }
+
+  purgeExpiredTrash(days = 14) {
+    const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+    const rows = db.prepare("SELECT id, owner_user_id FROM mail_messages WHERE folder='deleted' AND deleted_at IS NULL AND updated_at < ?").all(cutoff) as any[];
+    let count = 0;
+    for (const row of rows) {
+      this.permanentlyDelete(row.owner_user_id, row.id);
+      count++;
+    }
+    if (count > 0) console.log(`[Mail] 已自动清理垃圾箱中超过 ${days} 天的邮件: ${count} 封`);
+    return count;
+  }
+
+  private permanentlyDelete(userId: string, id: string) {
+    const atts = db.prepare('SELECT * FROM attachments WHERE entity_type=? AND entity_id=?').all('mail_message', id) as any[];
+    for (const att of atts) { try { fs.unlinkSync(att.file_path); } catch {} }
+    db.prepare('DELETE FROM attachments WHERE entity_type=? AND entity_id=?').run('mail_message', id);
+    db.prepare('UPDATE mail_messages SET deleted_at=?, updated_at=? WHERE owner_user_id=? AND id=?')
+      .run(new Date().toISOString(), new Date().toISOString(), userId, id);
   }
 
   private processBotReply(recipientAddress: string, messageId: string, sender: { address: string; displayName: string }, subject: string, bodyText: string, recipient: { address: string }) {
@@ -238,9 +301,12 @@ export class MailService {
         botAddress, botDisplayName,
         JSON.stringify([{ address: toAddress, name: '' }]),
         JSON.stringify([]), JSON.stringify([]),
-        subject, bodyHtml, bodyHtml, 0, 0, 0,
+        subject, bodyHtml, markdownToPlainText(bodyHtml), 0, 0, 0,
         now, now, now, now);
   }
 }
 
 export const mailService = new MailService();
+
+
+

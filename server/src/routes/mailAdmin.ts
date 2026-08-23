@@ -3,6 +3,7 @@ import { db } from '../db.js';
 import { authMiddleware, adminOnly, AuthRequest } from '../middleware/auth.js';
 import { mailService } from '../mail/MailService.js';
 import { getAccountByAddress } from '../mail/repository.js';
+import { markdownToPlainText } from '../mail/address.js';
 import { v4 as uuid } from 'uuid';
 import fs from 'fs';
 
@@ -204,22 +205,60 @@ router.delete('/messages/:id', (req: AuthRequest, res) => {
   res.json({ success: true });
 });
 
+router.post('/messages/batch-delete', (req: AuthRequest, res) => {
+  const ids = Array.isArray(req.body.ids) ? (req.body.ids as string[]) : [];
+  if (ids.length === 0) { res.status(400).json({ error: '请选择要删除的邮件' }); return; }
+  const placeholders = ids.map(() => '?').join(',');
+  const rows = db.prepare(`SELECT id, subject FROM mail_messages WHERE id IN (${placeholders})`).all(...ids) as any[];
+  const delAtts = db.prepare("DELETE FROM attachments WHERE entity_type='mail_message' AND entity_id=?");
+  const delMsg = db.prepare('DELETE FROM mail_messages WHERE id=?');
+  const tx = db.transaction((list: any[]) => {
+    for (const row of list) {
+      const atts = db.prepare("SELECT file_path FROM attachments WHERE entity_type='mail_message' AND entity_id=?").all(row.id) as any[];
+      atts.forEach((a: any) => { try { fs.unlinkSync(a.file_path); } catch {} });
+      delAtts.run(row.id);
+      delMsg.run(row.id);
+    }
+  });
+  tx(rows);
+  log(req.userId!, req.userName!, 'batch_delete_messages', 'mail_message', '', `批量删除邮件 ${ids.length} 封`);
+  res.json({ success: true, count: ids.length });
+});
+
 // ═══════════════════════════════════════════════
 // 群发通知
 // ═══════════════════════════════════════════════
 router.post('/broadcast', (req: AuthRequest, res) => {
   try {
-    const { subject, bodyHtml, recipientType, recipientIds } = req.body;
+    const { subject, bodyHtml, recipientType, recipientAddresses } = req.body;
     if (!subject || !bodyHtml) { res.status(400).json({ error: '主题和正文不能为空' }); return; }
 
-    let recipients: any[];
+    let recipients: { userId: string; accountId: string; username: string; address: string }[];
     if (recipientType === 'all') {
-      recipients = db.prepare("SELECT id, username FROM users WHERE status='active'").all() as any[];
+      recipients = db.prepare(`
+        SELECT ma.user_id AS userId, ma.id AS accountId, u.username, ma.address
+        FROM mail_accounts ma
+        JOIN users u ON ma.user_id = u.id
+        WHERE ma.status='active' AND u.status='active' AND ma.user_id NOT LIKE 'bot-%'
+        ORDER BY ma.address
+      `).all() as any[];
     } else if (recipientType === 'role' && req.body.role) {
-      recipients = db.prepare("SELECT id, username FROM users WHERE role=? AND status='active'").all(req.body.role) as any[];
-    } else if (recipientType === 'selected' && recipientIds?.length) {
-      const placeholders = recipientIds.map(() => '?').join(',');
-      recipients = db.prepare(`SELECT id, username FROM users WHERE id IN (${placeholders}) AND status='active'`).all(...recipientIds) as any[];
+      recipients = db.prepare(`
+        SELECT ma.user_id AS userId, ma.id AS accountId, u.username, ma.address
+        FROM mail_accounts ma
+        JOIN users u ON ma.user_id = u.id
+        WHERE ma.status='active' AND u.status='active' AND u.role=? AND ma.user_id NOT LIKE 'bot-%'
+        ORDER BY ma.address
+      `).all(req.body.role) as any[];
+    } else if (recipientType === 'selected' && Array.isArray(recipientAddresses) && recipientAddresses.length) {
+      const placeholders = recipientAddresses.map(() => '?').join(',');
+      recipients = db.prepare(`
+        SELECT ma.user_id AS userId, ma.id AS accountId, COALESCE(u.username, ma.display_name, ma.address) AS username, ma.address
+        FROM mail_accounts ma
+        LEFT JOIN users u ON ma.user_id = u.id
+        WHERE ma.status='active' AND ma.user_id NOT LIKE 'bot-%' AND ma.address IN (${placeholders})
+        ORDER BY ma.address
+      `).all(...recipientAddresses) as any[];
     } else {
       res.status(400).json({ error: '请选择收件人' }); return;
     }
@@ -228,21 +267,19 @@ router.post('/broadcast', (req: AuthRequest, res) => {
     if (!adminAccount) { res.status(400).json({ error: '管理员账号未开通邮箱' }); return; }
 
     const now = new Date().toISOString();
-    const bodyText = (req.body.bodyText || '').slice(0, 500);
+    const bodyText = markdownToPlainText(bodyHtml || '');
     let sent = 0;
 
     const insertMsg = db.prepare(`INSERT INTO mail_messages
       (id, owner_user_id, account_id, provider_message_id, thread_id, folder, from_address, from_name, to_addresses, cc_addresses, bcc_addresses, subject, body_html, body_text, is_read, is_starred, has_attachments, sent_at, received_at, created_at, updated_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
 
-    for (const user of recipients) {
-      const userAccount = db.prepare('SELECT * FROM mail_accounts WHERE user_id=? AND status=?').get(user.id, 'active') as any;
-      if (!userAccount) continue;
+    for (const r of recipients) {
       const id = 'bcast-' + uuid().slice(0, 12);
       insertMsg.run(
-        id, user.id, userAccount.id, '', id, 'inbox',
+        id, r.userId, r.accountId, '', id, 'inbox',
         adminAccount.address, adminAccount.display_name,
-        JSON.stringify([{ address: userAccount.address, name: user.username }]),
+        JSON.stringify([{ address: r.address, name: r.username }]),
         JSON.stringify([]), JSON.stringify([]),
         subject, bodyHtml, bodyText, 0, 0, 0, now, now, now, now
       );
@@ -254,7 +291,6 @@ router.post('/broadcast', (req: AuthRequest, res) => {
   } catch (err) { sendError(res, err); }
 });
 
-// ═══════════════════════════════════════════════
 // 审计日志
 // ═══════════════════════════════════════════════
 router.get('/logs', (req: AuthRequest, res) => {
@@ -463,6 +499,18 @@ router.get('/bots/:id/submissions', (req: AuthRequest, res) => {
   }
 });
 
+// List all non-bot active mail addresses (for broadcast recipient autocomplete)
+router.get('/addresses', (_req: AuthRequest, res) => {
+  const rows = db.prepare(`
+    SELECT ma.address, COALESCE(u.username, ma.display_name, ma.address) AS displayName
+    FROM mail_accounts ma
+    LEFT JOIN users u ON ma.user_id = u.id
+    WHERE ma.status='active' AND ma.user_id NOT LIKE 'bot-%'
+    ORDER BY ma.address
+  `).all() as any[];
+  res.json(rows);
+});
+
 // List all users (for broadcast recipient selection)
 router.get('/users', (_req: AuthRequest, res) => {
   const rows = db.prepare('SELECT id, username, role FROM users WHERE status=? ORDER BY role, username').all('active') as any[];
@@ -470,3 +518,4 @@ router.get('/users', (_req: AuthRequest, res) => {
 });
 
 export default router;
+

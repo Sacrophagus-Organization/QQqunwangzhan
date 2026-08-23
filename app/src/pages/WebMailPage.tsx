@@ -29,11 +29,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { RichTextEditor } from '@/components/RichTextEditor';
-import { apiDelete, apiDownload, apiGet, apiMultipart, apiPut } from '@/api/client';
+import MarkdownEditor from '@/components/MarkdownEditor';
+import { apiDelete, apiDownload, apiGet, apiMultipart, apiPost, apiPut } from '@/api/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { sanitizeHtml } from '@/lib/sanitize';
+import { quoteEmailBody } from '@/lib/mailBody';
 import { MailNotification } from '@/components/MailNotification';
+import EmailBody from '@/components/EmailBody';
 import type { MailAccount, MailFolder, MailFolderInfo, MailListResult, MailMessage } from '@/types';
 
 const folderLabels: Record<MailFolder, string> = {
@@ -41,8 +42,7 @@ const folderLabels: Record<MailFolder, string> = {
   sent: '发件箱',
   drafts: '草稿箱',
   spam: '垃圾邮件',
-  trash: '垃圾箱',
-  deleted: '已删除',
+  deleted: '垃圾箱',
 };
 
 const folderIcons: Record<MailFolder, typeof Inbox> = {
@@ -50,7 +50,6 @@ const folderIcons: Record<MailFolder, typeof Inbox> = {
   sent: Send,
   drafts: Pencil,
   spam: Archive,
-  trash: Trash2,
   deleted: Trash2,
 };
 
@@ -67,6 +66,7 @@ export default function WebMailPage() {
   const [folders, setFolders] = useState<MailFolderInfo[]>([]);
   const [folder, setFolder] = useState<MailFolder>('inbox');
   const [messages, setMessages] = useState<MailMessage[]>([]);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [selected, setSelected] = useState<MailMessage | null>(null);
   const [query, setQuery] = useState('');
   const [page, setPage] = useState(1);
@@ -202,7 +202,7 @@ export default function WebMailPage() {
       cc: '',
       bcc: '',
       subject: selected.subject.startsWith('Re:') ? selected.subject : `Re: ${selected.subject}`,
-      bodyHtml: `<p></p><blockquote>${selected.bodyHtml}</blockquote>`,
+      bodyHtml: `\n\n${quoteEmailBody(selected.bodyHtml)}`,
     });
     setComposeOpen(true);
   };
@@ -214,7 +214,7 @@ export default function WebMailPage() {
       cc: '',
       bcc: '',
       subject: selected.subject.startsWith('Fwd:') ? selected.subject : `Fwd: ${selected.subject}`,
-      bodyHtml: `<p></p><blockquote>${selected.bodyHtml}</blockquote>`,
+      bodyHtml: `\n\n${quoteEmailBody(selected.bodyHtml)}`,
     });
     setComposeOpen(true);
   };
@@ -229,6 +229,45 @@ export default function WebMailPage() {
   const deleteSelected = async () => {
     if (!selected) return;
     await apiDelete(`/mail/messages/${selected.id}`);
+    setSelected(null);
+    fetchMessages().catch(console.error);
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (messages.length === 0) return;
+    const allSelected = messages.every(m => selectedIds.has(m.id));
+    setSelectedIds(allSelected ? new Set() : new Set(messages.map(m => m.id)));
+  };
+
+  const batchDeleteSelected = async () => {
+    if (selectedIds.size === 0) return;
+    if (!confirm(`确定删除选中的 ${selectedIds.size} 封邮件？`)) return;
+    await apiPost(`/mail/messages/batch-delete`, { ids: Array.from(selectedIds) });
+    setSelectedIds(new Set());
+    setSelected(null);
+    fetchMessages().catch(console.error);
+  };
+
+  const batchMoveSelected = async (target: MailFolder) => {
+    if (selectedIds.size === 0) return;
+    await apiPost(`/mail/messages/batch-move`, { ids: Array.from(selectedIds), folder: target });
+    setSelectedIds(new Set());
+    setSelected(null);
+    fetchMessages().catch(console.error);
+  };
+
+  const emptyTrash = async () => {
+    if (!confirm('确定清空垃圾箱？此操作不可恢复。')) return;
+    await apiDelete(`/mail/trash`);
+    setSelectedIds(new Set());
     setSelected(null);
     fetchMessages().catch(console.error);
   };
@@ -282,7 +321,7 @@ export default function WebMailPage() {
             <DialogTrigger asChild>
               <Button><Pencil className="h-4 w-4 mr-2" />写信</Button>
             </DialogTrigger>
-            <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto">
+            <DialogContent className="max-w-4xl sm:max-w-4xl w-[min(96vw,56rem)] max-h-[92vh] overflow-y-auto">
               <DialogHeader><DialogTitle>写邮件</DialogTitle></DialogHeader>
               <div className="space-y-3">
                 <div className="grid gap-3 sm:grid-cols-3">
@@ -291,7 +330,7 @@ export default function WebMailPage() {
                   <div className="space-y-1"><Label>密送</Label><Input value={compose.bcc} onChange={e => setCompose(p => ({ ...p, bcc: e.target.value }))} /></div>
                   <div className="space-y-1"><Label>主题</Label><Input value={compose.subject} onChange={e => setCompose(p => ({ ...p, subject: e.target.value }))} /></div>
                 </div>
-                <RichTextEditor value={compose.bodyHtml} onChange={bodyHtml => setCompose(p => ({ ...p, bodyHtml }))} minHeight="260px" />
+                <MarkdownEditor value={compose.bodyHtml} onChange={bodyHtml => setCompose(p => ({ ...p, bodyHtml }))} minHeight="260px" placeholder="支持 Markdown 语法：**加粗**、# 标题、> 引用等" />
                 <div className="space-y-1">
                   <Label>附件</Label>
                   <Input type="file" multiple onChange={e => setFiles(Array.from(e.target.files || []))} />
@@ -348,25 +387,58 @@ export default function WebMailPage() {
             <div className="space-y-2">
               {messages.length === 0 ? (
                 <Card className="glass-card border-border/50"><CardContent className="p-8 text-center text-sm text-muted-foreground">没有邮件</CardContent></Card>
-              ) : messages.map(message => (
-                <button
-                  key={message.id}
-                  onClick={() => selectMessage(message)}
-                  className={`w-full text-left rounded-md border p-3 transition ${selected?.id === message.id ? 'border-primary bg-primary/10' : 'border-border/50 bg-card/80 hover:border-primary/30'}`}
-                >
-                  <div className="flex items-center gap-2 mb-1">
-                    {message.isRead ? <MailOpen className="h-4 w-4 text-muted-foreground" /> : <Mail className="h-4 w-4 text-primary" />}
-                    <span className={`truncate text-sm ${message.isRead ? 'font-medium' : 'font-bold'}`}>{message.subject}</span>
-                    {message.isStarred ? <Star className="h-4 w-4 text-amber-400 fill-amber-400 ml-auto" /> : null}
+              ) : (
+                <>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <label className="flex items-center gap-1.5 cursor-pointer">
+                      <input type="checkbox" className="rounded" checked={messages.every(m => selectedIds.has(m.id))} onChange={toggleSelectAll} />
+                      <span>全选</span>
+                    </label>
+                    {selectedIds.size > 0 && <span className="text-primary">{selectedIds.size} 封已选</span>}
+                    <div className="ml-auto flex items-center gap-1.5">
+                      {selectedIds.size > 0 && (
+                        <>
+                          <Select onValueChange={(value: MailFolder) => batchMoveSelected(value)}>
+                            <SelectTrigger className="h-8 w-[90px] text-xs"><SelectValue placeholder="移动" /></SelectTrigger>
+                            <SelectContent>
+                              {(Object.keys(folderLabels) as MailFolder[]).map(key => <SelectItem key={key} value={key}>{folderLabels[key]}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                          <Button variant="outline" size="sm" className="h-8 text-xs text-destructive" onClick={batchDeleteSelected}>
+                            {folder === 'deleted' ? '彻底删除' : '批量删除'}
+                          </Button>
+                        </>
+                      )}
+                    </div>
                   </div>
-                  <p className="text-xs text-muted-foreground truncate">{message.folder === 'sent' ? addressList(message.to) : message.from.address}</p>
-                  <p className="text-xs text-muted-foreground truncate mt-1">{message.bodyText}</p>
-                  <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
-                    <span>{new Date(message.receivedAt).toLocaleString()}</span>
-                    {message.hasAttachments ? <Paperclip className="h-3.5 w-3.5 ml-auto" /> : null}
-                  </div>
-                </button>
-              ))}
+                  {messages.map(message => (
+                    <div key={message.id} className="flex items-start gap-2">
+                      <input type="checkbox" className="rounded mt-3" checked={selectedIds.has(message.id)} onChange={() => toggleSelect(message.id)} />
+                      <button
+                        onClick={() => selectMessage(message)}
+                        className={`flex-1 text-left rounded-md border p-3 transition ${selected?.id === message.id ? 'border-primary bg-primary/10' : 'border-border/50 bg-card/80 hover:border-primary/30'}`}
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          {message.isRead ? <MailOpen className="h-4 w-4 text-muted-foreground" /> : <Mail className="h-4 w-4 text-primary" />}
+                          <span className={`truncate text-sm ${message.isRead ? 'font-medium' : 'font-bold'}`}>{message.subject}</span>
+                          {message.isStarred ? <Star className="h-4 w-4 text-amber-400 fill-amber-400 ml-auto" /> : null}
+                        </div>
+                        <p className="text-xs text-muted-foreground truncate">{message.folder === 'sent' ? addressList(message.to) : message.from.address}</p>
+                        <p className="text-xs text-muted-foreground truncate mt-1">{message.bodyText}</p>
+                        <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+                          <span>{new Date(message.receivedAt).toLocaleString()}</span>
+                          {message.hasAttachments ? <Paperclip className="h-3.5 w-3.5 ml-auto" /> : null}
+                        </div>
+                      </button>
+                    </div>
+                  ))}
+                  {folder === 'deleted' && (
+                    <Button variant="outline" size="sm" className="w-full text-destructive hover:text-destructive hover:bg-destructive/10" onClick={emptyTrash}>
+                      <Trash2 className="h-4 w-4 mr-2" />清空垃圾箱
+                    </Button>
+                  )}
+                </>
+              )}
             </div>
             <div className="flex items-center justify-between text-sm text-muted-foreground">
               <span>{page} / {totalPages}</span>
@@ -433,7 +505,7 @@ export default function WebMailPage() {
                     </div>
                   )}
 
-                  <div className="prose prose-invert max-w-none text-sm leading-7 border-t border-border/50 pt-4" dangerouslySetInnerHTML={{ __html: sanitizeHtml(selected.bodyHtml) }} />
+                  <EmailBody value={selected.bodyHtml} className="border-t border-border/50 pt-4 leading-7" />
                 </CardContent>
               </Card>
             )}
@@ -444,3 +516,4 @@ export default function WebMailPage() {
     </div>
   );
 }
+

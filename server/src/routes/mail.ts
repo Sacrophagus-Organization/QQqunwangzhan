@@ -101,7 +101,23 @@ router.delete('/messages/:id', (req: AuthRequest, res) => {
   catch (err) { sendError(res, err); }
 });
 
+// Batch delete selected messages (soft-delete to trash; permanently delete if already in trash)
+router.post('/messages/batch-delete', (req: AuthRequest, res) => {
+  try { res.json(mailService.batchDelete(req.userId!, Array.isArray(req.body.ids) ? req.body.ids : [])); }
+  catch (err) { sendError(res, err); }
+});
 
+// Batch move selected messages
+router.post('/messages/batch-move', (req: AuthRequest, res) => {
+  try { res.json(mailService.batchMove(req.userId!, Array.isArray(req.body.ids) ? req.body.ids : [], String(req.body.folder || 'inbox'))); }
+  catch (err) { sendError(res, err); }
+});
+
+// Empty trash (permanently delete all messages in trash)
+router.delete('/trash', (req: AuthRequest, res) => {
+  try { res.json(mailService.emptyTrash(req.userId!)); }
+  catch (err) { sendError(res, err); }
+});
 // 销毁邮箱账号 — 软删除
 router.delete('/account', (req: AuthRequest, res) => {
   try {

@@ -19,6 +19,7 @@ import imageRoutes from './routes/images.js';
 import siteRoutes from './routes/site.js';
 import mailRoutes from './routes/mail.js';
 import mailAdminRoutes from './routes/mailAdmin.js';
+import { mailService } from './mail/MailService.js';
 import storyRoutes from './routes/stories.js';
 import loopPuzzleRoutes from './routes/loopPuzzle.js';
 import { globalLimiter } from './lib/rateLimiter.js';
@@ -141,4 +142,11 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`  🌐 Web:  http://0.0.0.0:${PORT}/\n`);
   // 启动磁盘清理任务
   startDiskCleanup();
+
+  // 启动垃圾箱 14 天自动清理任务
+  const purgeMailTrash = () => {
+    try { mailService.purgeExpiredTrash(14); } catch (e) { console.error('[Mail] 垃圾箱清理失败', e); }
+  };
+  purgeMailTrash();
+  setInterval(purgeMailTrash, 24 * 60 * 60 * 1000).unref();
 });

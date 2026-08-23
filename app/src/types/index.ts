@@ -125,7 +125,7 @@ export interface AuthState {
   isAuthenticated: boolean;
 }
 
-export type MailFolder = 'inbox' | 'sent' | 'drafts' | 'spam' | 'trash' | 'deleted';
+export type MailFolder = 'inbox' | 'sent' | 'drafts' | 'spam' | 'deleted';
 
 export interface MailAddress {
   address: string;
