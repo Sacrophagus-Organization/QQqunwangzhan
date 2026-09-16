@@ -484,22 +484,11 @@
   <div class="modal">
     <div class="modal-eyebrow">∅</div>
     <h2 class="modal-title">长夜已尽。记录你的抵达</h2>
-    <p class="modal-sub">留下你的名字与落足之地，以证曾行至此。</p>
+    <p class="modal-sub">留下你的名字，以证曾行至此。</p>
     <label class="field">
       <span>您的名字</span>
       <input id="in-name" maxlength="60" placeholder="如何称呼你" autocomplete="off">
     </label>
-    <div id="addr-fields">
-      <label class="field">
-        <span>电话号码</span>
-        <input id="in-phone" maxlength="40" placeholder="用于收货联系" autocomplete="tel">
-      </label>
-      <label class="field">
-        <span>收货地址</span>
-        <input id="in-address" maxlength="200" placeholder="省 / 市 / 区 / 详细地址" autocomplete="street-address">
-      </label>
-    </div>
-    <div id="addr-closed" class="closed-note" hidden>地址征集已截止，仅记录你的名字。</div>
     <div class="modal-actions">
       <button id="btn-submit" class="act-btn act-primary">钉下印记</button>
       <button id="btn-cancel" class="act-btn act-ghost">暂不</button>
@@ -639,12 +628,7 @@
     const btnCancel = document.getElementById('btn-cancel');
     const btnSubmit = document.getElementById('btn-submit');
     const inName = document.getElementById('in-name');
-    const inPhone = document.getElementById('in-phone');
-    const inAddress = document.getElementById('in-address');
-    const addrFields = document.getElementById('addr-fields');
-    const addrClosed = document.getElementById('addr-closed');
     const statusLine = document.getElementById('record-status-line');
-    let collectAddress = true;
     let submitted = false;
 
     // 返回首页（左上角箭头）
@@ -652,18 +636,9 @@
       window.location.href = 'index.html';
     });
 
-    // 打开弹窗：先查收集状态（非管理员完成人数达到 11 后不再收集地址）
-    btnTenon.addEventListener('click', async () => {
+    // 打开弹窗（仅记录名字，不收集任何联系方式）
+    btnTenon.addEventListener('click', () => {
       if (submitted) { statusLine.textContent = '你已记录过抵达。'; return; }
-      try {
-        const res = await fetch('/api/end/record-status');
-        if (res.ok) {
-          const st = await res.json();
-          collectAddress = st.collectAddress;
-        }
-      } catch (_e) { /* 保持默认 */ }
-      addrFields.hidden = !collectAddress;
-      addrClosed.hidden = collectAddress;
       statusLine.textContent = '';
       overlay.hidden = false;
       setTimeout(() => inName.focus(), 60);
@@ -682,7 +657,7 @@
         const res = await fetch('/api/end/record', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sessionId, name, phone: inPhone.value.trim(), address: inAddress.value.trim() }),
+          body: JSON.stringify({ sessionId, name }),
         });
         const data = await res.json();
         if (res.ok) {

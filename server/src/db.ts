@@ -480,8 +480,6 @@ try {
       id TEXT PRIMARY KEY,
       branch TEXT NOT NULL,
       name TEXT NOT NULL,
-      phone TEXT NOT NULL DEFAULT '',
-      address TEXT NOT NULL DEFAULT '',
       session_id TEXT NOT NULL DEFAULT '',
       user_id TEXT NOT NULL DEFAULT '',
       user_name TEXT NOT NULL DEFAULT '',
