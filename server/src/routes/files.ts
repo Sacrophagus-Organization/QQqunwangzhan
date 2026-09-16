@@ -5,6 +5,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { db } from '../db.js';
 import { authMiddleware, AuthRequest } from '../middleware/auth.js';
+import { isPuzzleAttachmentAccessible } from './puzzles.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const uploadDir = path.join(__dirname, '..', '..', 'uploads');
@@ -43,6 +44,10 @@ router.post('/', authMiddleware, upload.array('files', 10), (req: AuthRequest, r
 router.get('/:id', authMiddleware, (req: AuthRequest, res) => {
   const att = db.prepare('SELECT * FROM attachments WHERE id = ?').get(req.params.id) as any;
   if (!att) { res.status(404).json({ error: '文件不存在' }); return; }
+  // 谜题详情锁：锁定谜题的附件须先解锁该谜题，防止绕过密码直接取走剧情附件
+  if (att.entity_type === 'puzzle' && !isPuzzleAttachmentAccessible(req.userId, att.entity_id)) {
+    res.status(403).json({ error: '请先解锁该谜题详情' }); return;
+  }
   if (!fs.existsSync(att.file_path)) { res.status(404).json({ error: '文件已丢失' }); return; }
   res.attachment(att.name);
   res.setHeader('Content-Type', att.mime_type || 'application/octet-stream');

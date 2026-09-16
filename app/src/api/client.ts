@@ -112,6 +112,16 @@ export async function apiMultipart<T>(path: string, formData: FormData): Promise
   return res.json();
 }
 
+/** 带鉴权将资源加载为 blob URL —— 供 <img>/<video>/<a> 等无法携带 Authorization header 的场景使用 */
+export async function apiBlobUrl(url: string): Promise<string> {
+  const res = await fetch(url, { headers: buildHeaders() });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: '加载失败' }));
+    throw new Error(err.error || '加载失败');
+  }
+  return URL.createObjectURL(await res.blob());
+}
+
 export async function apiDownload(url: string, filename: string) {
   const res = await fetch(url, {
     headers: buildHeaders(),

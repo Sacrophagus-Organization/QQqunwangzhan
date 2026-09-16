@@ -51,6 +51,25 @@ export function authMiddleware(req: AuthRequest, res: Response, next: NextFuncti
   }
 }
 
+// 可选鉴权：无 token 也放行；有 token 则解析并写入 req（供公开接口识别登录身份）
+export function optionalAuthMiddleware(req: AuthRequest, _res: Response, next: NextFunction) {
+  let token: string | undefined;
+  if (req.cookies?.token) {
+    token = req.cookies.token;
+  } else {
+    const header = req.headers.authorization;
+    if (header && header.startsWith('Bearer ')) token = header.slice(7);
+  }
+  if (!token) { next(); return; }
+  try {
+    const payload = jwt.verify(token, JWT_SECRET) as unknown as { id: string; role: string; username: string };
+    req.userId = payload.id;
+    req.userRole = payload.role;
+    req.userName = payload.username;
+  } catch { /* 无效 token 视为未登录 */ }
+  next();
+}
+
 export function adminOnly(req: AuthRequest, res: Response, next: NextFunction) {
   if (req.userRole !== 'admin') {
     res.status(403).json({ error: '仅管理员可操作' });

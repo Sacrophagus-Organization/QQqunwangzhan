@@ -22,8 +22,12 @@ import mailAdminRoutes from './routes/mailAdmin.js';
 import { mailService } from './mail/MailService.js';
 import storyRoutes from './routes/stories.js';
 import loopPuzzleRoutes from './routes/loopPuzzle.js';
+import endRoutes from './routes/end.js';
 import { globalLimiter } from './lib/rateLimiter.js';
 import { startDiskCleanup } from './lib/diskCleanup.js';
+import { optionalAuth } from './middleware/pageAccess.js';
+import { authMiddleware } from './middleware/auth.js';
+import { NODE6_KEYS, parseNode6State } from './routes/loopPuzzle.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -57,7 +61,7 @@ app.use(helmet({
       imgSrc: ["'self'", "data:", "blob:", "https:"],
       connectSrc: ["'self'", "https://sarcophagus.org.cn"],
       mediaSrc: ["'self'"],
-      objectSrc: ["'none'"],
+      objectSrc: ["'self'"],
       frameAncestors: ["'self'"],
       formAction: ["'self'"],
       upgradeInsecureRequests: [],
@@ -100,6 +104,7 @@ app.use('/api/mail', mailRoutes);
 app.use('/api/mail/admin', mailAdminRoutes);
 app.use('/api/stories', storyRoutes);
 app.use('/api/loop', loopPuzzleRoutes);
+app.use('/api/end', optionalAuth('/ORACLESAIDTHATCIVILSWITHNOENDSANDNOBEGINS'), endRoutes);
 
 // Serve uploaded avatars with caching (avatar filenames are UUID-based, immutable)
 app.use('/uploads/avatars', express.static(path.join(__dirname, '..', 'uploads', 'avatars'), {
@@ -121,11 +126,93 @@ app.use('/api/images', express.static(imageDir, {
 // Serve static frontend build
 const staticDir = path.join(__dirname, '..', '..', 'app', 'dist');
 // /loop 静态页面（节点2 论文网页 Loop Is All You Need）—— 显式路由，置于 express.static 之前，
-// 避免 express.static 对目录的 301 重定向与 SPA fallback 冲突
-app.get(['/loop', '/loop/'], (_req, res) => {
+// 避免 express.static 对目录的 301 重定向与 SPA fallback 冲突。
+// 访问控制：依据 page_access 表 /loop 配置（默认 admin 级，管理面板可调）
+app.get(['/loop', '/loop/'], optionalAuth('/loop'), (_req, res) => {
   res.sendFile(path.join(staticDir, 'loop', 'index.html'));
 });
+// /loop6/paper.pdf 节点6 论文正文（节点六二版，已去除附录；附录内容由密码解锁后展示）
+// 访问控制：与页面 /THEDARKSIDESOFTHETWINTERRAHOPES 同级（依据 page_access 表配置），
+// 防止绕过页面直接下载论文。
+app.get('/loop6/paper.pdf', optionalAuth('/THEDARKSIDESOFTHETWINTERRAHOPES'), (_req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'uploads', 'loop6_paper.pdf'));
+});
+// /loop6/paper/pages/:n.png 节点6 论文预渲染页面图片（服务器端 PyMuPDF 渲染，浏览器端无需解析 PDF，避免兼容性问题）
+app.get('/loop6/paper/pages/:n.png', optionalAuth('/THEDARKSIDESOFTHETWINTERRAHOPES'), (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'uploads', 'loop6_pages', `${req.params.n}.png`));
+});
+// /loop6/appendix/:key/pages/:page.png 节点6 附录 PDF 预渲染页面图片（解锁后可见）
+// 访问控制：需登录 + 该用户已解锁对应附录，防止绕过密码直接获取附录正文
+app.get('/loop6/appendix/:key/pages/:page.png', authMiddleware, (req: any, res) => {
+  try {
+    let key = req.params.key;
+    try {
+      key = decodeURIComponent(key);
+    } catch {
+      /* keep raw */
+    }
+    if (!NODE6_KEYS.includes(key)) {
+      res.status(404).json({ error: 'Not Found' });
+      return;
+    }
+    if (!parseNode6State(req.userId!)[key]) {
+      res.status(403).json({ error: '该附录尚未解锁' });
+      return;
+    }
+    const page = req.params.page;
+    if (!/^\d+$/.test(page)) {
+      res.status(404).json({ error: 'Not Found' });
+      return;
+    }
+    const file = path.join(__dirname, '..', 'uploads', 'loop6_appendix', key, `${page}.png`);
+    if (!fs.existsSync(file)) {
+      res.status(404).json({ error: 'Not Found' });
+      return;
+    }
+    res.sendFile(file);
+  } catch (err: any) {
+    console.error('[loop6] appendix page error:', err);
+    res.status(500).json({ error: '加载失败' });
+  }
+});
+// /ORACLESAIDTHATCIVILSWITHNOENDSANDNOBEGINS 静态页面（节点0 终局谜题，由原 /end 切换路径而来）——
+// 显式路由，置于 express.static 之前，避免 express.static 对目录的 301 重定向与 SPA fallback 冲突。
+// 访问控制：依据 page_access 表新路径配置（默认 admin 级，管理面板可调）
+app.get(['/ORACLESAIDTHATCIVILSWITHNOENDSANDNOBEGINS', '/ORACLESAIDTHATCIVILSWITHNOENDSANDNOBEGINS/'], optionalAuth('/ORACLESAIDTHATCIVILSWITHNOENDSANDNOBEGINS'), (req, res) => {
+  // 无尾斜杠请求统一 302 到带尾斜杠，保证页面内相对跳转（echo.html 等）基于新路径目录正确解析
+  if (!req.path.endsWith('/')) {
+    return res.redirect('/ORACLESAIDTHATCIVILSWITHNOENDSANDNOBEGINS/');
+  }
+  res.sendFile(path.join(staticDir, 'ORACLESAIDTHATCIVILSWITHNOENDSANDNOBEGINS', 'index.html'));
+});
+// /WDSJ225772937AAAB 仿造 403 Forbidden 页（谜题线索页，右下角隐藏文字）——
+// 显式路由，置于 express.static 之前；HTTP 状态码一并伪装为 403，增加真实性。
+// 访问控制：依据 page_access 表配置（默认 admin 级，管理面板可调）
+app.get(['/WDSJ225772937AAAB', '/WDSJ225772937AAAB/'], optionalAuth('/WDSJ225772937AAAB'), (req, res) => {
+  if (!req.path.endsWith('/')) {
+    return res.redirect('/WDSJ225772937AAAB/');
+  }
+  res.status(403).sendFile(path.join(staticDir, 'WDSJ225772937AAAB', 'index.html'));
+});
 // index: false — 不让 express.static 直接返回 index.html，留给下边的 SPA fallback 处理（那里会设置 Cache-Control: no-cache）
+// ─── 谜题静态目录前缀守卫 ─────────────────────────────────────────
+// 上方显式路由仅匹配精确路径（含/不含尾斜杠），其余子路径（如 /WDSJ.../index.html、
+// /ORACLE.../yao.html、/loop/index.html）会落入 express.static 被直接下发，绕过页面门控。
+// 此处统一按对应页面的 page_access 级别校验后再放行，复用 optionalAuth 与其缓存。
+const SECRET_STATIC_PREFIXES: Array<[prefix: string, routePath: string]> = [
+  ['/WDSJ225772937AAAB', '/WDSJ225772937AAAB'],
+  ['/ORACLESAIDTHATCIVILSWITHNOENDSANDNOBEGINS', '/ORACLESAIDTHATCIVILSWITHNOENDSANDNOBEGINS'],
+  ['/loop', '/loop'],
+];
+app.use((req, res, next) => {
+  const p = req.path;
+  for (const [prefix, routePath] of SECRET_STATIC_PREFIXES) {
+    if (p === prefix || p.startsWith(prefix + '/')) {
+      return optionalAuth(routePath)(req, res, next);
+    }
+  }
+  next();
+});
 app.use(express.static(staticDir, { index: false }));
 
 // SPA fallback: all non-API routes serve index.html

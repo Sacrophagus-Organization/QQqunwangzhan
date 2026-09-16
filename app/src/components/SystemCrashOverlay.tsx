@@ -335,7 +335,7 @@ export default function SystemCrashOverlay({ trigger, onComplete }: SystemCrashO
   const [screenRage, setScreenRage] = useState(false);
   const [crtOff, setCrtOff] = useState(false);
   // Zalgo 文本仅在首次渲染时生成一次并缓存，整段动画期间保持不变
-  const zalgoLoop = useMemo(() => zalgoText('Secrets hidden in the dark', { up: 5, down: 5, mid: 2 }), []);
+  const zalgoLoop = useMemo(() => zalgoText('Connection Timeout', { up: 5, down: 5, mid: 2 }), []);
 
   const soundRef = useRef<CrashSoundEngine | null>(null);
   const dataNoiseRef = useRef<{ osc: OscillatorNode; lfo: OscillatorNode; gain: GainNode; hpf: BiquadFilterNode } | null>(null);

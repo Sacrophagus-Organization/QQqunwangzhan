@@ -9,7 +9,7 @@ import {
   Shield, Users, UserCheck, UserX, Trash2,
   Clock, CheckCircle2, XCircle, Loader2, AlertTriangle,
   MessageSquare, Terminal, Key, FileText,
-  Upload, Plus, Globe, Lock,
+  Upload, Plus, Globe, Lock, RefreshCw,
 } from 'lucide-react';
 import { AvatarDisplay } from '@/components/AvatarDisplay';
 import type { SarcophagusCode, PageAccessConfig } from '@/types';
@@ -38,7 +38,7 @@ export default function AdminPage() {
   const [users, setUsers] = useState<UserItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [actingId, setActingId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'users' | 'sarcophagus' | 'pages'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'sarcophagus' | 'pages' | 'system'>('users');
   // ── 石棺代码管理状态 ──
   const [codes, setCodes] = useState<SarcophagusCode[]>([]);
   const [codesLoading, setCodesLoading] = useState(false);
@@ -57,6 +57,10 @@ export default function AdminPage() {
   const [pageConfigsLoading, setPageConfigsLoading] = useState(false);
   const [pageConfigsError, setPageConfigsError] = useState('');
   const [savingPageId, setSavingPageId] = useState<string | null>(null);
+  // ── 系统维护状态 ──
+  const [resetting, setResetting] = useState(false);
+  const [endResetMsg, setEndResetMsg] = useState('');
+  const [endResetErr, setEndResetErr] = useState('');
 
   const fetchUsers = useCallback(async () => {
     try { setUsers(await apiGet<UserItem[]>('/admin/users')); } catch {}
@@ -152,6 +156,18 @@ export default function AdminPage() {
       alert(e.message || '保存失败');
     }
     setSavingPageId(null);
+  };
+
+  const handleEndReset = async () => {
+    if (!confirm('确定重置所有 /end 会话？所有玩家的叙事进度将被清空并回到故事开头。')) return;
+    setResetting(true);
+    setEndResetMsg('');
+    setEndResetErr('');
+    try {
+      const res = await apiPost<{ message: string }>('/admin/end/reset');
+      setEndResetMsg(res.message || '已重置 /end 页面状态');
+    } catch (e: any) { setEndResetErr(e.message || '重置失败'); }
+    setResetting(false);
   };
 
   const handleAddCode = async () => {
@@ -260,6 +276,7 @@ export default function AdminPage() {
             { key: 'users' as const, icon: Users, label: '用户管理', count: pendingCount, alert: pendingCount > 0 },
             { key: 'sarcophagus' as const, icon: Terminal, label: '石棺代码', count: codes.length, alert: false },
             { key: 'pages' as const, icon: Globe, label: '页面访问', count: pageConfigs.length, alert: false },
+            { key: 'system' as const, icon: RefreshCw, label: '系统维护', count: 0, alert: false },
           ].map(tab => (
             <button
               key={tab.key}
@@ -515,6 +532,34 @@ export default function AdminPage() {
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {activeTab === 'system' && (
+          <div className="space-y-4 anim-fade-up" style={{ animationDelay: '0.2s' } as any}>
+            <Card className="glass-card glass-card-hover border-border/30 anim-fade-up">
+              <CardContent className="p-5">
+                <div className="flex items-center gap-3 mb-3">
+                  <RefreshCw className="h-5 w-5 text-cyan-400 animate-breathe-glow" />
+                  <div>
+                    <h3 className="font-semibold font-heading tracking-wide">重置 /end 页面状态</h3>
+                    <p className="text-xs text-muted-foreground mono-text">将所有进行中的终点叙事会话重置回起点</p>
+                  </div>
+                </div>
+                <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
+                  清空服务端内存中所有 /end 会话进度（文本流、密码锁状态等），并解除全部 IP 限速锁定。
+                  玩家刷新 /end 页面后将从故事开头重新开始。
+                </p>
+                <div className="flex items-center gap-4">
+                  <Button variant="destructive" size="sm" disabled={resetting} onClick={handleEndReset}>
+                    {resetting ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <RefreshCw className="h-4 w-4 mr-1.5" />}
+                    {resetting ? '重置中…' : '重置 /end 状态'}
+                  </Button>
+                  {endResetMsg && <span className="text-xs text-green-400 mono-text">{endResetMsg}</span>}
+                  {endResetErr && <span className="text-xs text-red-400 mono-text">{endResetErr}</span>}
+                </div>
+              </CardContent>
+            </Card>
           </div>
         )}
 

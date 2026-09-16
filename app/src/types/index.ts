@@ -59,6 +59,10 @@ export interface Puzzle {
   likeCount?: number;
   /** 当前账号是否已触发该谜题的 glitch 崩溃（封印提交按钮） */
   sealed?: boolean;
+  /** 谜题详情是否带密码锁（啥子杯#2 等） */
+  locked?: boolean;
+  /** 当前账号是否已通过密码解锁该谜题详情（未解锁时 content/hint/attachments 已脱敏） */
+  unlocked?: boolean;
   createdAt: string;
   updatedAt: string;
 }

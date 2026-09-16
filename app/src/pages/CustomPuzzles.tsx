@@ -13,7 +13,7 @@ import { PuzzleCardSkeleton } from '@/components/Skeleton';
 import { apiGet, apiPost, apiPut, apiDelete, apiUpload, apiDownload } from '@/api/client';
 import { LikeButton } from '@/components/LikeButton';
 import CrashSubmitButton from '@/components/CrashSubmitButton';
-import { Puzzle, Plus, Search, User, Tag, Lightbulb, Key, CheckCircle2, HelpCircle, Brain, Zap, Filter, Sparkles, Trophy, Paperclip, Download, Edit3, Save, Trash2, RotateCcw } from 'lucide-react';
+import { Puzzle, Plus, Search, User, Tag, Lightbulb, Key, CheckCircle2, HelpCircle, Brain, Zap, Filter, Sparkles, Trophy, Paperclip, Download, Edit3, Save, Trash2, RotateCcw, Lock } from 'lucide-react';
 import type { Puzzle as PuzzleType, FileAttachment } from '@/types';
 import { sanitizeHtml } from '@/lib/sanitize';
 
@@ -40,6 +40,11 @@ export default function CustomPuzzles() {
   const [ecat, setEcat] = useState('cipher'); const [ediff, setEdiff] = useState('medium');
   const [eh, setEh] = useState(''); const [es, setEs] = useState(''); const [etags, setEtags] = useState('');
   const [efiles, setEfiles] = useState<File[]>([]);
+  const [detailId, setDetailId] = useState<string | null>(null);   // 详情 Dialog 受控
+  const [unlockId, setUnlockId] = useState<string | null>(null);   // 密码锁 Dialog 受控
+  const [unlockInput, setUnlockInput] = useState('');
+  const [unlockError, setUnlockError] = useState('');
+  const [unlockBusy, setUnlockBusy] = useState(false);
 
   const load = useCallback(async () => { try { const res = await apiGet<any>('/puzzles'); setPuzzles(res.data || []); } catch {} finally { setLoading(false); } }, []);
   useEffect(() => { load(); }, [load]);
@@ -87,6 +92,24 @@ export default function CustomPuzzles() {
       await apiPost(`/puzzles/${id}/unseal`);
       load();
     } catch (e: any) { alert(e.message); }
+  };
+
+  // 验证解锁密码：通过后解锁详情（剧情 / 附件）并直接打开详情
+  const handleUnlock = async () => {
+    if (!unlockId || !unlockInput.trim()) return;
+    setUnlockBusy(true);
+    setUnlockError('');
+    try {
+      await apiPost(`/puzzles/${unlockId}/unlock`, { password: unlockInput });
+      setPuzzles(prev => prev.map(p => p.id === unlockId ? { ...p, unlocked: true } : p));
+      setUnlockId(null);
+      setUnlockInput('');
+      setUnlockBusy(false);
+      setDetailId(unlockId);
+    } catch (e: any) {
+      setUnlockBusy(false);
+      setUnlockError(e?.message || '密码错误');
+    }
   };
 
   const openEdit = (p: PuzzleType) => { setEditId(p.id); setEt(p.title); setEd(p.description); setEc(p.content); setEcat(p.category); setEdiff(p.difficulty); setEh(p.hint); setEs(''); setEtags((p.tags || []).join(', ')); setEfiles([]); };
@@ -204,13 +227,22 @@ export default function CustomPuzzles() {
                   ) : (
                     <Dialog open={solveId === pz.id} onOpenChange={o => { if (!o) { setSolveId(null); setSolveAnswer(''); setSolveResult(null); } }}><DialogTrigger asChild><Button size="sm" className="flex-1" variant={pz.status === 'solved' ? 'outline' : 'default'} disabled={pz.status === 'solved'} onClick={() => setSolveId(pz.id)}>{pz.status === 'solved' ? <><CheckCircle2 className="h-4 w-4 mr-1" />已破解</> : <><Key className="h-4 w-4 mr-1" />提交答案</>}</Button></DialogTrigger><DialogContent><DialogHeader><DialogTitle className="flex items-center gap-2"><Key className="h-5 w-5 text-amber-400" />提交答案</DialogTitle></DialogHeader><div className="space-y-4 mt-4">{solveResult === null && <><div className="space-y-2"><Label>你的答案</Label><Input value={solveAnswer} onChange={e => setSolveAnswer(e.target.value)} className="bg-secondary/30 border-border/50 mono-text" /></div><Button onClick={() => handleSolve(pz.id)} className="w-full" disabled={!solveAnswer.trim()}><Zap className="h-4 w-4 mr-2" />提交</Button></>}{solveResult === 'correct' && <div className="text-center py-4"><CheckCircle2 className="h-12 w-12 text-green-400 mx-auto mb-2" /><p className="text-lg font-bold text-green-400">回答正确！</p></div>}{solveResult === 'wrong' && <div className="text-center py-4"><HelpCircle className="h-12 w-12 text-red-400 mx-auto mb-2" /><p className="text-lg font-bold text-red-400">回答错误</p></div>}</div></DialogContent></Dialog>
                   )}
-                  <Dialog><DialogTrigger asChild><Button size="sm" variant="ghost">详情</Button></DialogTrigger><DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto"><DialogHeader><div className="flex items-center justify-between"><DialogTitle className="flex items-center gap-2"><Puzzle className="h-5 w-5 text-accent" />{pz.title}</DialogTitle>{canEdit(pz) && <div className="flex items-center gap-1"><Button variant="outline" size="sm" onClick={() => openEdit(pz)} className="border-border/40 hover:border-accent/30 hover:text-accent"><Edit3 className="h-4 w-4 mr-1" />编辑</Button><Button variant="outline" size="sm" onClick={() => handleDelete(pz.id)} className="border-border/40 hover:border-destructive/30 hover:text-destructive"><Trash2 className="h-4 w-4" /></Button></div>}</div></DialogHeader><div className="mt-4 space-y-4"><div className="text-sm bg-secondary/20 rounded-lg p-4 border border-border/20 rich-editor-content" dangerouslySetInnerHTML={{ __html: sanitizeHtml(pz.content) }} />{pz.hint && <div className="flex items-start gap-2 text-sm bg-amber-500/10 border border-amber-500/20 rounded-lg p-3"><Lightbulb className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" /><span className="text-amber-400">{pz.hint}</span></div>}{pz.tags?.length > 0 && <div className="flex flex-wrap gap-1.5">{pz.tags.map((t: string) => <Badge key={t} variant="secondary" className="text-xs"><Tag className="h-3 w-3 mr-1" />{t}</Badge>)}</div>}{pz.attachments?.length > 0 && <div className="border-t border-border/20 pt-3"><p className="text-xs text-muted-foreground mb-2"><Paperclip className="h-3 w-3 inline mr-1" />附件</p><div className="flex flex-wrap gap-2">{pz.attachments.map((a: FileAttachment) => <Button key={a.id} variant="outline" size="sm" onClick={() => downloadAtt(a)} className="text-xs"><Download className="h-3 w-3 mr-1" />{a.name}</Button>)}</div></div>}</div></DialogContent></Dialog>
+                  <Dialog open={detailId === pz.id} onOpenChange={o => { if (!o) setDetailId(null); }}><DialogTrigger asChild><Button size="sm" variant="ghost" onClick={() => { if (pz.locked && !pz.unlocked) { setUnlockId(pz.id); setUnlockInput(''); setUnlockError(''); } else { setDetailId(pz.id); } }}>{pz.locked && !pz.unlocked && <Lock className="h-3.5 w-3.5 mr-1 text-amber-400" />}详情</Button></DialogTrigger><DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto"><DialogHeader><div className="flex items-center justify-between"><DialogTitle className="flex items-center gap-2">{pz.locked && !pz.unlocked ? <Lock className="h-5 w-5 text-amber-400" /> : <Puzzle className="h-5 w-5 text-accent" />}{pz.title}</DialogTitle>{canEdit(pz) && <div className="flex items-center gap-1"><Button variant="outline" size="sm" onClick={() => openEdit(pz)} className="border-border/40 hover:border-accent/30 hover:text-accent"><Edit3 className="h-4 w-4 mr-1" />编辑</Button><Button variant="outline" size="sm" onClick={() => handleDelete(pz.id)} className="border-border/40 hover:border-destructive/30 hover:text-destructive"><Trash2 className="h-4 w-4" /></Button></div>}</div></DialogHeader><div className="mt-4 space-y-4"><div className="text-sm bg-secondary/20 rounded-lg p-4 border border-border/20 rich-editor-content" dangerouslySetInnerHTML={{ __html: sanitizeHtml(pz.content) }} />{pz.hint && <div className="flex items-start gap-2 text-sm bg-amber-500/10 border border-amber-500/20 rounded-lg p-3"><Lightbulb className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" /><span className="text-amber-400">{pz.hint}</span></div>}{pz.tags?.length > 0 && <div className="flex flex-wrap gap-1.5">{pz.tags.map((t: string) => <Badge key={t} variant="secondary" className="text-xs"><Tag className="h-3 w-3 mr-1" />{t}</Badge>)}</div>}{pz.attachments?.length > 0 && <div className="border-t border-border/20 pt-3"><p className="text-xs text-muted-foreground mb-2"><Paperclip className="h-3 w-3 inline mr-1" />附件</p><div className="flex flex-wrap gap-2">{pz.attachments.map((a: FileAttachment) => <Button key={a.id} variant="outline" size="sm" onClick={() => downloadAtt(a)} className="text-xs"><Download className="h-3 w-3 mr-1" />{a.name}</Button>)}</div></div>}</div></DialogContent></Dialog>
                 </div>
               </CardContent>
             </Card>
           ))}
         </div>
       </div>
+
+      <Dialog open={!!unlockId} onOpenChange={o => { if (!o) { setUnlockId(null); setUnlockInput(''); setUnlockError(''); } }}><DialogContent className="max-w-sm"><DialogHeader><DialogTitle className="flex items-center gap-2"><Lock className="h-5 w-5 text-amber-400" />输入解锁密码</DialogTitle></DialogHeader>
+        <div className="space-y-3 mt-3">
+          <p className="text-xs text-muted-foreground">该谜题的详情、剧情与附件已加密锁定，请输入密码后解锁查看。</p>
+          <div className="space-y-2"><Label>解锁密码</Label><Input type="password" value={unlockInput} onChange={e => setUnlockInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') handleUnlock(); }} placeholder="输入谜题解锁密码" className="bg-secondary/30 border-border/50 mono-text" autoFocus /></div>
+          {unlockError && <p className="text-xs text-red-400">{unlockError}</p>}
+          <Button onClick={handleUnlock} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground" disabled={!unlockInput.trim() || unlockBusy}><Lock className="h-4 w-4 mr-2" />{unlockBusy ? '解锁中…' : '解锁'}</Button>
+        </div>
+      </DialogContent></Dialog>
 
       <Dialog open={!!editId} onOpenChange={o => { if (!o) setEditId(null); }}><DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto"><DialogHeader><DialogTitle><Edit3 className="h-5 w-5 text-accent inline mr-1" />编辑谜题</DialogTitle></DialogHeader>
         <div className="space-y-4 mt-4">

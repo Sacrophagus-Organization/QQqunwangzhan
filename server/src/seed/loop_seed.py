@@ -9,7 +9,7 @@
 
 可选环境变量 LOOP_PROJECT_ROOT：项目根目录，默认取本脚本所在目录向上三级。
 """
-import os, re, sys, shutil, sqlite3, zipfile, html, datetime
+import os, re, sys, shutil, sqlite3, zipfile, html, datetime, json
 sys.stdout.reconfigure(encoding='utf-8')
 
 # 项目根：默认 server/src/seed -> 上溯三级，可用 LOOP_PROJECT_ROOT 覆盖
@@ -98,10 +98,18 @@ CREATE TABLE IF NOT EXISTS puzzles (
 ''')
 
 # sarcophagus codes
-for code, fname in [
-    ('TURKEYSCIENTIST', 'loop.zip'),
-    ('NOONEESCAPETHELOOPBABELLOOPBABELESCAPESNOONE', 'loop-node4.zip'),
-]:
+# 明文验证码不写入仓库（仓库为公开），改从 gitignore 的外部文件读取：
+#   server/seed-assets/sarco_codes.json
+#   格式: [["<CODE>", "loop.zip"], ["<CODE>", "loop-node4.zip"]]
+CODES_FILE = os.path.join(BASE, 'server', 'seed-assets', 'sarco_codes.json')
+if not os.path.isfile(CODES_FILE):
+    print(f'[fatal] 缺少石棺验证码文件（含明文，已被 gitignore）: {CODES_FILE}')
+    print('        请创建该文件，格式: [["<CODE>","loop.zip"],["<CODE>","loop-node4.zip"]]')
+    sys.exit(1)
+with open(CODES_FILE, encoding='utf-8') as _f:
+    SARCO_CODES = [(str(c), str(n)) for c, n in json.load(_f)]
+
+for code, fname in SARCO_CODES:
     cur.execute(
         'INSERT OR REPLACE INTO sarcophagus_codes (id, code, file_name, file_path, created_at, updated_at) VALUES (?,?,?,?,?,?)',
         (f'code-{fname}', code, fname, os.path.join(UPLOADS, fname), now, now))

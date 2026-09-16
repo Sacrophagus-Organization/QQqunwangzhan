@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
+  <title>0</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Noto+Serif+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --paper: #ece6d8;
+      --paper-shadow: #d8d0bc;
+      --ink: #2b2520;
+      --ink-soft: #5a5042;
+      --ink-faint: #8c8170;
+      --tear-line: #b8ac94;
+      --aside: #6a5f4c;
+      --accent: #6b1f1f;
+      --serif-en: 'Cormorant Garamond', serif;
+      --serif-cn: 'Noto Serif SC', serif;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: #15130f;
+      font-family: var(--serif-cn), var(--serif-en), serif;
+      color: var(--ink);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    #paper {
+      position: relative;
+      width: 100%;
+      max-width: 720px;
+      margin: 2rem auto 4rem;
+      background:
+        radial-gradient(ellipse at 20% 10%, rgba(255,255,255,.25), transparent 40%),
+        radial-gradient(ellipse at 85% 70%, rgba(0,0,0,.04), transparent 50%),
+        var(--paper);
+      box-shadow: 0 0 80px rgba(0,0,0,.5), 0 0 0 1px rgba(0,0,0,.05);
+      padding: 10vh 7vw 22vh;
+      min-height: 100vh;
+      border-radius: 2px;
+    }
+
+    #paper::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+      pointer-events: none;
+      mix-blend-mode: multiply;
+    }
+
+    #paper::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 14px;
+      background: var(--paper);
+      clip-path: polygon(0% 100%, 2% 30%, 5% 80%, 8% 10%, 12% 60%, 16% 20%, 20% 90%, 24% 40%, 28% 70%, 32% 15%, 36% 55%, 40% 25%, 44% 85%, 48% 35%, 52% 65%, 56% 10%, 60% 50%, 64% 80%, 68% 20%, 72% 60%, 76% 30%, 80% 90%, 84% 45%, 88% 15%, 92% 70%, 96% 25%, 100% 100%);
+      transform: translateY(-13px);
+    }
+
+    #tear-edge {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 14px;
+      background: repeating-linear-gradient(180deg, transparent 0 6px, rgba(0,0,0,.06) 6px 7px, transparent 7px 18px);
+      opacity: 0.45;
+      pointer-events: none;
+    }
+
+    #letterhead {
+      margin-bottom: 8vh;
+      padding-bottom: 2em;
+      border-bottom: 1px solid var(--tear-line);
+      opacity: 0.85;
+    }
+    #letterhead .num {
+      font-family: var(--serif-en);
+      font-style: italic;
+      font-size: 13px;
+      letter-spacing: .18em;
+      color: var(--ink-faint);
+      text-transform: uppercase;
+    }
+    #letterhead .ttl {
+      font-family: var(--serif-cn);
+      font-size: 15px;
+      letter-spacing: .4em;
+      color: var(--ink-soft);
+      margin-top: .6em;
+    }
+
+    #manuscript {
+      font-size: 18px;
+      line-height: 2.1;
+      letter-spacing: .01em;
+      position: relative;
+      word-break: break-word;
+    }
+    #manuscript p { margin-bottom: 1.7em; font-weight: 400; }
+
+    .ln {
+      display: inline;
+      opacity: 0;
+      filter: blur(2px);
+      transition: opacity 1.1s ease, filter 1.1s ease;
+    }
+    .ln.seen { opacity: 1; filter: blur(0); }
+
+    /* 粗体样式 */
+    .ln b, .ln strong, .aside b, .aside strong {
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    /* 斜体样式 */
+    .ln i, .ln em, .aside i, .aside em {
+      font-style: italic;
+      color: var(--ink-soft);
+    }
+
+    /* 模糊体样式 */
+    .ln .blur, .aside .blur {
+      display: inline-block;
+      filter: blur(2px);
+      opacity: 0.6;
+      transition: filter 0.8s ease, opacity 0.8s ease;
+    }
+    .ln .blur.seen-blur, .aside .blur.seen-blur {
+      filter: blur(0);
+      opacity: 1;
+    }
+
+    .aside {
+      display: block;
+      margin: 1.4em 0 1.6em 1.2em;
+      padding-left: 1em;
+      border-left: 2px solid var(--tear-line);
+      font-family: var(--serif-cn), var(--serif-en), serif;
+      font-style: italic;
+      font-size: 18px;
+      letter-spacing: .01em;
+      color: var(--aside);
+      opacity: 0;
+      filter: blur(2px);
+      transition: opacity 1.1s ease, filter 1.1s ease;
+      break-inside: avoid;
+    }
+    .aside.seen { opacity: 0.9; filter: blur(0); }
+    .aside .tag {
+      font-style: normal;
+      font-weight: 600;
+      letter-spacing: .1em;
+      color: var(--ink-faint);
+      margin-right: .5em;
+      font-size: 0.9em;
+    }
+
+    /* 红色旁白样式 */
+    .aside-red {
+      display: block;
+      margin: 1.4em 0 1.6em 1.2em;
+      padding-left: 1em;
+      border-left: 2px solid var(--accent);
+      font-family: var(--serif-cn), var(--serif-en), serif;
+      font-style: italic;
+      font-size: 18px;
+      letter-spacing: .01em;
+      color: #8b1a1a;
+      opacity: 0;
+      filter: blur(2px);
+      transition: opacity 1.1s ease, filter 1.1s ease;
+      break-inside: avoid;
+    }
+    .aside-red.seen { opacity: 0.9; filter: blur(0); }
+    .aside-red .tag {
+      font-style: normal;
+      font-weight: 600;
+      letter-spacing: .1em;
+      color: var(--accent);
+      margin-right: .5em;
+      font-size: 0.9em;
+    }
+
+    /* 涂黑样式 */
+    .redact {
+      background: #1c1812;
+      color: transparent;
+      cursor: help;
+      border-radius: 1px;
+      padding: 0 2px;
+      user-select: none;
+      transition: color .35s ease, background .35s ease;
+    }
+    .redact:hover, .redact:focus, .redact.peek {
+      color: var(--ink-faint);
+      background: transparent;
+      text-shadow: 0 0 1px rgba(0,0,0,.2);
+    }
+
+    /* 悬浮注释 */
+    .note {
+      position: relative;
+      border-bottom: 1px dotted var(--ink-faint);
+      cursor: help;
+    }
+    .note::after {
+      content: attr(data-note);
+      position: absolute;
+      left: 50%;
+      bottom: calc(100% + 10px);
+      transform: translateX(-50%) translateY(6px);
+      width: max-content;
+      max-width: 220px;
+      padding: .7em .9em;
+      background: var(--ink);
+      color: var(--paper);
+      font-family: var(--serif-en);
+      font-style: italic;
+      font-size: 12.5px;
+      line-height: 1.5;
+      border-radius: 2px;
+      box-shadow: 0 6px 18px rgba(0,0,0,.35);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .35s ease, transform .35s ease;
+      z-index: 50;
+    }
+    .note::before {
+      content: '';
+      position: absolute;
+      left: 50%;
+      bottom: calc(100% + 4px);
+      transform: translateX(-50%) translateY(6px);
+      border: 5px solid transparent;
+      border-top-color: var(--ink);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .35s ease, transform .35s ease;
+      z-index: 50;
+    }
+    .note:hover::after, .note:hover::before,
+    .note.peek::after, .note.peek::before,
+    .note:focus::after, .note:focus::before {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* 表里文字 */
+    .layer {
+      position: relative;
+      display: inline-block;
+      cursor: help;
+      vertical-align: top;
+    }
+    .layer .surface {
+      display: inline-block;
+      transition: opacity .9s ease, filter .9s ease;
+    }
+    .layer .under {
+      position: absolute;
+      left: 0;
+      top: 0;
+      white-space: nowrap;
+      color: var(--accent);
+      opacity: 0;
+      filter: blur(3px);
+      transition: opacity .9s ease, filter .9s ease;
+      pointer-events: none;
+    }
+    .layer:hover .surface, .layer.peek .surface, .layer:focus .surface {
+      opacity: .15;
+      filter: blur(1.5px);
+    }
+    .layer:hover .under, .layer.peek .under, .layer:focus .under {
+      opacity: 1;
+      filter: blur(0);
+    }
+
+    .insert {
+      font-size: .72em;
+      vertical-align: super;
+      color: var(--accent);
+      font-style: italic;
+      margin: 0 .15em;
+    }
+
+    .smudge {
+      display: inline-block;
+      filter: blur(.6px);
+      opacity: .5;
+      letter-spacing: .02em;
+      text-shadow: 0 0 3px rgba(43,37,32,.3);
+    }
+
+    /* ── 底部动作区：刺入榫销 ── */
+    #end-actions {
+      margin-top: 6vh;
+      padding-top: 3.5vh;
+      border-top: 1px solid var(--tear-line);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.1em;
+    }
+    .act-btn {
+      font-family: var(--serif-cn), var(--serif-en), serif;
+      font-size: 15px;
+      letter-spacing: .28em;
+      padding: .85em 2.4em;
+      cursor: pointer;
+      border-radius: 1px;
+      background: transparent;
+      transition: opacity .25s ease, background .25s ease, color .25s ease, border-color .25s ease;
+    }
+    .act-primary {
+      border: 1px solid var(--accent);
+      background: var(--accent);
+      color: var(--paper);
+    }
+    .act-primary:hover { background: #7d2626; }
+    .act-primary:disabled { opacity: .45; cursor: not-allowed; }
+
+    /* ── 左上角返回箭头 ── */
+    #btn-back {
+      position: fixed;
+      top: 18px;
+      left: 18px;
+      z-index: 90;
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(232, 226, 216, 0.28);
+      border-radius: 50%;
+      background: rgba(21, 19, 15, 0.55);
+      color: rgba(232, 226, 216, 0.72);
+      cursor: pointer;
+      transition: background .25s ease, color .25s ease, border-color .25s ease;
+    }
+    #btn-back:hover {
+      border-color: rgba(232, 226, 216, 0.85);
+      color: #ece6d8;
+      background: rgba(21, 19, 15, 0.85);
+    }
+
+    /* ── 抵达弹窗 ── */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      background: rgba(10, 9, 7, 0.72);
+      backdrop-filter: blur(3px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 5vw;
+    }
+    .overlay[hidden] { display: none; }
+    .modal {
+      width: 100%;
+      max-width: 420px;
+      background: var(--paper);
+      color: var(--ink);
+      padding: 2.4rem 2rem 1.8rem;
+      border-radius: 2px;
+      box-shadow: 0 24px 70px rgba(0,0,0,.55), 0 0 0 1px rgba(0,0,0,.08);
+      animation: rise .4s ease;
+    }
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(14px); }
+      to { opacity: 1; transform: none; }
+    }
+    .modal-eyebrow {
+      font-family: var(--serif-en);
+      font-style: italic;
+      font-size: 12px;
+      letter-spacing: .2em;
+      color: var(--ink-faint);
+      text-transform: uppercase;
+    }
+    .modal-title {
+      font-size: 19px;
+      font-weight: 600;
+      letter-spacing: .12em;
+      margin: .5em 0 .4em;
+      color: var(--ink);
+    }
+    .modal-sub {
+      font-size: 13.5px;
+      color: var(--ink-soft);
+      letter-spacing: .04em;
+      line-height: 1.8;
+      margin-bottom: 1.4em;
+    }
+    .field { display: block; margin-bottom: 1em; }
+    .field span {
+      display: block;
+      font-size: 12.5px;
+      letter-spacing: .18em;
+      color: var(--ink-soft);
+      margin-bottom: .45em;
+    }
+    .field input {
+      width: 100%;
+      font-family: var(--serif-cn), var(--serif-en), serif;
+      font-size: 15px;
+      color: var(--ink);
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid var(--tear-line);
+      padding: .4em 0;
+      outline: none;
+      transition: border-color .25s ease;
+    }
+    .field input:focus { border-color: var(--accent); }
+    .closed-note {
+      font-size: 12.5px;
+      color: var(--accent);
+      letter-spacing: .06em;
+      line-height: 1.7;
+      margin-bottom: 1.2em;
+    }
+    .modal-actions {
+      display: flex;
+      gap: 1em;
+      margin-top: 1.6em;
+      justify-content: flex-end;
+    }
+    .modal-actions .act-btn { padding: .7em 1.8em; font-size: 13.5px; }
+    .status-line {
+      margin-top: 1em;
+      min-height: 1.5em;
+      font-size: 12.5px;
+      color: var(--accent);
+      letter-spacing: .06em;
+      text-align: center;
+    }
+    .status-line.ok { color: #3d5a2e; }
+
+    @media (max-width: 560px) {
+      #paper { padding: 9vh 6vw 20vh; }
+      #manuscript { font-size: 17px; line-height: 2; }
+      .modal-title { font-size: 17px; }
+    }
+  </style>
+</head>
+<body>
+<div id="paper">
+  <div id="tear-edge"></div>
+  <div id="letterhead">
+    <div class="num">∅</div>
+    <div class="ttl">∅</div>
+  </div>
+
+  <div id="manuscript"></div>
+
+  <div id="end-actions">
+    <button id="btn-tenon" class="act-btn act-primary">刺入榫销</button>
+  </div>
+</div>
+
+<!-- 左上角返回箭头 -->
+<button id="btn-back" title="返回首页" aria-label="返回首页">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+</button>
+
+<!-- 抵达弹窗 -->
+<div id="record-overlay" class="overlay" hidden>
+  <div class="modal">
+    <div class="modal-eyebrow">∅</div>
+    <h2 class="modal-title">长夜已尽。记录你的抵达</h2>
+    <p class="modal-sub">留下你的名字与落足之地，以证曾行至此。</p>
+    <label class="field">
+      <span>您的名字</span>
+      <input id="in-name" maxlength="60" placeholder="如何称呼你" autocomplete="off">
+    </label>
+    <div id="addr-fields">
+      <label class="field">
+        <span>电话号码</span>
+        <input id="in-phone" maxlength="40" placeholder="用于收货联系" autocomplete="tel">
+      </label>
+      <label class="field">
+        <span>收货地址</span>
+        <input id="in-address" maxlength="200" placeholder="省 / 市 / 区 / 详细地址" autocomplete="street-address">
+      </label>
+    </div>
+    <div id="addr-closed" class="closed-note" hidden>地址征集已截止，仅记录你的名字。</div>
+    <div class="modal-actions">
+      <button id="btn-submit" class="act-btn act-primary">钉下印记</button>
+      <button id="btn-cancel" class="act-btn act-ghost">暂不</button>
+    </div>
+    <div id="record-status-line" class="status-line"></div>
+  </div>
+</div>
+
+<script>
+(function() {
+    // 结局正文由后端下发，前端不持有任何正文明文
+
+    // ── 工具函数 ──
+    function splitKeepingTags(text) {
+      const tags = [];
+      const protectedText = text.replace(/<[^>]+>/g, (m) => {
+        tags.push(m);
+        return `\u0000${tags.length-1}\u0000`;
+      });
+      const rawChunks = protectedText.split(/(?<=[。，、——])/);
+      const chunks = [];
+      let buffer = '';
+      let openTags = [];
+      
+      for (const raw of rawChunks) {
+        let restored = raw.replace(/\u0000(\d+)\u0000/g, (_, i) => tags[+i]);
+        buffer += restored;
+        
+        // 检查所有行内标签是否平衡
+        const startMatches = buffer.match(/<(i|b|strong|em|span)[^>]*>/g) || [];
+        const endMatches = buffer.match(/<\/(i|b|strong|em|span)>/g) || [];
+        
+        if (startMatches.length === endMatches.length) {
+          chunks.push(buffer);
+          buffer = '';
+        }
+      }
+      
+      if (buffer) chunks.push(buffer);
+      if (chunks.length === 0) chunks.push(text);
+      return chunks;
+    }
+
+    function renderManuscript(container, data) {
+      container.innerHTML = '';
+      data.forEach(block => {
+        if (block.type === 'p') {
+          const p = document.createElement('p');
+          const chunks = splitKeepingTags(block.text);
+          chunks.forEach(chunk => {
+            if (!chunk) return;
+            const span = document.createElement('span');
+            span.className = 'ln';
+            span.innerHTML = chunk;
+            p.appendChild(span);
+          });
+          container.appendChild(p);
+        } else if (block.type === 'aside') {
+          const div = document.createElement('div');
+          div.className = 'aside';
+          div.innerHTML = `<span class="tag">[@]</span>${block.text}`;
+          container.appendChild(div);
+        } else if (block.type === 'aside-red') {
+          const div = document.createElement('div');
+          div.className = 'aside-red';
+          div.innerHTML = `<span class="tag">[@]</span>${block.text}`;
+          container.appendChild(div);
+        }
+      });
+
+      container.querySelectorAll('.redact').forEach(el => {
+        el.setAttribute('tabindex', '0');
+        el.addEventListener('click', () => el.classList.toggle('peek'));
+      });
+      container.querySelectorAll('.layer').forEach(el => {
+        el.setAttribute('tabindex', '0');
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          el.classList.toggle('peek');
+        });
+      });
+      container.querySelectorAll('.note').forEach(el => {
+        el.setAttribute('tabindex', '0');
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          el.classList.toggle('peek');
+        });
+      });
+    }
+
+    // 正文由后端下发，见下方 loadEnding()
+    const manuscriptContainer = document.getElementById('manuscript');
+
+    // 逐行浮现 + 模糊体渐显
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('seen');
+          const blurs = entry.target.querySelectorAll('.blur');
+          blurs.forEach(b => {
+            setTimeout(() => {
+              b.classList.add('seen-blur');
+            }, 400);
+          });
+        }
+      });
+    }, { threshold: 0.6, rootMargin: '0px 0px -10% 0px' });
+
+    // ── 会话与内容：结局正文由后端下发（前端不持有明文） ──
+    const sessionId = sessionStorage.getItem('end_sid');
+
+    async function loadEnding() {
+      if (!sessionId) { window.location.href = 'index.html'; return; }
+      let res;
+      try {
+        res = await fetch(`/api/end/ending?sessionId=${encodeURIComponent(sessionId)}`);
+      } catch (_e) {
+        manuscriptContainer.textContent = 'CONNECTION ERROR';
+        return;
+      }
+      if (res.status === 404 || res.status === 403) {
+        sessionStorage.removeItem('end_sid');
+        window.location.href = 'index.html';
+        return;
+      }
+      const data = await res.json();
+      if (!data.manuscript) { sessionStorage.removeItem('end_sid'); window.location.href = 'index.html'; return; }
+      renderManuscript(manuscriptContainer, data.manuscript);
+      document.querySelectorAll('#manuscript .ln, #manuscript .aside, #manuscript .aside-red').forEach(el => observer.observe(el));
+      window.scrollTo(0, 0);
+    }
+    loadEnding();
+
+    // ── 抵达记录：刺入榫销 ──
+    const btnTenon = document.getElementById('btn-tenon');
+    const overlay = document.getElementById('record-overlay');
+    const btnCancel = document.getElementById('btn-cancel');
+    const btnSubmit = document.getElementById('btn-submit');
+    const inName = document.getElementById('in-name');
+    const inPhone = document.getElementById('in-phone');
+    const inAddress = document.getElementById('in-address');
+    const addrFields = document.getElementById('addr-fields');
+    const addrClosed = document.getElementById('addr-closed');
+    const statusLine = document.getElementById('record-status-line');
+    let collectAddress = true;
+    let submitted = false;
+
+    // 返回首页（左上角箭头）
+    document.getElementById('btn-back').addEventListener('click', () => {
+      window.location.href = 'index.html';
+    });
+
+    // 打开弹窗：先查收集状态（非管理员完成人数达到 11 后不再收集地址）
+    btnTenon.addEventListener('click', async () => {
+      if (submitted) { statusLine.textContent = '你已记录过抵达。'; return; }
+      try {
+        const res = await fetch('/api/end/record-status');
+        if (res.ok) {
+          const st = await res.json();
+          collectAddress = st.collectAddress;
+        }
+      } catch (_e) { /* 保持默认 */ }
+      addrFields.hidden = !collectAddress;
+      addrClosed.hidden = collectAddress;
+      statusLine.textContent = '';
+      overlay.hidden = false;
+      setTimeout(() => inName.focus(), 60);
+    });
+
+    btnCancel.addEventListener('click', () => { overlay.hidden = true; });
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) overlay.hidden = true;
+    });
+
+    btnSubmit.addEventListener('click', async () => {
+      const name = inName.value.trim();
+      if (!name) { statusLine.textContent = '请留下你的名字。'; inName.focus(); return; }
+      btnSubmit.disabled = true;
+      try {
+        const res = await fetch('/api/end/record', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId, name, phone: inPhone.value.trim(), address: inAddress.value.trim() }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          submitted = true;
+          statusLine.textContent = '已记录你的抵达。长夜已尽。';
+          statusLine.classList.add('ok');
+          btnTenon.disabled = true;
+          btnTenon.textContent = '印记已钉下';
+          setTimeout(() => { overlay.hidden = true; }, 1400);
+        } else if (res.status === 409) {
+          submitted = true;
+          btnTenon.disabled = true;
+          btnTenon.textContent = '印记已钉下';
+          statusLine.textContent = data.error || '已记录过抵达。';
+        } else {
+          statusLine.textContent = data.error || '提交失败，请稍后再试。';
+        }
+      } catch (_e) {
+        statusLine.textContent = '连接失败，请稍后再试。';
+      }
+      btnSubmit.disabled = false;
+    });
+  })();
+</script>
+</body>
+</html>

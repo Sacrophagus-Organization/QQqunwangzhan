@@ -6,12 +6,15 @@ import { fileURLToPath } from 'url';
 import fs from 'fs';
 import { db } from '../db.js';
 import { authMiddleware, adminOnly, AuthRequest } from '../middleware/auth.js';
-import { upsertProgress } from './loopPuzzle.js';
+import { upsertProgress, getNodeState } from './loopPuzzle.js';
 
 // 石棺下载文件 → 对应谜题节点进度的映射（与 seed/loop_seed.py 的约定保持一致）
+// 注意：线上库中节点四主线包的 file_name 实际为 '4.zip'（与下方插图判断一致），
+// 两种命名都要映射到 node4，否则验证成功不会写入节点四进度。
 const FILE_NODE_MAP: Record<string, string> = {
   'loop.zip': 'node2',
   'loop-node4.zip': 'node4',
+  '4.zip': 'node4',
 };
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -140,11 +143,34 @@ router.post('/verify', authMiddleware, (req: AuthRequest, res) => {
     }
   }
 
+  // 特定记录（node4 主线包，DB 中 file_name 为 4.zip）验证成功后在弹窗附赠一张插图
+  const imageUrl = ['4.zip', 'loop-node4.zip'].includes(row.file_name)
+    ? '/api/sarcophagus/window_capture_with_poems.png'
+    : undefined;
+
   res.json({
     success: true,
     downloadToken,
     message: '远程协议验证通过，数据包已就绪',
+    ...(imageUrl ? { imageUrl } : {}),
   });
+});
+
+// ─── GET /window_capture_with_poems.png ──────────────────────────────
+// 谜题插画：验证成功后在下载弹窗内展示，可右键另存/复制。
+const windowCapturePath = path.join(uploadDir, 'window_capture_with_poems.png');
+// 鉴权：仅节点四验证成功（服务端已记录 node4 进度）的用户可访问，防止绕过验证直接取走弹窗插画
+router.get('/window_capture_with_poems.png', authMiddleware, (req: AuthRequest, res) => {
+  if (!getNodeState(req.userId!, 'node4')) {
+    res.status(403).json({ error: '请先完成节点四验证' });
+    return;
+  }
+  if (!fs.existsSync(windowCapturePath)) {
+    res.status(404).json({ error: '图片不存在' });
+    return;
+  }
+  res.setHeader('Cache-Control', 'public, max-age=86400');
+  res.sendFile(windowCapturePath);
 });
 
 // ─── Download IP Rate Limiter ─────────────────────────────────────────

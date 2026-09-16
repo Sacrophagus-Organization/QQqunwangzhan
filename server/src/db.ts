@@ -419,6 +419,17 @@ try {
     .run('pa-mail-admin-bots', '/mail/admin/bots', 'Bot管理', 'admin', 1, 'Bot自动回复管理（仅管理员可见）');
   db.prepare('INSERT OR IGNORE INTO page_access (id, route_path, route_name, access_level, is_enabled, description) VALUES (?, ?, ?, ?, ?, ?)')
     .run('pa-loop-node6', '/THEDARKSIDESOFTHETWINTERRAHOPES', '长夜尽头·线索板', 'member', 1, 'LOOP 节点6 线索板（论文与附录解锁）');
+  db.prepare('INSERT OR IGNORE INTO page_access (id, route_path, route_name, access_level, is_enabled, description) VALUES (?, ?, ?, ?, ?, ?)')
+    .run('pa-end', '/ORACLESAIDTHATCIVILSWITHNOENDSANDNOBEGINS', '终局谜题', 'admin', 1, '节点0 终局谜题页（仅管理员可访问）');
+  db.prepare('INSERT OR IGNORE INTO page_access (id, route_path, route_name, access_level, is_enabled, description) VALUES (?, ?, ?, ?, ?, ?)')
+    .run('pa-fake403', '/WDSJ225772937AAAB', '伪装403页', 'admin', 1, '仿造 403 Forbidden 页（谜题线索页）');
+  // 迁移：节点0 终局谜题页路径由 /end 切换为 /ORACLESAIDTHATCIVILSWITHNOENDSANDNOBEGINS（仅切换路径，具体内容不变）
+  try {
+    db.prepare("UPDATE page_access SET route_path = '/ORACLESAIDTHATCIVILSWITHNOENDSANDNOBEGINS' WHERE id = 'pa-end'").run();
+    console.log('[DB] page_access: /end 已切换为 /ORACLESAIDTHATCIVILSWITHNOENDSANDNOBEGINS');
+  } catch {}
+  db.prepare('INSERT OR IGNORE INTO page_access (id, route_path, route_name, access_level, is_enabled, description) VALUES (?, ?, ?, ?, ?, ?)')
+    .run('pa-loop', '/loop', 'LOOP 论文页', 'admin', 1, '节点2 论文网页（仅管理员可访问）');
 } catch {}
 
 // Seed page_access - 初始化所有页面访问配?
@@ -461,5 +472,26 @@ if (!existingAdmin) {
     console.log('[DB] 管理员账号已创建 (Admin)');
   }
 }
+
+// 终局谜题：抵达记录（真/假结局收集的名字与收货地址）
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS end_records (
+      id TEXT PRIMARY KEY,
+      branch TEXT NOT NULL,
+      name TEXT NOT NULL,
+      phone TEXT NOT NULL DEFAULT '',
+      address TEXT NOT NULL DEFAULT '',
+      session_id TEXT NOT NULL DEFAULT '',
+      user_id TEXT NOT NULL DEFAULT '',
+      user_name TEXT NOT NULL DEFAULT '',
+      is_admin INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_end_records_created ON end_records(created_at);
+    CREATE INDEX IF NOT EXISTS idx_end_records_session ON end_records(session_id);
+  `);
+  console.log('[DB] end_records table ensured');
+} catch {}
 
 export { db, DB_PATH };

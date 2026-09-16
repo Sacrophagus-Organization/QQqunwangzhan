@@ -1,6 +1,9 @@
 import { Router } from 'express';
 import { v4 as uuid } from 'uuid';
 import crypto from 'crypto';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { db } from '../db.js';
 import { authMiddleware, AuthRequest } from '../middleware/auth.js';
 import { LOOP_NODE6_APPENDICES, LOOP_NODE6_PAPER } from '../data/loopNode6.js';
@@ -8,7 +11,7 @@ import { LOOP_NODE6_APPENDICES, LOOP_NODE6_PAPER } from '../data/loopNode6.js';
 const router = Router();
 
 // ─── 常量 ────────────────────────────────────────────────────────────────
-const NODE6_KEYS = LOOP_NODE6_APPENDICES.map((a) => a.key); // ['A'...'J','?']
+export const NODE6_KEYS = LOOP_NODE6_APPENDICES.map((a) => a.key); // ['A'...'J','?']
 
 const APPENDIX_HASH_MAP = new Map(
   LOOP_NODE6_APPENDICES.map((a) => [a.key, a.passwordHash] as const)
@@ -71,13 +74,25 @@ setInterval(() => {
 }, 60_000).unref();
 
 // ─── 进度读写辅助 ────────────────────────────────────────────────────────
-// 旧版 key 系统为 D-I（对应 PDF 附录 E-J），当前 key 已与 PDF 标签对齐（A-J+?）：
-//   D=语言预言寓言 E=必然的循环 F=无解死局 G=为明天占卜 H=终端 I=一角 J=遇见终究遗忘
-// 迁移映射：旧 D→新 E、旧 E→新 F、…、旧 I→新 J（旧版 D-I 的内容在修正后的 key 表下
-// 恰好落在新 E-J 上），避免老玩家解锁进度丢失。
-const LEGACY_KEY_MAP: Record<string, string> = {
-  D: 'E', E: 'F', F: 'G', G: 'H', H: 'I', I: 'J',
-};
+// key 与 PDF 附录标签对齐（A-J + ?）。defaultUnlocked 附录（A/B/C/D/?）始终解锁。
+// 2026-08 结构调整：原 J「遇见终究遗忘」移至 D，E-J 依次顺延（内容/密码跟随原 D-I）。
+// 已按需求重置全部 node6 解锁进度，不再提供旧 key 迁移。
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const APPENDIX_PAGES_DIR = path.join(__dirname, '..', '..', 'uploads', 'loop6_appendix');
+
+// 返回指定附录预渲染页面图的相对 URL 列表（页面图文件由部署脚本按 <key>/<n>.png 生成）
+export function getAppendixPages(key: string): string[] {
+  const dir = path.join(APPENDIX_PAGES_DIR, key);
+  let files: string[] = [];
+  try {
+    files = fs.readdirSync(dir).filter((f) => /^\d+\.png$/.test(f));
+  } catch {
+    return [];
+  }
+  files.sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
+  return files.map((f) => `/loop6/appendix/${encodeURIComponent(key)}/pages/${f}`);
+}
 
 function getProgressRow(userId: string, nodeKey: string): any {
   return db.prepare('SELECT * FROM puzzle_progress WHERE user_id = ? AND node_key = ?')
@@ -93,9 +108,9 @@ export function upsertProgress(userId: string, nodeKey: string, state: Record<st
     .run('lp-' + uuid().slice(0, 8), userId, nodeKey, stateJson, now);
 }
 
-function parseNode6State(userId: string): Record<string, boolean> {
+export function parseNode6State(userId: string): Record<string, boolean> {
   const result: Record<string, boolean> = {};
-  // defaultUnlocked 附录（A/B/C/J/?）从一开始就解锁，无视 DB 状态
+  // defaultUnlocked 附录（A/B/C/D/?）从一开始就解锁，无视 DB 状态
   for (const a of LOOP_NODE6_APPENDICES) {
     if (a.defaultUnlocked) result[a.key] = true;
   }
@@ -106,17 +121,13 @@ function parseNode6State(userId: string): Record<string, boolean> {
     for (const k of NODE6_KEYS) {
       if (parsed[k]) result[k] = true;
     }
-    // 旧版 key（D-I）进度迁移到新 key
-    for (const [oldK, newK] of Object.entries(LEGACY_KEY_MAP)) {
-      if (parsed[oldK]) result[newK] = true;
-    }
     return result;
   } catch {
     return result;
   }
 }
 
-function getNodeState(userId: string, nodeKey: string): boolean {
+export function getNodeState(userId: string, nodeKey: string): boolean {
   return !!getProgressRow(userId, nodeKey);
 }
 
@@ -148,8 +159,8 @@ router.get('/node6', authMiddleware, (req: AuthRequest, res) => {
         title: a.title,
         subtitle: a.subtitle,
         unlocked: !!unlocked[a.key],
-        // 已解锁的附录直接返回正文，刷新后可再次阅读
-        content: unlocked[a.key] ? a.content : undefined,
+        // 已解锁的附录返回预渲染 PDF 页面图 URL 列表（仅解锁者可见）
+        pages: unlocked[a.key] ? getAppendixPages(a.key) : undefined,
       })),
     });
   } catch (err: any) {
@@ -161,7 +172,7 @@ router.get('/node6', authMiddleware, (req: AuthRequest, res) => {
 // ─── POST /api/loop/node6/unlock ────────────────────────────────────────
 // body: { appendix: 'A'..'J'|'?', password: string }
 // 密码校验（sha256 摘要比对）成功则写服务端进度并返回该附录正文
-// 注意：defaultUnlocked 附录（A/B/C/J/?）不通过本接口，前端直接阅读。
+// 注意：defaultUnlocked 附录（A/B/C/D/?）不通过本接口，前端直接阅读。
 router.post('/node6/unlock', authMiddleware, (req: AuthRequest, res) => {
   try {
     const ip = getClientIP(req);
@@ -204,8 +215,7 @@ router.post('/node6/unlock', authMiddleware, (req: AuthRequest, res) => {
     unlocked[key] = true;
     upsertProgress(req.userId!, 'node6', unlocked);
 
-    const appendixConfig = LOOP_NODE6_APPENDICES.find((a) => a.key === key);
-    res.json({ correct: true, content: appendixConfig?.content || '' });
+    res.json({ correct: true, pages: getAppendixPages(key) });
   } catch (err: any) {
     console.error('[loop] POST /node6/unlock error:', err);
     res.status(500).json({ error: '解锁失败' });

@@ -127,10 +127,22 @@ export function pageAccessGuard(_routePath: string) {
   return (_req: AuthRequest, _res: Response, next: NextFunction) => next();
 }
 
+// 静态谜题隐藏路由：这些路径仅存在于服务端静态目录（不在前端 bundle 中），
+// 属于谜题暗线地址，不得经公开配置接口下发，防止匿名枚举。
+// 注意：/THEDARKSIDESOFTHETWINTERRAHOPES 为 SPA 路由，路径已存在于前端 bundle，
+// 且前端 PageAccessRoute 依赖其配置行执行维护门控，故不在此过滤。
+const SECRET_STATIC_ROUTES = new Set([
+  '/WDSJ225772937AAAB',
+  '/ORACLESAIDTHATCIVILSWITHNOENDSANDNOBEGINS',
+  '/loop',
+]);
+
 /** 获取所有页面配置（供 site 公开接口使用，含 admin 路由以支持前端完整逻辑） */
 export function getPublicPageAccess(): Omit<PageAccessRow, 'updated_by'>[] {
   const config = loadCache();
-  return Object.values(config).map(({ updated_by, ...rest }) => rest);
+  return Object.values(config)
+    .filter((row) => !SECRET_STATIC_ROUTES.has(row.route_path))
+    .map(({ updated_by, ...rest }) => rest);
 }
 
 /** 获取所有页面配置（含 admin 路由，供管理端使用） */

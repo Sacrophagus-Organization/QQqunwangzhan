@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Link } from 'react-router-dom';
-import { apiPost } from '@/api/client';
+import { apiPost, apiBlobUrl } from '@/api/client';
 import { TerminalAutopilot } from '@/components/TerminalAutopilot';
 import { Footer } from '@/components/Footer';
 import { Loader2, Terminal, Shield, X, Download, ArrowLeft } from 'lucide-react';
@@ -16,6 +16,9 @@ export default function SarcophagusTerminal() {
   const [animationType, setAnimationType] = useState<'none' | 'unlock' | 'fail'>('none');
   const [loading, setLoading] = useState(false);
   const [downloadToken, setDownloadToken] = useState<string | null>(null);
+  const [poemImage, setPoemImage] = useState<string | null>(null);
+  // 插图接口需要登录鉴权，<img>/<a> 无法携带 Authorization header，改用带鉴权 fetch 得到的 blob URL
+  const [poemBlobUrl, setPoemBlobUrl] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [modalPhase, setModalPhase] = useState<'closed' | 'opening' | 'open'>('closed');
   const [errorModal, setErrorModal] = useState(false);
@@ -48,7 +51,7 @@ export default function SarcophagusTerminal() {
     appendOutput(`AUTH_REQ: 正在验证接入代码 "${code.trim().toUpperCase()}"...`);
 
     try {
-      const result = await apiPost<{ success: boolean; downloadToken?: string; message?: string }>(
+      const result = await apiPost<{ success: boolean; downloadToken?: string; message?: string; imageUrl?: string }>(
         '/sarcophagus/verify',
         { code: code.trim() }
       );
@@ -58,6 +61,12 @@ export default function SarcophagusTerminal() {
         appendOutput('SYNC: 数据包已就绪，正在建立下载通道...');
         setAnimationType('unlock');
         setDownloadToken(result.downloadToken);
+        setPoemImage(result.imageUrl || null);
+        if (result.imageUrl) {
+          apiBlobUrl(result.imageUrl)
+            .then(setPoemBlobUrl)
+            .catch(() => setPoemBlobUrl(null));
+        }
       } else {
         appendOutput(`AUTH_FAIL: ${result.message || '访问代码无效'}`);
         setAnimationType('fail');
@@ -545,7 +554,8 @@ export default function SarcophagusTerminal() {
           }} />
           <div
             className={`
-              relative w-full max-w-sm rounded-xl border border-primary/30 p-6 transition-all duration-500 z-10
+              relative w-full ${poemImage ? 'max-w-lg' : 'max-w-sm'} rounded-xl border border-primary/30 transition-all duration-500 z-10
+              flex flex-col max-h-[90vh] overflow-hidden
               ${modalPhase === 'open' ? 'scale-100 opacity-100' : 'scale-90 opacity-0'}
             `}
             style={{
@@ -553,14 +563,16 @@ export default function SarcophagusTerminal() {
               boxShadow: '0 0 60px rgba(0,210,245,0.15), 0 0 120px rgba(0,210,245,0.05), inset 0 1px 0 rgba(0,210,245,0.04)',
             }}
           >
+            {/* X 关闭：固定在弹窗右上角，不随内容滚动 */}
             <button
               onClick={() => { setShowModal(false); setModalPhase('closed'); }}
-              className="absolute top-3 right-3 text-muted-foreground/30 hover:text-primary/60 transition-colors"
+              className="absolute top-3 right-3 z-20 text-muted-foreground/30 hover:text-primary/60 transition-colors"
             >
               <X className="h-4 w-4" />
             </button>
 
-            <div className="flex items-center gap-3 mb-4">
+            {/* 头部：固定 */}
+            <div className="flex items-center gap-3 px-6 pt-6 pb-4 pr-12 shrink-0">
               <div className="h-10 w-10 rounded-lg bg-green-500/10 border border-green-500/20 flex items-center justify-center">
                 <Download className="h-5 w-5 text-green-400" />
               </div>
@@ -570,21 +582,47 @@ export default function SarcophagusTerminal() {
               </div>
             </div>
 
-            <div className="p-3 rounded-lg border border-amber-500/10 mb-4" style={{ background: 'rgba(245,158,11,0.04)' }}>
-              <p className="text-[11px] text-amber-400/60 mono-text">
-                ⚠ 本链接5分钟内有效，请在失效前完成下载。数据通道仅可单次建立，请谨慎操作。
-              </p>
+            {/* 内容区：可滚动 */}
+            <div className="px-6 overflow-y-auto">
+              <div className="p-3 rounded-lg border border-amber-500/10 mb-4" style={{ background: 'rgba(245,158,11,0.04)' }}>
+                <p className="text-[11px] text-amber-400/60 mono-text">
+                  ⚠ 本链接5分钟内有效，请在失效前完成下载。数据通道仅可单次建立，请谨慎操作。
+                </p>
+              </div>
+
+              {poemImage && poemBlobUrl && (
+                <a
+                  href={poemBlobUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="block mb-4 group"
+                  title="在新标签页打开原图（可复制 / 另存为）"
+                >
+                  <img
+                    src={poemBlobUrl}
+                    alt="ANOMALY_SNAPSHOT"
+                    className="max-w-full max-h-[55vh] w-auto mx-auto rounded-lg border border-primary/15 group-hover:border-primary/40 transition-colors duration-300 object-contain"
+                  />
+                  <p className="mono-text text-[9px] text-muted-foreground/40 mt-1.5 flex items-center justify-between">
+                    <span>ANOMALY_SNAPSHOT // 点击放大，右键可保存或复制</span>
+                    <span className="text-primary/50 group-hover:text-primary/80">OPEN ↗</span>
+                  </p>
+                </a>
+              )}
             </div>
 
-            <button
-              onClick={handleDownload}
-              className="w-full py-3 rounded-lg border border-primary/30 text-primary/80 mono-text text-sm
-                         hover:bg-primary/10 hover:border-primary/50 hover:text-primary transition-all duration-300
-                         flex items-center justify-center gap-2"
-            >
-              <Download className="h-4 w-4" />
-              下载协议数据
-            </button>
+            {/* 底部：固定，始终可点 */}
+            <div className="px-6 pt-4 pb-6 shrink-0">
+              <button
+                onClick={handleDownload}
+                className="w-full py-3 rounded-lg border border-primary/30 text-primary/80 mono-text text-sm
+                           hover:bg-primary/10 hover:border-primary/50 hover:text-primary transition-all duration-300
+                           flex items-center justify-center gap-2"
+              >
+                <Download className="h-4 w-4" />
+                下载协议数据
+              </button>
+            </div>
           </div>
         </div>
       )}

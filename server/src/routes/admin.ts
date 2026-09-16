@@ -5,6 +5,7 @@ import { unlinkSync } from 'node:fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { deleteImagesFromHtml } from '../lib/imageCleanup.js';
+import { resetEndSessions } from './end.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -162,6 +163,15 @@ router.put('/page-access/:id', (req: AuthRequest, res) => {
 
   const updated = db.prepare('SELECT * FROM page_access WHERE id = ?').get(req.params.id);
   res.json(updated);
+});
+
+// 重置 /end 页面状态（清空所有进行中的文本会话与 IP 限速锁定）
+router.post('/end/reset', (_req: AuthRequest, res) => {
+  const result = resetEndSessions();
+  res.json({
+    success: true,
+    message: `已重置 /end 页面状态：清理 ${result.sessions} 个会话，解除 ${result.locks} 个限速锁定`,
+  });
 });
 
 export default router;

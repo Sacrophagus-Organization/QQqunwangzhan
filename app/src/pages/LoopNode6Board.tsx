@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import PdfPaperViewer from '@/components/PdfPaperViewer';
 
 interface LoopAppendixDTO {
   key: string;
@@ -29,6 +30,7 @@ interface LoopAppendixDTO {
   subtitle: string;
   unlocked: boolean;
   content?: string;
+  pages?: string[];
 }
 
 interface LoopPaperDTO {
@@ -45,7 +47,7 @@ interface Node6Response {
 
 interface UnlockResponse {
   correct: boolean;
-  content?: string;
+  pages?: string[];
 }
 
 // 每张附录卡的轻微倾斜角度（模拟随手钉上的质感）
@@ -62,6 +64,9 @@ const TILTS = [
   '-rotate-2',
   'rotate-1',
 ];
+
+// 服务器端预渲染的论文页面图片（7 页正文，无附录）
+const PAPER_PAGES = Array.from({ length: 7 }, (_, i) => `/loop6/paper/pages/${i + 1}.png`);
 
 export default function LoopNode6Board() {
   const navigate = useNavigate();
@@ -137,7 +142,7 @@ export default function LoopNode6Board() {
                 ...prev,
                 appendices: prev.appendices.map((a) =>
                   a.key === activeKey
-                    ? { ...a, unlocked: true, content: res.content || a.content }
+                    ? { ...a, unlocked: true, pages: res.pages || [] }
                     : a
                 ),
               }
@@ -281,7 +286,7 @@ export default function LoopNode6Board() {
             <div className="loop-thesis-card relative flex h-full flex-col p-8">
               <span className="loop-pushpin absolute -top-3 left-1/2 -translate-x-1/2" />
               <p className="font-mono text-[11px] tracking-[0.35em] text-[#A07040]">
-                LOOP — NODE VI · DOCTOR'S THESIS
+                LOOP — NODE VI
               </p>
               <h2 className="mt-4 font-serif text-2xl font-bold leading-snug text-[#3A2A14] lg:text-[28px]">
                 {data.paper.title}
@@ -391,21 +396,29 @@ export default function LoopNode6Board() {
           if (!open) setReadingKey(null);
         }}
       >
-        <DialogContent className="loop-paper-card max-w-2xl border-[#C8A878] text-[#3A2F1B]">
-          <DialogHeader>
-            <DialogTitle className="font-serif text-[#3A2A14]">
-              附录 {readingAppendix?.key} · {readingAppendix?.title}
-            </DialogTitle>
-            <DialogDescription className="flex items-center gap-2 text-[#6B563A]">
-              <FileText className="h-3.5 w-3.5" /> 已解锁文件内容
-            </DialogDescription>
-          </DialogHeader>
-          <div
-            className="markdown-content markdown-paper max-h-[60vh] overflow-y-auto pr-2 text-sm leading-relaxed text-[#4A3620]"
-            dangerouslySetInnerHTML={{
-              __html: sanitizeHtml(renderMarkdown(readingAppendix?.content || '')),
-            }}
-          />
+        <DialogContent className="loop-paper-card max-w-[min(1100px,calc(100vw-2rem))] border-[#C8A878] p-0 text-[#3A2F1B]">
+          <div className="flex h-[85vh] flex-col">
+            <div className="flex items-center justify-between border-b border-[#D8C191] px-5 py-3">
+              <DialogHeader className="p-0">
+                <DialogTitle className="font-serif text-[#3A2A14]">
+                  附录 {readingAppendix?.key} · {readingAppendix?.title}
+                </DialogTitle>
+                <DialogDescription className="flex items-center gap-2 text-[#6B563A]">
+                  <FileText className="h-3.5 w-3.5" /> 已解锁文件内容
+                </DialogDescription>
+              </DialogHeader>
+            </div>
+            {readingAppendix?.pages?.length ? (
+              <PdfPaperViewer pages={readingAppendix.pages} />
+            ) : (
+              <div
+                className="markdown-content markdown-paper max-h-[60vh] overflow-y-auto p-5 text-sm leading-relaxed text-[#4A3620]"
+                dangerouslySetInnerHTML={{
+                  __html: sanitizeHtml(renderMarkdown(readingAppendix?.content || '')),
+                }}
+              />
+            )}
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -418,10 +431,10 @@ export default function LoopNode6Board() {
           <div className="flex h-[82vh] flex-col">
             <div className="flex items-center justify-between border-b border-[#3C2C1B] px-5 py-3">
               <p className="font-mono text-xs tracking-widest text-[#E5C98A]">
-                LOOP IS ALL YOU NEED — READER
+                LOOP — NODE VI
               </p>
             </div>
-            <iframe src="/loop" title="Loop Is All You Need" className="min-h-0 w-full flex-1" />
+            <PdfPaperViewer pages={PAPER_PAGES} />
           </div>
         </DialogContent>
       </Dialog>
