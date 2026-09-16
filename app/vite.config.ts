@@ -39,7 +39,7 @@ export default defineConfig({
           return undefined;
         },
       },
-      // /ORACLESAIDTHATCIVILSWITHNOENDSANDNOBEGINS 节点0终局谜题由后端 Express 提供（原 /end 切换路径，含 yao.html、变爻说.pdf 等资源）
+      // /ORACLESAIDTHATCIVILSWITHNOENDSANDNOBEGINS 节点0 终局页面由后端 Express 提供
       '/ORACLESAIDTHATCIVILSWITHNOENDSANDNOBEGINS': 'http://localhost:3001',
     },
   },

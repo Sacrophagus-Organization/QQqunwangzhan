@@ -132,7 +132,7 @@
       font-weight: 700;
     }
 
-    /* 爻 链接：可点击提示 + 新页签打开变爻说 PDF */
+    /* 正文中可点击文字的提示样式 */
     .ln .clickable-yao {
       cursor: pointer;
       color: var(--accent);
@@ -366,14 +366,6 @@ function renderManuscript(container, data) {
     });
   });
 
-  // ── 爻跳转：新页签直接打开变爻说 PDF（绕过 yao.html 中间页） ──
-  container.querySelectorAll('.clickable-yao').forEach(el => {
-    el.addEventListener('click', () => {
-      const sid = sessionStorage.getItem('end_sid');
-      if (!sid) return;
-      window.open(`/api/end/pdf?sessionId=${encodeURIComponent(sid)}`, '_blank', 'noopener');
-    });
-  });
 }
 
     // 正文由后端下发，见下方 loadEcho()
