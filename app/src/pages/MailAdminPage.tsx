@@ -22,9 +22,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { apiDelete, apiGet, apiPatch, apiPost } from '@/api/client';
 import MarkdownEditor from '@/components/MarkdownEditor';
 import EmailBody from '@/components/EmailBody';
-import type { MailAdminAccount, MailAdminLog, MailAdminMessage, MailAdminStats } from '@/types';
+import type { MailAdminAccess, MailAdminAccount, MailAdminLog, MailAdminMessage, MailAdminStats } from '@/types';
 
-type Tab = 'accounts' | 'messages' | 'broadcast' | 'logs';
+type Tab = 'accounts' | 'messages' | 'broadcast' | 'logs' | 'access';
 
 const statusLabels: Record<string, string> = { active: '已激活', pending: '待审核', disabled: '已停用' };
 const statusColors: Record<string, string> = { active: 'bg-green-500/20 text-green-400', pending: 'bg-yellow-500/20 text-yellow-400', disabled: 'bg-red-500/20 text-red-400' };
@@ -59,6 +59,7 @@ export default function MailAdminPage() {
     { key: 'messages', label: '邮件监控' },
     { key: 'broadcast', label: '群发通知' },
     { key: 'logs', label: '操作日志' },
+    { key: 'access', label: '特别访问记录' },
   ];
 
   return (
@@ -74,7 +75,6 @@ export default function MailAdminPage() {
           </div>
           <div className="flex gap-2">
             <Link to="/mail"><Button variant="outline"><Mail className="h-4 w-4 mr-2" />返回邮箱</Button></Link>
-            
           </div>
         </div>
 
@@ -110,6 +110,9 @@ export default function MailAdminPage() {
         </ErrorBoundary>
         <ErrorBoundary>
           {tab === 'logs' && <LogsPanel />}
+        </ErrorBoundary>
+        <ErrorBoundary>
+          {tab === 'access' && <BeforeSarcophagusAccessPanel />}
         </ErrorBoundary>
       </div>
     </div>
@@ -527,6 +530,93 @@ function LogsPanel() {
               </tr>
             ))}
             {logs.length === 0 && <tr><td colSpan={4} className="p-6 text-center text-muted-foreground">暂无操作记录</td></tr>}
+          </tbody>
+        </table>
+      </div>
+      <div className="flex items-center justify-between text-sm text-muted-foreground">
+        <span>第 {page} 页 / 共 {totalPages} 页 ({total} 条)</span>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>上一页</Button>
+          <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>下一页</Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BeforeSarcophagusAccessPanel() {
+  const [records, setRecords] = useState<MailAdminAccess[]>([]);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const fetchRecords = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({ page: String(page), pageSize: '20' });
+      const data = await apiGet<{ records: MailAdminAccess[]; total: number }>(`/mail/admin/before-sarcophagus-access?${params}`);
+      setRecords(data.records);
+      setTotal(data.total);
+    } finally { setLoading(false); }
+  }, [page]);
+
+  useEffect(() => { fetchRecords().catch(console.error); }, [fetchRecords]);
+
+  const deleteRecord = async (id: string) => {
+    if (!confirm('确定删除这条访问记录吗？')) return;
+    setDeletingId(id);
+    try {
+      await apiDelete(`/mail/admin/before-sarcophagus-access/${id}`);
+      setRecords(prev => prev.filter(item => item.id !== id));
+      setTotal(prev => Math.max(0, prev - 1));
+    } catch (err) {
+      console.error(err);
+      alert('删除失败，请稍后重试');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const totalPages = Math.max(1, Math.ceil(total / 20));
+
+  const resultLabel: Record<string, string> = {
+    success: '通过',
+    fail: '未通过',
+    invalid: '无效输入',
+    rate_limited: '频率受限',
+  };
+  const resultColor: Record<string, string> = {
+    success: 'bg-green-500/20 text-green-400',
+    fail: 'bg-red-500/20 text-red-400',
+    invalid: 'bg-yellow-500/20 text-yellow-400',
+    rate_limited: 'bg-amber-500/20 text-amber-400',
+  };
+
+  if (loading) return <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div>;
+
+  return (
+    <div className="space-y-4">
+      <div className="overflow-x-auto rounded-md border border-border/50">
+        <table className="w-full min-w-[640px] text-sm">
+          <thead className="bg-secondary/50">
+            <tr><th className="text-left p-3">结果</th><th className="text-left p-3">设备</th><th className="text-left p-3">User-Agent</th><th className="text-left p-3">时间</th><th className="text-right p-3">操作</th></tr>
+          </thead>
+          <tbody>
+            {records.map(r => (
+              <tr key={r.id} className="border-t border-border/30 hover:bg-secondary/30">
+                <td className="p-3"><Badge variant="outline" className={`text-xs ${resultColor[r.result] || 'bg-secondary text-secondary-foreground'}`}>{resultLabel[r.result] || r.result}</Badge></td>
+                <td className="p-3">{r.device}</td>
+                <td className="p-3 text-muted-foreground max-w-[320px] truncate">{r.userAgent}</td>
+                <td className="p-3 text-muted-foreground text-xs">{new Date(r.createdAt).toLocaleString()}</td>
+                <td className="p-3 text-right">
+                  <Button variant="ghost" size="sm" disabled={deletingId === r.id} onClick={() => deleteRecord(r.id)}>
+                    <Trash2 className="h-4 w-4 text-red-400" />
+                  </Button>
+                </td>
+              </tr>
+            ))}
+            {records.length === 0 && <tr><td colSpan={5} className="p-6 text-center text-muted-foreground">暂无访问记录</td></tr>}
           </tbody>
         </table>
       </div>

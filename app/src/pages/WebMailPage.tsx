@@ -32,7 +32,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import MarkdownEditor from '@/components/MarkdownEditor';
 import { apiDelete, apiDownload, apiGet, apiMultipart, apiPost, apiPut } from '@/api/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { quoteEmailBody } from '@/lib/mailBody';
+import { previewEmailBody, quoteEmailBody } from '@/lib/mailBody';
 import { MailNotification } from '@/components/MailNotification';
 import EmailBody from '@/components/EmailBody';
 import type { MailAccount, MailFolder, MailFolderInfo, MailListResult, MailMessage } from '@/types';
@@ -416,7 +416,7 @@ export default function WebMailPage() {
                       <input type="checkbox" className="rounded mt-3" checked={selectedIds.has(message.id)} onChange={() => toggleSelect(message.id)} />
                       <button
                         onClick={() => selectMessage(message)}
-                        className={`flex-1 text-left rounded-md border p-3 transition ${selected?.id === message.id ? 'border-primary bg-primary/10' : 'border-border/50 bg-card/80 hover:border-primary/30'}`}
+                        className={`flex-1 min-w-0 text-left rounded-md border p-3 transition ${selected?.id === message.id ? 'border-primary bg-primary/10' : 'border-border/50 bg-card/80 hover:border-primary/30'}`}
                       >
                         <div className="flex items-center gap-2 mb-1">
                           {message.isRead ? <MailOpen className="h-4 w-4 text-muted-foreground" /> : <Mail className="h-4 w-4 text-primary" />}
@@ -424,7 +424,7 @@ export default function WebMailPage() {
                           {message.isStarred ? <Star className="h-4 w-4 text-amber-400 fill-amber-400 ml-auto" /> : null}
                         </div>
                         <p className="text-xs text-muted-foreground truncate">{message.folder === 'sent' ? addressList(message.to) : message.from.address}</p>
-                        <p className="text-xs text-muted-foreground truncate mt-1">{message.bodyText}</p>
+                        <p className="text-xs text-muted-foreground line-clamp-2 break-words mt-1">{message.bodyText || previewEmailBody(message.bodyHtml)}</p>
                         <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
                           <span>{new Date(message.receivedAt).toLocaleString()}</span>
                           {message.hasAttachments ? <Paperclip className="h-3.5 w-3.5 ml-auto" /> : null}

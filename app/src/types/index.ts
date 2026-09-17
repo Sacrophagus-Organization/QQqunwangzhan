@@ -207,6 +207,7 @@ export interface MailAdminAccount { id: string; address: string; displayName: st
 export interface MailAdminLog { id: string; action: string; detail: string; adminName?: string; createdAt: string; }
 export interface MailAdminMessage { id: string; subject: string; from: { address: string; name?: string }; to: { address: string; name?: string }[]; isRead?: number; receivedAt: string; createdAt: string; }
 export interface MailAdminStats { totalAccounts: number; activeAccounts: number; pendingAccounts?: number; totalMessages: number; todayReceived?: number; bots?: number; botCount?: number; }
+export interface MailAdminAccess { id: string; result: string; device: string; userAgent: string; createdAt: string; expiresAt: string; }
 
 export interface MailBot {
   id: string;

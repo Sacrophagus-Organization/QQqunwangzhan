@@ -127,6 +127,16 @@ db.exec(`
     UNIQUE(user_id, entity_type, entity_id)
   );
 
+  CREATE TABLE IF NOT EXISTS before_sarcophagus_access (
+    id TEXT PRIMARY KEY,
+    result TEXT NOT NULL DEFAULT 'fail',
+    device TEXT NOT NULL DEFAULT 'unknown',
+    user_agent TEXT NOT NULL DEFAULT '',
+    unlock_token TEXT,
+    token_expires_at TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
   CREATE TABLE IF NOT EXISTS page_access (
     id TEXT PRIMARY KEY,
     route_path TEXT NOT NULL UNIQUE,
@@ -179,6 +189,8 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_likes_entity ON likes(entity_type, entity_id);
   CREATE INDEX IF NOT EXISTS idx_comments_entity ON comments(entity_type, entity_id);
   CREATE INDEX IF NOT EXISTS idx_attachments_entity ON attachments(entity_type, entity_id);
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_before_sarcophagus_token ON before_sarcophagus_access(unlock_token);
+  CREATE INDEX IF NOT EXISTS idx_before_sarcophagus_created ON before_sarcophagus_access(created_at);
   CREATE INDEX IF NOT EXISTS idx_mail_messages_owner_folder ON mail_messages(owner_user_id, folder, received_at);
   CREATE INDEX IF NOT EXISTS idx_mail_messages_account ON mail_messages(account_id);
 
@@ -374,6 +386,9 @@ CREATE TABLE IF NOT EXISTS stories (
 // Migration: mail_bot_rules title column and mail_bot_rule_prerequisites table
 try { db.exec("ALTER TABLE mail_bot_rules ADD COLUMN title TEXT NOT NULL DEFAULT ''"); console.log("[DB] Added title column to mail_bot_rules (migration)"); } catch {}
 
+// 访问审计不再保存 IP：移除历史表中的 ip 字段（若存在）
+try { db.exec('ALTER TABLE before_sarcophagus_access DROP COLUMN ip'); console.log('[DB] before_sarcophagus_access: 已移除 ip 字段'); } catch {}
+
 try {
   db.exec("CREATE TABLE IF NOT EXISTS mail_bot_rule_prerequisites (" +
     "id TEXT PRIMARY KEY, " +
@@ -423,6 +438,8 @@ try {
     .run('pa-end', '/ORACLESAIDTHATCIVILSWITHNOENDSANDNOBEGINS', '终局谜题', 'admin', 1, '节点0 终局谜题页（仅管理员可访问）');
   db.prepare('INSERT OR IGNORE INTO page_access (id, route_path, route_name, access_level, is_enabled, description) VALUES (?, ?, ?, ?, ?, ?)')
     .run('pa-fake403', '/WDSJ225772937AAAB', '伪装403页', 'admin', 1, '仿造 403 Forbidden 页（谜题线索页）');
+  db.prepare('INSERT OR IGNORE INTO page_access (id, route_path, route_name, access_level, is_enabled, description) VALUES (?, ?, ?, ?, ?, ?)')
+    .run('pa-before-sarcophagus', '/BEFORETHESARCOPHAGUS', '石棺之前', 'public', 1, '半公开谜题页（游客可访问，密钥由后端校验）');
   // 迁移：节点0 终局谜题页路径由 /end 切换为 /ORACLESAIDTHATCIVILSWITHNOENDSANDNOBEGINS（仅切换路径，具体内容不变）
   try {
     db.prepare("UPDATE page_access SET route_path = '/ORACLESAIDTHATCIVILSWITHNOENDSANDNOBEGINS' WHERE id = 'pa-end'").run();

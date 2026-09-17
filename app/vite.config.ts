@@ -41,6 +41,8 @@ export default defineConfig({
       },
       // /ORACLESAIDTHATCIVILSWITHNOENDSANDNOBEGINS 节点0 终局页面由后端 Express 提供
       '/ORACLESAIDTHATCIVILSWITHNOENDSANDNOBEGINS': 'http://localhost:3001',
+      // /BEFORETHESARCOPHAGUS 石棺之前页面由后端 Express 提供
+      '/BEFORETHESARCOPHAGUS': 'http://localhost:3001',
     },
   },
 });

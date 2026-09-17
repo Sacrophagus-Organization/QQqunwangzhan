@@ -48,6 +48,48 @@ router.get('/stats', (_req: AuthRequest, res) => {
 });
 
 // ═══════════════════════════════════════════════
+// 特别访问记录：/BEFORETHESARCOPHAGUS 输入校验审计
+// ═══════════════════════════════════════════════
+router.get('/before-sarcophagus-access', (req: AuthRequest, res) => {
+  const page = Math.max(1, Number(req.query.page) || 1);
+  const pageSize = Math.min(100, Math.max(1, Number(req.query.pageSize) || 20));
+  const offset = (page - 1) * pageSize;
+
+  const { total } = db.prepare('SELECT COUNT(*) as total FROM before_sarcophagus_access').get() as { total: number };
+  const rows = db.prepare(`
+    SELECT id, result, device, user_agent, unlock_token, token_expires_at, created_at
+    FROM before_sarcophagus_access
+    ORDER BY created_at DESC
+    LIMIT ? OFFSET ?
+  `).all(pageSize, offset) as any[];
+
+  res.json({
+    records: rows.map((r) => ({
+      id: r.id,
+      result: r.result,
+      device: r.device,
+      userAgent: r.user_agent,
+      createdAt: r.created_at,
+      expiresAt: r.token_expires_at || '',
+    })),
+    page,
+    pageSize,
+    total,
+  });
+});
+
+// 删除单条特别访问记录
+router.delete('/before-sarcophagus-access/:id', (req: AuthRequest, res) => {
+  const row = db.prepare('SELECT id FROM before_sarcophagus_access WHERE id = ?').get(req.params.id);
+  if (!row) {
+    res.status(404).json({ error: '记录不存在' });
+    return;
+  }
+  db.prepare('DELETE FROM before_sarcophagus_access WHERE id = ?').run(req.params.id);
+  res.json({ success: true });
+});
+
+// ═══════════════════════════════════════════════
 // 账号管理
 // ═══════════════════════════════════════════════
 router.get('/accounts', (req: AuthRequest, res) => {

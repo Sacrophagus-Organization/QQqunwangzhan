@@ -134,6 +134,7 @@ export function pageAccessGuard(_routePath: string) {
 const SECRET_STATIC_ROUTES = new Set([
   '/WDSJ225772937AAAB',
   '/ORACLESAIDTHATCIVILSWITHNOENDSANDNOBEGINS',
+  '/BEFORETHESARCOPHAGUS',
   '/loop',
 ]);
 

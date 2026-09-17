@@ -15,6 +15,7 @@ import messageRoutes from './routes/messages.js';
 import commentRoutes from './routes/comments.js';
 import likeRoutes from './routes/likes.js';
 import sarcophagusRoutes from './routes/sarcophagus.js';
+import beforeSarcophagusRoutes from './routes/beforeSarcophagus.js';
 import imageRoutes from './routes/images.js';
 import siteRoutes from './routes/site.js';
 import mailRoutes from './routes/mail.js';
@@ -97,6 +98,7 @@ app.use('/api/messages', messageRoutes);
 app.use('/api/comments', commentRoutes);
 app.use('/api/likes', likeRoutes);
 app.use('/api/sarcophagus', sarcophagusRoutes);
+app.use('/api/before-sarcophagus', beforeSarcophagusRoutes);
 app.use('/api/images', imageRoutes);
 app.use('/api/site', siteRoutes);
 app.use('/api/mail', mailRoutes);
@@ -183,6 +185,15 @@ app.get(['/ORACLESAIDTHATCIVILSWITHNOENDSANDNOBEGINS', '/ORACLESAIDTHATCIVILSWIT
   }
   res.sendFile(path.join(staticDir, 'ORACLESAIDTHATCIVILSWITHNOENDSANDNOBEGINS', 'index.html'));
 });
+// /BEFORETHESARCOPHAGUS 静态页面（石棺之前，半公开谜题页）——
+// 显式路由，置于 express.static 之前；访问控制依据 page_access 表（默认 public，游客可访问）。
+app.get(['/BEFORETHESARCOPHAGUS', '/BEFORETHESARCOPHAGUS/'], optionalAuth('/BEFORETHESARCOPHAGUS'), (req, res) => {
+  // 无尾斜杠请求统一 302 到带尾斜杠，保证页面内相对资源解析正确
+  if (!req.path.endsWith('/')) {
+    return res.redirect('/BEFORETHESARCOPHAGUS/');
+  }
+  res.sendFile(path.join(staticDir, 'BEFORETHESARCOPHAGUS', 'index.html'));
+});
 // /WDSJ225772937AAAB 仿造 403 Forbidden 页（谜题线索页，右下角隐藏文字）——
 // 显式路由，置于 express.static 之前；HTTP 状态码一并伪装为 403，增加真实性。
 // 访问控制：依据 page_access 表配置（默认 admin 级，管理面板可调）
@@ -200,6 +211,7 @@ app.get(['/WDSJ225772937AAAB', '/WDSJ225772937AAAB/'], optionalAuth('/WDSJ225772
 const SECRET_STATIC_PREFIXES: Array<[prefix: string, routePath: string]> = [
   ['/WDSJ225772937AAAB', '/WDSJ225772937AAAB'],
   ['/ORACLESAIDTHATCIVILSWITHNOENDSANDNOBEGINS', '/ORACLESAIDTHATCIVILSWITHNOENDSANDNOBEGINS'],
+  ['/BEFORETHESARCOPHAGUS', '/BEFORETHESARCOPHAGUS'],
   ['/loop', '/loop'],
 ];
 app.use((req, res, next) => {

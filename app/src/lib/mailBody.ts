@@ -16,6 +16,15 @@ export function renderEmailBody(value: string | null | undefined): string {
   return sanitizeHtml(isHtmlBody(value) ? value : renderMarkdown(value));
 }
 
+/** 邮件列表摘要：去除 HTML/Markdown 标记，返回用于多行截断的纯文本。 */
+export function previewEmailBody(value: string | null | undefined): string {
+  if (!value) return '';
+  const html = renderEmailBody(value);
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  return (div.textContent || '').replace(/\s+/g, ' ').trim();
+}
+
 /** 将邮件正文转为可引用的 Markdown 引用块，Markdown 保留原格式，旧 HTML 降级为纯文本。 */
 export function quoteEmailBody(value: string | null | undefined): string {
   if (!value) return '';
