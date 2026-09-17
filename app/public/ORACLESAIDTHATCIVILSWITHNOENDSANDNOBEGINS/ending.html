@@ -306,7 +306,7 @@
       text-shadow: 0 0 3px rgba(43,37,32,.3);
     }
 
-    /* ── 底部动作区 ── */
+    /* ── 底部动作区：刺入榫销 ── */
     #end-actions {
       margin-top: 6vh;
       padding-top: 3.5vh;
@@ -469,12 +469,44 @@
 
   <div id="manuscript"></div>
 
+  <div id="end-actions">
+    <button id="btn-tenon" class="act-btn act-primary">刺入榫销</button>
+  </div>
 </div>
 
 <!-- 左上角返回箭头 -->
 <button id="btn-back" title="返回首页" aria-label="返回首页">
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
 </button>
+
+<!-- 抵达弹窗 -->
+<div id="record-overlay" class="overlay" hidden>
+  <div class="modal">
+    <div class="modal-eyebrow">∅</div>
+    <h2 class="modal-title">长夜已尽。记录你的抵达</h2>
+    <p class="modal-sub">留下你的名字与落足之地，以证曾行至此。</p>
+    <label class="field">
+      <span>您的名字</span>
+      <input id="in-name" maxlength="60" placeholder="如何称呼你" autocomplete="off">
+    </label>
+    <div id="addr-fields">
+      <label class="field">
+        <span>电话号码</span>
+        <input id="in-phone" maxlength="40" placeholder="用于收货联系" autocomplete="tel">
+      </label>
+      <label class="field">
+        <span>收货地址</span>
+        <input id="in-address" maxlength="200" placeholder="省 / 市 / 区 / 详细地址" autocomplete="street-address">
+      </label>
+    </div>
+    <div id="addr-closed" class="closed-note" hidden>地址征集已截止，仅记录你的名字。</div>
+    <div class="modal-actions">
+      <button id="btn-submit" class="act-btn act-primary">钉下印记</button>
+      <button id="btn-cancel" class="act-btn act-ghost">暂不</button>
+    </div>
+    <div id="record-status-line" class="status-line"></div>
+  </div>
+</div>
 
 <script>
 (function() {
@@ -601,9 +633,77 @@
     }
     loadEnding();
 
+    // ── 抵达记录：刺入榫销 ──
+    const btnTenon = document.getElementById('btn-tenon');
+    const overlay = document.getElementById('record-overlay');
+    const btnCancel = document.getElementById('btn-cancel');
+    const btnSubmit = document.getElementById('btn-submit');
+    const inName = document.getElementById('in-name');
+    const inPhone = document.getElementById('in-phone');
+    const inAddress = document.getElementById('in-address');
+    const addrFields = document.getElementById('addr-fields');
+    const addrClosed = document.getElementById('addr-closed');
+    const statusLine = document.getElementById('record-status-line');
+    let collectAddress = true;
+    let submitted = false;
+
     // 返回首页（左上角箭头）
     document.getElementById('btn-back').addEventListener('click', () => {
       window.location.href = 'index.html';
+    });
+
+    // 打开弹窗：先查收集状态（非管理员完成人数达到 11 后不再收集地址）
+    btnTenon.addEventListener('click', async () => {
+      if (submitted) { statusLine.textContent = '你已记录过抵达。'; return; }
+      try {
+        const res = await fetch('/api/end/record-status');
+        if (res.ok) {
+          const st = await res.json();
+          collectAddress = st.collectAddress;
+        }
+      } catch (_e) { /* 保持默认 */ }
+      addrFields.hidden = !collectAddress;
+      addrClosed.hidden = collectAddress;
+      statusLine.textContent = '';
+      overlay.hidden = false;
+      setTimeout(() => inName.focus(), 60);
+    });
+
+    btnCancel.addEventListener('click', () => { overlay.hidden = true; });
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) overlay.hidden = true;
+    });
+
+    btnSubmit.addEventListener('click', async () => {
+      const name = inName.value.trim();
+      if (!name) { statusLine.textContent = '请留下你的名字。'; inName.focus(); return; }
+      btnSubmit.disabled = true;
+      try {
+        const res = await fetch('/api/end/record', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId, name, phone: inPhone.value.trim(), address: inAddress.value.trim() }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          submitted = true;
+          statusLine.textContent = '已记录你的抵达。长夜已尽。';
+          statusLine.classList.add('ok');
+          btnTenon.disabled = true;
+          btnTenon.textContent = '印记已钉下';
+          setTimeout(() => { overlay.hidden = true; }, 1400);
+        } else if (res.status === 409) {
+          submitted = true;
+          btnTenon.disabled = true;
+          btnTenon.textContent = '印记已钉下';
+          statusLine.textContent = data.error || '已记录过抵达。';
+        } else {
+          statusLine.textContent = data.error || '提交失败，请稍后再试。';
+        }
+      } catch (_e) {
+        statusLine.textContent = '连接失败，请稍后再试。';
+      }
+      btnSubmit.disabled = false;
     });
   })();
 </script>

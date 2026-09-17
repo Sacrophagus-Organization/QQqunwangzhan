@@ -490,4 +490,25 @@ if (!existingAdmin) {
   }
 }
 
+// 终局谜题：抵达记录（真/假结局收集的名字与收货地址）
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS end_records (
+      id TEXT PRIMARY KEY,
+      branch TEXT NOT NULL,
+      name TEXT NOT NULL,
+      phone TEXT NOT NULL DEFAULT '',
+      address TEXT NOT NULL DEFAULT '',
+      session_id TEXT NOT NULL DEFAULT '',
+      user_id TEXT NOT NULL DEFAULT '',
+      user_name TEXT NOT NULL DEFAULT '',
+      is_admin INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_end_records_created ON end_records(created_at);
+    CREATE INDEX IF NOT EXISTS idx_end_records_session ON end_records(session_id);
+  `);
+  console.log('[DB] end_records table ensured');
+} catch {}
+
 export { db, DB_PATH };

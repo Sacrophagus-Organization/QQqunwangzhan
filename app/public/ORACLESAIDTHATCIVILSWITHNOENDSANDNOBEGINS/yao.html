@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>爻</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      background: #15130f;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    #pdf-container {
+      width: 100%;
+      max-width: 900px;
+      height: 95vh;
+      background: #ece6d8;
+      border-radius: 4px;
+      box-shadow: 0 0 80px rgba(0,0,0,.6);
+      overflow: hidden;
+    }
+    #pdf-container iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+    #close-btn {
+      position: fixed;
+      top: 20px;
+      right: 30px;
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-size: 14px;
+      letter-spacing: .1em;
+      color: #8c8170;
+      cursor: pointer;
+      z-index: 10;
+      background: rgba(21, 19, 15, 0.7);
+      padding: 8px 20px;
+      border-radius: 20px;
+      border: 1px solid #5a5042;
+      transition: all .3s ease;
+    }
+    #close-btn:hover {
+      color: #ece6d8;
+      background: rgba(21, 19, 15, 0.9);
+      border-color: #8c8170;
+    }
+    #err-msg {
+      color: #8c8170;
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      letter-spacing: .08em;
+    }
+    @media (max-width: 560px) {
+      #pdf-container {
+        height: 90vh;
+        border-radius: 0;
+      }
+      #close-btn {
+        top: 10px;
+        right: 10px;
+        font-size: 12px;
+        padding: 5px 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+<div id="close-btn" onclick="window.location.href='echo.html'">✕ 返回</div>
+  <div id="pdf-container">
+    <iframe id="pdf-frame" title="爻说"></iframe>
+  </div>
+<script>
+  // PDF 由后端鉴权下发（前端不持有文件，仅真分支会话可访问）
+  const sessionId = sessionStorage.getItem('end_sid');
+  if (!sessionId) {
+    window.location.href = 'index.html';
+  } else {
+    document.getElementById('pdf-frame').src = '/api/end/pdf?sessionId=' + encodeURIComponent(sessionId);
+  }
+</script>
+</body>
+</html>

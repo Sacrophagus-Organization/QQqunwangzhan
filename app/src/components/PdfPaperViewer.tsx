@@ -1,50 +1,17 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { FileWarning, Loader2 } from 'lucide-react';
-import { apiBlobUrl } from '../api/client';
 
 /**
- * 纸质化论文阅读器：带鉴权加载服务器端预渲染的 PDF 页面图片（论文接口要求登录，
- * <img> 无法携带 Authorization header，故用 fetch + blob 加载后转为 objectURL），
+ * 纸质化论文阅读器：直接展示服务器端预渲染的 PDF 页面图片，
  * 以「泛黄纸张钉在木板上」的质感呈现，与谜题页整体风格一致。
  * 浏览器端不解析 PDF，兼容所有现代浏览器。
  */
 export default function PdfPaperViewer({ pages }: { pages: string[] }) {
-  const [urls, setUrls] = useState<string[]>([]);
-  const [hasError, setHasError] = useState(false);
-  const createdUrls = useRef<string[]>([]);
+  const [loaded, setLoaded] = useState(0);
+  const [failed, setFailed] = useState(0);
 
-  useEffect(() => {
-    let alive = true;
-    createdUrls.current.forEach((u) => URL.revokeObjectURL(u));
-    createdUrls.current = [];
-    setUrls([]);
-    setHasError(false);
-
-    (async () => {
-      const got: string[] = [];
-      for (const src of pages) {
-        try {
-          got.push(await apiBlobUrl(src));
-          if (!alive) break;
-        } catch {
-          if (alive) setHasError(true);
-          break;
-        }
-      }
-      if (alive) {
-        createdUrls.current = got;
-        setUrls(got);
-      }
-    })();
-
-    return () => {
-      alive = false;
-      createdUrls.current.forEach((u) => URL.revokeObjectURL(u));
-      createdUrls.current = [];
-    };
-  }, [pages]);
-
-  const pending = urls.length === 0 && !hasError;
+  const pending = loaded + failed < pages.length;
+  const hasError = failed === pages.length;
 
   return (
     <div className="loop-wood-bg relative min-h-0 flex-1 overflow-y-auto">
@@ -66,7 +33,7 @@ export default function PdfPaperViewer({ pages }: { pages: string[] }) {
             </p>
           </div>
         )}
-        {urls.map((src, idx) => (
+        {pages.map((src, idx) => (
           <div
             key={src}
             className={`loop-paper-card relative w-full max-w-[900px] p-2 sm:p-3 ${
@@ -78,6 +45,8 @@ export default function PdfPaperViewer({ pages }: { pages: string[] }) {
               src={src}
               alt={`论文第 ${idx + 1} 页`}
               className="h-auto w-full"
+              onLoad={() => setLoaded((l) => l + 1)}
+              onError={() => setFailed((f) => f + 1)}
             />
           </div>
         ))}

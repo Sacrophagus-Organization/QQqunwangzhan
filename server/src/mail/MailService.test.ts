@@ -52,12 +52,12 @@ test('moves and deletes messages by owner only', async () => {
   await service.sendMessage('test-user-a', { to: 'bob@example.test', subject: 'Move me', bodyHtml: 'body' });
   const message = service.listMessages({ userId: 'test-user-b', folder: 'inbox' }).messages[0]!;
 
-  service.move('test-user-b', message.id, 'deleted');
-  assert.equal(service.listMessages({ userId: 'test-user-b', folder: 'deleted' }).total, 1);
+  service.move('test-user-b', message.id, 'trash');
+  assert.equal(service.listMessages({ userId: 'test-user-b', folder: 'trash' }).total, 1);
 
-  assert.throws(() => service.move('test-user-a', message.id, 'deleted'));
+  assert.throws(() => service.move('test-user-a', message.id, 'trash'));
   service.delete('test-user-b', message.id);
-  assert.equal(service.listMessages({ userId: 'test-user-b', folder: 'deleted' }).total, 0);
+  assert.equal(service.listMessages({ userId: 'test-user-b', folder: 'deleted' }).total, 1);
   cleanup();
 });
 

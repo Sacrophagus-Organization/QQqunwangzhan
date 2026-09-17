@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>终局 · 抵达记录</title>
+  <style>
+    :root {
+      --bg: #101214;
+      --panel: #171a1e;
+      --panel-2: #1d2126;
+      --line: #2a2f36;
+      --text: #d8dce2;
+      --muted: #7d8590;
+      --accent: #c7a15a;
+      --red: #c0564f;
+      --blue: #5b8fb0;
+      --green: #6da06d;
+      --serif: Georgia, 'Noto Serif SC', serif;
+      --mono: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--serif);
+      min-height: 100vh;
+      padding: 2.4rem 1.2rem 4rem;
+    }
+    .wrap { max-width: 1080px; margin: 0 auto; }
+
+    header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 1.6rem;
+    }
+    h1 {
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: .14em;
+    }
+    h1 small {
+      display: block;
+      font-size: 12px;
+      letter-spacing: .3em;
+      color: var(--muted);
+      font-weight: 400;
+      margin-top: .35em;
+    }
+    .actions { display: flex; gap: .8rem; align-items: center; }
+    button, .link {
+      font-family: inherit;
+      font-size: 13px;
+      letter-spacing: .08em;
+      padding: .55em 1.1em;
+      border: 1px solid var(--line);
+      border-radius: 2px;
+      background: var(--panel);
+      color: var(--text);
+      cursor: pointer;
+      text-decoration: none;
+      transition: border-color .2s, color .2s, background .2s;
+    }
+    button:hover, .link:hover { border-color: var(--accent); color: var(--accent); }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+
+    .banner {
+      padding: 1rem 1.2rem;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-left: 3px solid var(--red);
+      border-radius: 2px;
+      margin-bottom: 1.6rem;
+      font-size: 14px;
+      letter-spacing: .04em;
+      line-height: 1.8;
+    }
+    .banner a { color: var(--accent); }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: .8rem;
+      margin-bottom: 1.6rem;
+    }
+    .stat {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 2px;
+      padding: .9rem 1rem;
+    }
+    .stat span {
+      display: block;
+      font-size: 11.5px;
+      letter-spacing: .18em;
+      color: var(--muted);
+      margin-bottom: .45em;
+    }
+    .stat b {
+      font-family: var(--mono);
+      font-size: 22px;
+      font-weight: 600;
+    }
+    .stat b.green { color: var(--green); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    th, td {
+      padding: .7rem .8rem;
+      text-align: left;
+      font-size: 13px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+    }
+    th {
+      background: var(--panel-2);
+      font-weight: 600;
+      letter-spacing: .12em;
+      color: var(--muted);
+      font-size: 11.5px;
+      white-space: nowrap;
+    }
+    tr:last-child td { border-bottom: none; }
+    td.mono { font-family: var(--mono); font-size: 12.5px; }
+    td.time { color: var(--muted); white-space: nowrap; }
+    .branch {
+      display: inline-block;
+      padding: .12em .6em;
+      font-size: 11px;
+      letter-spacing: .12em;
+      border-radius: 2px;
+      border: 1px solid;
+    }
+    .branch.true { color: var(--red); border-color: rgba(192,86,79,.5); }
+    .branch.fake { color: var(--blue); border-color: rgba(91,143,176,.5); }
+    .tag-admin {
+      display: inline-block;
+      margin-left: .45em;
+      font-size: 10px;
+      letter-spacing: .1em;
+      color: var(--accent);
+      border: 1px solid rgba(199,161,90,.45);
+      border-radius: 2px;
+      padding: .05em .45em;
+      vertical-align: 1px;
+    }
+    .del {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 12px;
+      cursor: pointer;
+      padding: .2em .4em;
+      letter-spacing: .06em;
+    }
+    .del:hover { color: var(--red); border-color: transparent; }
+    .empty {
+      text-align: center;
+      color: var(--muted);
+      padding: 2.4rem 0;
+      letter-spacing: .2em;
+      font-size: 13px;
+    }
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 1.6rem;
+      transform: translateX(-50%);
+      background: var(--panel-2);
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      padding: .6em 1.2em;
+      font-size: 13px;
+      letter-spacing: .08em;
+      border-radius: 2px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .3s;
+      z-index: 50;
+    }
+    .toast.show { opacity: 1; }
+    @media (max-width: 640px) {
+      th:nth-child(3), td:nth-child(3) { display: none; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>终局 · 抵达记录
+      <small>刺入榫销 · 真假结局信息收集</small>
+    </h1>
+    <div class="actions">
+      <button id="btn-refresh">刷新</button>
+      <a class="link" href="/lynchpin-admin" target="_blank">管理后台</a>
+    </div>
+  </header>
+
+  <div id="login-prompt" class="banner" hidden>
+    无法读取记录：请先登录管理后台（<a href="/lynchpin-admin" target="_blank">前往登录</a>），
+    登录后回到本页刷新即可查看。仅管理员可见全部抵达记录。
+  </div>
+
+  <main id="main" hidden>
+    <section class="stats">
+      <div class="stat"><span>总记录</span><b id="st-total">0</b></div>
+      <div class="stat"><span>真结局</span><b id="st-true">0</b></div>
+      <div class="stat"><span>假结局</span><b id="st-fake">0</b></div>
+      <div class="stat"><span>玩家提交</span><b id="st-player">0</b></div>
+      <div class="stat"><span>地址收集</span><b id="st-addr" class="green">0/11</b></div>
+    </section>
+
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>提交时间</th>
+          <th>分支</th>
+          <th>名字</th>
+          <th>电话</th>
+          <th>收货地址</th>
+          <th>提交者</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </main>
+</div>
+<div id="toast" class="toast"></div>
+
+<script>
+(function () {
+  const rowsEl = document.getElementById('rows');
+  const mainEl = document.getElementById('main');
+  const promptEl = document.getElementById('login-prompt');
+  const refreshBtn = document.getElementById('btn-refresh');
+  const toastEl = document.getElementById('toast');
+
+  let toastTimer = null;
+  function toast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2200);
+  }
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[c]);
+  }
+
+  function fmtTime(createdAt) {
+    if (!createdAt) return '';
+    try {
+      // SQLite datetime('now') 为 UTC，补 Z 后转本地时间
+      const d = new Date(String(createdAt).replace(' ', 'T') + 'Z');
+      if (isNaN(d)) return esc(createdAt);
+      const p = (n) => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+    } catch (_e) {
+      return esc(createdAt);
+    }
+  }
+
+  function render(data) {
+    const { records, stats } = data;
+
+    document.getElementById('st-total').textContent = stats.total;
+    document.getElementById('st-true').textContent = stats.trueCount;
+    document.getElementById('st-fake').textContent = stats.fakeCount;
+    document.getElementById('st-player').textContent = stats.playerCount;
+    document.getElementById('st-addr').textContent = `${stats.playerCount}/${stats.limit}`;
+    document.getElementById('st-addr').className = stats.collectAddress ? 'green' : '';
+
+    rowsEl.innerHTML = '';
+    if (!records.length) {
+      rowsEl.innerHTML = '<tr><td colspan="8" class="empty">尚无抵达记录</td></tr>';
+      return;
+    }
+    records.forEach((r) => {
+      const tr = document.createElement('tr');
+      const who = r.is_admin
+        ? (r.user_name ? esc(r.user_name) : '管理员') + '<span class="tag-admin">管理员</span>'
+        : '玩家 ' + esc(String(r.session_id).slice(-6));
+      tr.innerHTML = `
+        <td class="mono">${r.seq}</td>
+        <td class="time">${fmtTime(r.created_at)}</td>
+        <td><span class="branch ${r.branch === 'true' ? 'true' : 'fake'}">${r.branch === 'true' ? '真结局' : '假结局'}</span></td>
+        <td>${esc(r.name)}</td>
+        <td class="mono">${esc(r.phone) || '—'}</td>
+        <td>${esc(r.address) || '—'}</td>
+        <td>${who}</td>
+        <td style="text-align:right"><button class="del" data-id="${esc(r.id)}">删除</button></td>
+      `;
+      rowsEl.appendChild(tr);
+    });
+    rowsEl.querySelectorAll('.del').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('删除这条抵达记录？')) return;
+        const res = await fetch(`/api/end/records/${encodeURIComponent(btn.dataset.id)}`, { method: 'DELETE' });
+        if (res.ok) {
+          toast('已删除');
+          load();
+        } else {
+          toast('删除失败');
+        }
+      });
+    });
+  }
+
+  async function load() {
+    refreshBtn.disabled = true;
+    try {
+      const res = await fetch('/api/end/records');
+      if (res.status === 401 || res.status === 403) {
+        mainEl.hidden = true;
+        promptEl.hidden = false;
+        return;
+      }
+      if (!res.ok) throw new Error('bad status');
+      const data = await res.json();
+      promptEl.hidden = true;
+      mainEl.hidden = false;
+      render(data);
+    } catch (_e) {
+      mainEl.hidden = true;
+      promptEl.hidden = false;
+    } finally {
+      refreshBtn.disabled = false;
+    }
+  }
+
+  refreshBtn.addEventListener('click', load);
+  load();
+})();
+</script>
+</body>
+</html>

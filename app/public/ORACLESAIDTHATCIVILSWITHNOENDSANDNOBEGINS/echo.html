@@ -126,26 +126,6 @@
       color: var(--ink);
     }
 
-    /* 末句金句：比正文大两号并加粗 */
-    .ln .closing {
-      font-size: 1.3em;
-      font-weight: 700;
-    }
-
-    /* 正文中可点击文字的提示样式 */
-    .ln .clickable-yao {
-      cursor: pointer;
-      color: var(--accent);
-      text-decoration: underline;
-      text-underline-offset: 3px;
-      text-decoration-thickness: 1px;
-      transition: color .25s ease, text-decoration-thickness .25s ease;
-    }
-    .ln .clickable-yao:hover {
-      color: #8b1a1a;
-      text-decoration-thickness: 2px;
-    }
-
     /* 模糊体样式 */
     .ln .blur, .aside .blur {
       display: inline-block;
@@ -366,6 +346,12 @@ function renderManuscript(container, data) {
     });
   });
 
+  // ── 爻跳转 ──
+  container.querySelectorAll('.clickable-yao').forEach(el => {
+    el.addEventListener('click', () => {
+      window.location.href = 'yao.html';
+    });
+  });
 }
 
     // 正文由后端下发，见下方 loadEcho()

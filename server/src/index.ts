@@ -23,6 +23,7 @@ import mailAdminRoutes from './routes/mailAdmin.js';
 import { mailService } from './mail/MailService.js';
 import storyRoutes from './routes/stories.js';
 import loopPuzzleRoutes from './routes/loopPuzzle.js';
+import endRoutes from './routes/end.js';
 import { globalLimiter } from './lib/rateLimiter.js';
 import { startDiskCleanup } from './lib/diskCleanup.js';
 import { optionalAuth } from './middleware/pageAccess.js';
@@ -105,6 +106,7 @@ app.use('/api/mail', mailRoutes);
 app.use('/api/mail/admin', mailAdminRoutes);
 app.use('/api/stories', storyRoutes);
 app.use('/api/loop', loopPuzzleRoutes);
+app.use('/api/end', optionalAuth('/ORACLESAIDTHATCIVILSWITHNOENDSANDNOBEGINS'), endRoutes);
 
 // Serve uploaded avatars with caching (avatar filenames are UUID-based, immutable)
 app.use('/uploads/avatars', express.static(path.join(__dirname, '..', 'uploads', 'avatars'), {

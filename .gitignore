@@ -27,6 +27,4 @@ _tmp/
 server/data/
 # 本地开发启动脚本：含本机绝对路径与默认口令
 server-dev.cmd
-# 终局正文数据（含真/假结局全文）：线上部署需要，但不进公开仓库
-server/src/data/end-content.ts
 

@@ -107,7 +107,7 @@ export const LOOP_NODE6_APPENDICES: LoopAppendix[] = [
     key: 'J',
     title: '一角',
     subtitle: '写在实验报告背面的、手写的记录。',
-    // 密码仅存 sha256 摘要（校验时 trim + 转大写后比对），此处不记录明文
+    // 明文：WDSJ225772937AAAB（校验时统一转大写后比对 sha256）
     passwordHash: '0a96da1a7183a2d249771f93796e81475198754beac0c21850be04a2d6be1954',
   },
 ];
